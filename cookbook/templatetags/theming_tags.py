@@ -75,4 +75,8 @@ def get_theming_values(request):
             tv['nav_text_class'] = nav_text_type_mapping[space.nav_text_color]
         if space.app_name:
             tv['app_name'] = space.app_name
+
+    # home theme: the stock tan nav colour becomes a plain white bar (matches the Vue app)
+    if tv['nav_bg_color'].lower() == '#ddbf86':
+        tv['nav_bg_color'] = '#ffffff'
     return tv
