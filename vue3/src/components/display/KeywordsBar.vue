@@ -1,5 +1,5 @@
 <template>
-    <div v-if="props.keywords">
+    <div class="keywords-bar" v-if="props.keywords">
         <slot name="prepend"></slot>
 
         <v-chip class="me-1 mb-1" :label="props.label" :color="props.color" :size="props.size" :variant="props.variant" v-for="k in keywords"

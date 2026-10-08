@@ -1,16 +1,16 @@
 <template>
     <v-app>
-        <v-app-bar color="tandoor" flat density="comfortable" v-if="!useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode">
+        <v-app-bar color="surface" flat density="comfortable" v-if="!useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode">
             <a href="https://tandoor.dev">
                 <v-img src="../../assets/brand_logo.svg" width="140px" class="ms-2" ></v-img>
             </a>
         </v-app-bar>
-        <v-app-bar :color="useUserPreferenceStore().activeSpace.navBgColor ? useUserPreferenceStore().activeSpace.navBgColor : useUserPreferenceStore().userSettings.navBgColor"
+        <v-app-bar :color="navBgColor"
                    flat density="comfortable" v-if="useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode"
                    :absolute="!useUserPreferenceStore().userSettings.navSticky"
                    :scroll-behavior="useUserPreferenceStore().userSettings.navSticky ? 'elevate' : ''">
             <router-link :to="{ name: 'StartPage', params: {} }">
-                <v-img src="../../assets/brand_logo.svg" width="140px" class="ms-2"
+                <v-img :src="theme.global.current.value.dark ? brandLogoDark : brandLogo" width="140px" class="ms-2"
                        v-if="useUserPreferenceStore().userSettings.navShowLogo && !useUserPreferenceStore().activeSpace.navLogo"></v-img>
                 <v-img :src="useUserPreferenceStore().activeSpace.navLogo.preview" width="140px" class="ms-2"
                        v-if="useUserPreferenceStore().userSettings.navShowLogo && useUserPreferenceStore().activeSpace.navLogo != undefined"></v-img>
@@ -124,12 +124,14 @@
 <script lang="ts" setup>
 import GlobalSearchDialog from "@/components/inputs/GlobalSearchDialog.vue"
 
-import {useDisplay, useLocale} from "vuetify"
+import {useDisplay, useLocale, useTheme} from "vuetify"
+import brandLogo from "@/assets/brand_logo.svg"
+import brandLogoDark from "@/assets/brand_logo_dark.svg"
 import {toVuetifyLocale} from "@/vuetify"
 import VSnackbarQueued from "@/components/display/VSnackbarQueued.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import NavigationDrawerContextMenu from "@/components/display/NavigationDrawerContextMenu.vue";
-import {nextTick, onMounted, ref} from "vue";
+import {computed, nextTick, onMounted, ref} from "vue";
 import {isSpaceAboveLimit} from "@/utils/logic_utils";
 import {useTitle} from "@vueuse/core";
 import HelpDialog from "@/components/dialogs/HelpDialog.vue";
@@ -140,6 +142,15 @@ import {THousehold, TSpace} from "@/types/Models.ts";
 import MenuUserInfo from "@/components/display/MenuUserInfo.vue";
 
 const {lgAndUp} = useDisplay()
+const theme = useTheme()
+
+// Home theme: the stock default nav colour (#ddbf86) becomes a plain surface bar; a colour a
+// user or space picked on purpose is still respected.
+const LEGACY_NAV_BG = '#ddbf86'
+const navBgColor = computed(() => {
+    const c = useUserPreferenceStore().activeSpace.navBgColor || useUserPreferenceStore().userSettings.navBgColor
+    return (!c || c.toLowerCase() == LEGACY_NAV_BG) ? 'surface' : c
+})
 const {t} = useI18n()
 
 const title = useTitle()

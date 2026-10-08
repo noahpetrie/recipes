@@ -37,7 +37,17 @@ export default createVuetify({
         // chips use the close icon defined as delete in the aliases but trash can does not look good
         VChip: {
             closeIcon: 'fa-solid fa-circle-xmark'
-        }
+        },
+        // Home theme: softer corners
+        VCard: {
+            rounded: 'lg'
+        },
+        VBtn: {
+            rounded: 'lg'
+        },
+        VDialog: {
+            VCard: {rounded: 'xl'}
+        },
     },
     locale: {
         locale: 'en',
@@ -47,43 +57,52 @@ export default createVuetify({
     theme: {
         defaultTheme: 'light',
         themes: {
+            // Home theme: lighter warm neutrals and a deeper terracotta accent so white text on
+            // primary meets WCAG AA (the stock #b98766 was ~3.1:1).
             light: {
                 colors: {
-                    background: '#f5efea',
+                    background: '#f7f4ef',
+                    surface: '#ffffff',
+                    'surface-variant': '#ece6de',
+                    'on-surface-variant': '#4a3f36',
                     tandoor: '#ddbf86',
-                    primary: '#b98766',
-                    secondary: '#b55e4f',
-                    success: '#82aa8b',
-                    info: '#385f84',
-                    warning: '#eaaa21',
+                    primary: '#a05a38',
+                    secondary: '#9c4a3c',
+                    success: '#4f8a5b',
+                    info: '#2f5f8a',
+                    warning: '#c98a12',
                     error: '#a7240e',
 
-                    save: '#82aa8b',
-                    create: '#82aa8b',
-                    edit: '#385f84',
+                    save: '#4f8a5b',
+                    create: '#4f8a5b',
+                    edit: '#2f5f8a',
                     delete: '#a7240e',
-                    cancel: '#eaaa21',
+                    cancel: '#c98a12',
 
-                    recipeImagePlaceholderBg: '#ffffff',
+                    recipeImagePlaceholderBg: '#f1ece5',
                 },
             },
             dark: {
                 colors: {
+                    background: '#131315',
+                    surface: '#1c1c1f',
+                    'surface-variant': '#2a2a2e',
+                    'on-surface-variant': '#d6cfc7',
                     tandoor: '#ddbf86',
-                    primary: '#b98766',
-                    secondary: '#b55e4f',
-                    success: '#82aa8b',
-                    info: '#385f84',
-                    warning: '#eaaa21',
-                    error: '#a7240e',
+                    primary: '#d9a07a',
+                    secondary: '#d98b7a',
+                    success: '#7fb48a',
+                    info: '#7aa7d1',
+                    warning: '#e6b04a',
+                    error: '#e06a55',
 
-                    save: '#82aa8b',
-                    create: '#82aa8b',
-                    edit: '#385f84',
-                    delete: '#a7240e',
-                    cancel: '#eaaa21',
+                    save: '#7fb48a',
+                    create: '#7fb48a',
+                    edit: '#7aa7d1',
+                    delete: '#e06a55',
+                    cancel: '#e6b04a',
 
-                    recipeImagePlaceholderBg: '#212121',
+                    recipeImagePlaceholderBg: '#26262a',
                 },
             },
         },

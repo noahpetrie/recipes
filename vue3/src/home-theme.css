@@ -1,0 +1,217 @@
+/*
+ * Home theme for noahpetrie/recipes: a lighter, more modern skin over stock Tandoor.
+ * Kept in one file (plus palette/defaults in vuetify.ts) so upstream merges stay easy.
+ */
+
+:root {
+    --home-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --home-display-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --home-radius: 12px;
+    --home-hairline: rgba(var(--v-border-color), 0.10);
+}
+
+/* ---- Typography: system font, sentence-case controls ---------------------------------- */
+.v-application,
+.text-body-1, .text-body-2, .text-subtitle-1, .text-subtitle-2,
+.text-caption, .text-overline, .text-button {
+    font-family: var(--home-font) !important;
+}
+
+.text-h1, .text-h2, .text-h3, .text-h4, .text-h5, .text-h6 {
+    font-family: var(--home-display-font) !important;
+    letter-spacing: -0.015em !important;
+    font-weight: 650;
+}
+
+.v-btn, .v-tab, .text-button {
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-weight: 600;
+}
+
+.v-application {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Surfaces: hairline borders instead of heavy shadows ---------------------------- */
+.v-card--variant-elevated {
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px -8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.v-theme--dark .v-card--variant-elevated {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07) !important;
+}
+
+.v-card--hover:hover {
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 8px 24px -10px rgba(0, 0, 0, 0.18) !important;
+}
+
+.v-expansion-panel {
+    border-radius: var(--home-radius) !important;
+}
+
+.v-expansion-panel:not(:first-child)::after {
+    border-top-color: var(--home-hairline) !important;
+}
+
+.v-expansion-panel__shadow {
+    box-shadow: 0 0 0 1px var(--home-hairline) !important;
+}
+
+/* Recipe photos on cards get the card's rounded top corners */
+.v-card > .v-img:first-child,
+.v-card > a:first-child .v-img {
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+}
+
+/* ---- App bar: clean surface with a hairline instead of the solid tan band ------------ */
+.v-app-bar.bg-surface {
+    border-bottom: 1px solid var(--home-hairline);
+}
+
+.v-app-bar.v-toolbar--flat {
+    box-shadow: none;
+}
+
+/* ---- Navigation drawer: inset pill for the active item ------------------------------ */
+.v-navigation-drawer {
+    border-right: 1px solid var(--home-hairline) !important;
+}
+
+.v-navigation-drawer .v-list-item {
+    border-radius: 10px;
+    margin-inline: 8px;
+    margin-block: 1px;
+    width: auto;
+    min-height: 44px !important;
+}
+
+.v-navigation-drawer .v-list-item--active {
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.10);
+}
+
+.v-navigation-drawer .v-list-item--active > .v-list-item__overlay {
+    opacity: 0 !important;
+}
+
+.v-navigation-drawer .v-list-item__prepend > .v-icon {
+    opacity: 0.75;
+}
+
+.v-navigation-drawer .v-list-item--active .v-list-item__prepend > .v-icon {
+    opacity: 1;
+}
+
+/* ---- Bottom navigation (phones) ----------------------------------------------------- */
+.v-bottom-navigation {
+    box-shadow: none !important;
+    border-top: 1px solid var(--home-hairline);
+}
+
+.v-bottom-navigation .v-btn--active {
+    color: rgb(var(--v-theme-primary));
+}
+
+/* ---- Chips: rounded pills; keyword chips tinted with the accent --------------------- */
+.v-chip--label {
+    border-radius: 999px !important;
+}
+
+.keywords-bar .v-chip--variant-flat:not([class*="bg-"]),
+.keywords-bar .v-chip--variant-tonal:not([class*="text-"]) {
+    background: rgba(var(--v-theme-primary), 0.12) !important;
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.keywords-bar .v-chip--variant-flat > .v-chip__overlay {
+    opacity: 0;
+}
+
+.keywords-bar .v-chip--variant-outlined {
+    border-color: var(--home-hairline);
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+
+/* ---- Inputs ------------------------------------------------------------------------- */
+.v-field--variant-filled .v-field__overlay {
+    background-color: rgba(var(--v-theme-on-surface), 0.035) !important;
+}
+
+.v-field--variant-filled,
+.v-field--variant-outlined,
+.v-field--variant-solo {
+    border-radius: 10px !important;
+}
+
+.v-field--variant-filled {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+/* ---- Dialogs and menus -------------------------------------------------------------- */
+.v-overlay__content > .v-list,
+.v-menu > .v-overlay__content > .v-card {
+    border-radius: var(--home-radius) !important;
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 12px 32px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.v-overlay__scrim {
+    backdrop-filter: blur(2px);
+}
+
+/* ---- Cmd+K search: command-palette style list --------------------------------------- */
+.global-search .v-field--variant-solo {
+    box-shadow: 0 0 0 1px var(--home-hairline) !important;
+    background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.global-search .v-card-text > .v-card {
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 10px;
+    margin-top: 2px !important;
+    background: transparent;
+}
+
+.global-search .v-card-text > .v-card.v-card--variant-tonal {
+    background: rgba(var(--v-theme-primary), 0.10);
+    color: rgb(var(--v-theme-primary));
+}
+
+.global-search .v-card-text > .v-card > .v-card__overlay {
+    border-radius: inherit;
+}
+
+.global-search .v-card-text > .v-card .v-card-title {
+    font-size: 0.975rem;
+    font-weight: 500;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.global-search .v-card-text > .v-card .v-avatar {
+    --v-avatar-height: 32px;
+    border-radius: 8px;
+}
+
+/* ---- Phones: full-bleed pages (recipe view) get square edges and horizontal hairlines only */
+@media (max-width: 1279.98px) {
+    .v-main .v-container.ps-0.pe-0 .v-card {
+        border-radius: 0 !important;
+    }
+
+    .v-main .v-container.ps-0.pe-0 .v-card--variant-elevated {
+        box-shadow: 0 1px 0 var(--home-hairline), 0 -1px 0 var(--home-hairline) !important;
+    }
+}
+
+@media (max-width: 1279.98px) {
+    .v-main .v-container.ps-0.pe-0 .v-expansion-panel {
+        border-radius: 0 !important;
+    }
+}

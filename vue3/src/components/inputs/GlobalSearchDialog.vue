@@ -14,7 +14,7 @@
               :fullscreen="mobile"
     >
 
-        <v-card>
+        <v-card class="global-search">
             <v-closable-card-title :title="$t('Search')" v-model="dialog"></v-closable-card-title>
             <!-- search input -->
             <v-card-text class="pt-0 pt-md-2">
