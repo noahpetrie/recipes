@@ -1,5 +1,5 @@
 <template>
-    <v-dialog max-width="1400" :activator="dialogActivator" v-model="dialog" :persistent="editingObjChangedState">
+    <v-dialog :max-width="props.model == 'MealPlan' ? 720 : 1400" :activator="dialogActivator" v-model="dialog" :persistent="editingObjChangedState">
         <component :is="editorComponent" :item="props.item" :item-id="props.itemId" @create="createEvent" @save="saveEvent" @delete="deleteEvent" dialog @close="dialog = false; " @changed-state="(state:boolean) => {editingObjChangedState = state}" :itemDefaults="props.itemDefaults"></component>
     </v-dialog>
 </template>

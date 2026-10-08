@@ -1,7 +1,7 @@
 <template>
     <v-card :loading="loading"  class="mb-10">
         <v-closable-card-title
-            :sub-title="$t(modelClass.model.localizationKey) + ((isChanged) ? ` (${$t('unsaved')})` : '')"
+            :sub-title="isUpdate ? $t(modelClass.model.localizationKey) + ((isChanged) ? ` (${$t('unsaved')})` : '') : ((isChanged) ? $t('unsaved') : '')"
             :title="objectName"
             :icon="modelClass.model.icon"
             @close="closeDialog()"
@@ -22,8 +22,10 @@
                    :to="{name: 'ModelDeletePage', params: {model: modelClass.model.name, id: props.editingObject.id!}}" :disabled="loading">{{ $t('Delete') }}
             </v-btn>
 
-            <v-btn color="save" prepend-icon="$create" @click="emit('save')" v-if="!isUpdate && !modelClass.model.disableCreate" :loading="loading">{{ $t('Create') }}</v-btn>
-            <v-btn color="save" prepend-icon="$save" @click="emit('save')" v-if="isUpdate && !modelClass.model.disableUpdate" :loading="loading"> {{ $t('Save') }}</v-btn>
+            <v-spacer></v-spacer>
+            <v-btn variant="text" @click="closeDialog()" v-if="dialog" :disabled="loading">{{ $t('Cancel') }}</v-btn>
+            <v-btn color="save" variant="flat" prepend-icon="$create" @click="emit('save')" v-if="!isUpdate && !modelClass.model.disableCreate" :loading="loading">{{ $t('Create') }}</v-btn>
+            <v-btn color="save" variant="flat" prepend-icon="$save" @click="emit('save')" v-if="isUpdate && !modelClass.model.disableUpdate" :loading="loading"> {{ $t('Save') }}</v-btn>
         </v-card-actions>
     </v-card>
 

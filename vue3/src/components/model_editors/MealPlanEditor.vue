@@ -11,87 +11,105 @@
         :object-name="editingObjName()"
         :editing-object="editingObj">
 
-        <v-card-text class="pa-0">
-            <v-tabs v-model="tab" :disabled="loading" grow>
-                <v-tab prepend-icon="$mealplan" value="plan">{{ $t('Meal_Plan') }}</v-tab>
-                <v-tab prepend-icon="$shopping" value="shopping" :disabled="!isUpdate()">{{ $t('Shopping_list') }}</v-tab>
-            </v-tabs>
-        </v-card-text>
+        <!-- tabs only matter once the plan exists (the shopping tab is unavailable for new plans) -->
+        <v-tabs v-model="tab" :disabled="loading" grow density="compact" v-if="isUpdate()">
+            <v-tab prepend-icon="$mealplan" value="plan">{{ $t('Meal_Plan') }}</v-tab>
+            <v-tab prepend-icon="$shopping" value="shopping">{{ $t('Shopping_list') }}</v-tab>
+        </v-tabs>
 
-        <v-card-text>
+        <v-card-text class="meal-plan-editor">
             <v-tabs-window v-model="tab">
                 <v-tabs-window-item value="plan">
                     <v-form :disabled="loading">
 
-                        <v-row>
-                            <v-col cols="12" md="6">
-                                <v-model-select model="Recipe" v-model="editingObj.recipe"
-                                             @update:modelValue="editingObj.servings = editingObj.recipe ? editingObj.recipe.servings : 1"></v-model-select>
-                                <!--                                <v-number-input label="Days" control-variant="split" :min="1"></v-number-input>-->
-                                <!--TODO create days input with +/- synced to date -->
-                                <recipe-card :recipe="editingObj.recipe" :servings="editingObj.servings" v-if="editingObj && editingObj.recipe" link-target="_blank"></recipe-card>
-                                <v-btn prepend-icon="$shopping" color="create" class="mt-1" v-if="!editingObj.shopping && editingObj.recipe && isUpdate()">
-                                    {{ $t('Add') }}
-                                    <add-to-shopping-dialog :recipe="editingObj.recipe" :meal-plan="editingObj"
-                                                            @created="editingObj.shopping = true;"></add-to-shopping-dialog>
-                                </v-btn>
+                        <!-- what -->
+                        <v-model-select model="Recipe" v-model="editingObj.recipe" hide-details
+                                        @update:modelValue="editingObj.servings = editingObj.recipe ? editingObj.recipe.servings : 1"></v-model-select>
 
-                                <v-checkbox :label="$t('AddToShopping')" v-model="editingObj.addshopping" hide-details v-if="editingObj.recipe && !isUpdate()"></v-checkbox>
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field :label="$t('Title')" v-model="editingObj.title"></v-text-field>
-                                <v-row no-gutters class="datetime-joined-group">
-                                    <v-col cols="12" sm="7">
-                                        <v-date-input
-                                            v-model="dateRangeValue"
-                                            @update:modelValue="updateDate()"
-                                            :first-day-of-week="useUserPreferenceStore().deviceSettings.mealplan_startingDayOfWeek"
-                                            :show-week="useUserPreferenceStore().deviceSettings.mealplan_displayWeekNumbers"
-                                            :label="$t('Date')"
-                                            multiple="range"
-                                            prepend-icon=""
-                                            prepend-inner-icon="$calendar"
-                                            hide-details
-                                        ></v-date-input>
-                                    </v-col>
-                                    <v-col cols="12" sm="5">
-                                        <v-text-field v-model="mealPlanTime"
-                                            :active="timePickerMenu" :focus="timePickerMenu"
-                                            :label="$t('Time')" prepend-inner-icon="fa-solid fa-clock" readonly
-                                            hide-details>
-                                            <v-menu v-model="timePickerMenu" :close-on-content-click="false"
-                                                    activator="parent" transition="scale-transition">
-                                                <v-time-picker v-if="timePickerMenu" format="24hr"
-                                                               v-model="mealPlanTime"
-                                                               @update:modelValue="applyTimeToEditingDates"></v-time-picker>
-                                            </v-menu>
-                                        </v-text-field>
-                                    </v-col>
-                                </v-row>
+                        <v-list-item v-if="editingObj && editingObj.recipe" class="mpe-recipe mt-2" rounded="lg"
+                                     :to="{name: 'RecipeViewPage', params: {id: editingObj.recipe.id}}" target="_blank">
+                            <template #prepend>
+                                <v-avatar rounded="lg" size="48" :image="editingObj.recipe.image" class="me-1" v-if="editingObj.recipe.image"></v-avatar>
+                                <v-avatar rounded="lg" size="48" color="tandoor" class="me-1" v-else>{{ editingObj.recipe.name.charAt(0) }}</v-avatar>
+                            </template>
+                            <v-list-item-title class="font-weight-medium">{{ editingObj.recipe.name }}</v-list-item-title>
+                            <v-list-item-subtitle v-if="editingObj.recipe.workingTime || editingObj.recipe.waitingTime">
+                                <v-icon icon="fa-regular fa-clock" size="x-small" class="me-1"></v-icon>
+                                {{ (editingObj.recipe.workingTime ?? 0) + (editingObj.recipe.waitingTime ?? 0) }} min
+                            </v-list-item-subtitle>
+                            <template #append>
+                                <v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small" class="text-medium-emphasis"></v-icon>
+                            </template>
+                        </v-list-item>
 
-                                <v-input>
-                                    <v-btn-group elevation="1" class="w-100" divided border>
-                                        <v-btn class="w-25" @click="adjustDateRangeLength(dateRangeValue,-1); updateDate()"><i class="fa-solid fa-minus"></i></v-btn>
-                                        <v-btn class="w-25" @click="dateRangeValue = shiftDateRange(dateRangeValue, -1); updateDate()"><i class="fa-solid fa-angles-left"></i>
-                                        </v-btn>
-                                        <v-btn class="w-25" @click="dateRangeValue = shiftDateRange(dateRangeValue, +1); updateDate()"><i class="fa-solid fa-angles-right"></i>
-                                        </v-btn>
-                                        <v-btn class="w-25" @click="adjustDateRangeLength(dateRangeValue,+1); updateDate()"><i class="fa-solid fa-plus"></i></v-btn>
-                                    </v-btn-group>
-                                </v-input>
+                        <v-text-field v-model="editingObj.title" hide-details class="mt-3"
+                                      :label="editingObj.recipe ? $t('Title') : $t('or') + ' ' + $t('Title').toLowerCase()"
+                                      :placeholder="editingObj.recipe ? editingObj.recipe.name : ''"></v-text-field>
 
-                                <v-model-select model="MealType" create v-model="editingObj.mealType"></v-model-select>
-                                <v-number-input control-variant="split" :min="0" v-model="editingObj.servings" :label="$t('Servings')" :precision="2"></v-number-input>
-                            </v-col>
+                        <!-- when -->
+                        <div class="mpe-section-label">{{ $t('Date') }}</div>
+                        <div class="d-flex align-center ga-2 flex-wrap">
+                            <div class="d-flex align-center flex-grow-1 mpe-date">
+                                <v-btn icon="fa-solid fa-chevron-left" variant="text" size="small" density="comfortable" :title="$t('Previous_Day')"
+                                       @click="dateRangeValue = shiftDateRange(dateRangeValue, -1); updateDate()"></v-btn>
+                                <v-text-field :model-value="dateLabel" readonly prepend-inner-icon="$calendar" density="compact" hide-details
+                                              :aria-label="$t('Date')" :active="datePickerMenu" :focused="datePickerMenu">
+                                    <v-menu v-model="datePickerMenu" :close-on-content-click="false" activator="parent" transition="scale-transition">
+                                        <v-date-picker v-model="pickerValue" multiple="range" @update:modelValue="onPickerChange" hide-header color="primary"
+                                                       :first-day-of-week="useUserPreferenceStore().deviceSettings.mealplan_startingDayOfWeek"
+                                                       :show-week="useUserPreferenceStore().deviceSettings.mealplan_displayWeekNumbers"></v-date-picker>
+                                    </v-menu>
+                                </v-text-field>
+                                <v-btn icon="fa-solid fa-chevron-right" variant="text" size="small" density="comfortable" :title="$t('Next_Day')"
+                                       @click="dateRangeValue = shiftDateRange(dateRangeValue, +1); updateDate()"></v-btn>
+                            </div>
 
-                        </v-row>
-                        <v-row dense>
-                            <v-col cols="12">
-                                <v-textarea :label="$t('Note')" v-model="editingObj.note" rows="3"></v-textarea>
-                            </v-col>
-                        </v-row>
+                            <v-text-field v-model="mealPlanTime" class="mpe-time"
+                                          :active="timePickerMenu" :focus="timePickerMenu"
+                                          :aria-label="$t('Time')" prepend-inner-icon="fa-regular fa-clock" readonly density="compact" hide-details>
+                                <v-menu v-model="timePickerMenu" :close-on-content-click="false"
+                                        activator="parent" transition="scale-transition">
+                                    <v-time-picker v-if="timePickerMenu" format="24hr"
+                                                   v-model="mealPlanTime"
+                                                   @update:modelValue="applyTimeToEditingDates"></v-time-picker>
+                                </v-menu>
+                            </v-text-field>
 
-                        <closable-help-alert :text="$t('HouseholdSettingsHelp')" :title="$t('Household')"></closable-help-alert>
+                            <div class="mpe-stepper" :title="$t('Days')">
+                                <v-btn icon="fa-solid fa-minus" variant="text" size="x-small" :disabled="dayCount <= 1"
+                                       @click="adjustDateRangeLength(dateRangeValue,-1); updateDate()"></v-btn>
+                                <span class="mpe-stepper-value">{{ dayCount }} {{ (dayCount == 1 ? $t('Day') : $t('Days')).toLowerCase() }}</span>
+                                <v-btn icon="fa-solid fa-plus" variant="text" size="x-small"
+                                       @click="adjustDateRangeLength(dateRangeValue,+1); updateDate()"></v-btn>
+                            </div>
+                        </div>
+
+                        <!-- details -->
+                        <div class="d-flex align-center ga-2 mt-4 flex-wrap">
+                            <div class="flex-grow-1 mpe-mealtype">
+                                <v-model-select model="MealType" create v-model="editingObj.mealType" density="compact" hide-details></v-model-select>
+                            </div>
+                            <div class="mpe-stepper" :title="$t('Servings')">
+                                <v-btn icon="fa-solid fa-minus" variant="text" size="x-small" :disabled="editingObj.servings <= 1"
+                                       @click="editingObj.servings = Math.max(1, Math.round((editingObj.servings ?? 1) - 1))"></v-btn>
+                                <span class="mpe-stepper-value">{{ Number(editingObj.servings ?? 1).toLocaleString() }} {{ (editingObj.servings == 1 ? $t('Serving') : $t('Servings')).toLowerCase() }}</span>
+                                <v-btn icon="fa-solid fa-plus" variant="text" size="x-small"
+                                       @click="editingObj.servings = Math.floor((editingObj.servings ?? 0) + 1)"></v-btn>
+                            </div>
+                        </div>
+
+                        <v-switch :label="$t('AddToShopping')" v-model="editingObj.addshopping" hide-details density="compact" class="mt-2"
+                                  v-if="editingObj.recipe && !isUpdate()"></v-switch>
+                        <v-btn prepend-icon="$shopping" color="create" variant="tonal" class="mt-3" v-if="!editingObj.shopping && editingObj.recipe && isUpdate()">
+                            {{ $t('AddToShopping') }}
+                            <add-to-shopping-dialog :recipe="editingObj.recipe" :meal-plan="editingObj"
+                                                    @created="editingObj.shopping = true;"></add-to-shopping-dialog>
+                        </v-btn>
+
+                        <v-textarea :label="$t('Note')" v-model="editingObj.note" rows="2" auto-grow hide-details class="mt-3"
+                                    v-if="showNote || editingObj.note" :autofocus="showNote && !editingObj.note"></v-textarea>
+                        <v-btn variant="text" size="small" prepend-icon="fa-regular fa-note-sticky" class="mt-2 px-1 text-medium-emphasis" v-else
+                               @click="showNote = true">{{ $t('Add') }} {{ $t('Note').toLowerCase() }}</v-btn>
 
                     </v-form>
                 </v-tabs-window-item>
@@ -110,15 +128,13 @@
 
 <script setup lang="ts">
 
-import {nextTick, onMounted, onUnmounted, PropType, ref, toRaw, watch} from "vue";
+import {computed, nextTick, onMounted, onUnmounted, PropType, ref, toRaw, watch} from "vue";
 import {ApiApi, MealPlan, MealType, ShoppingListRecipe} from "@/openapi";
 import ModelEditorBase from "@/components/model_editors/ModelEditorBase.vue";
 import {useModelEditorFunctions} from "@/composables/useModelEditorFunctions";
 import {DateTime} from "luxon";
 import {adjustDateRangeLength, shiftDateRange} from "@/utils/date_utils";
 import ModelSelect from "@/components/inputs/ModelSelect.vue";
-import RecipeCard from "@/components/display/RecipeCard.vue";
-import {VDateInput} from "vuetify/labs/VDateInput";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import {ErrorMessageType, MessageType, useMessageStore} from "@/stores/MessageStore";
 import ShoppingLineItem from "@/components/display/ShoppingLineItem.vue";
@@ -165,6 +181,38 @@ const tab = ref('plan')
 const dateRangeValue = ref([] as Date[])
 const timePickerMenu = ref(false)
 const mealPlanTime = ref('12:00')
+const showNote = ref(false)
+
+/** number of days covered by the selected range (a plan can span several days) */
+const dayCount = computed(() => {
+    if (!dateRangeValue.value || dateRangeValue.value.length == 0) return 1
+    const sorted = [...dateRangeValue.value].sort((a, b) => a.getTime() - b.getTime())
+    return Math.round(DateTime.fromJSDate(sorted[sorted.length - 1]).startOf('day')
+        .diff(DateTime.fromJSDate(sorted[0]).startOf('day'), 'days').days) + 1
+})
+
+/** "Fri, Oct 9" for a single day, "Fri, Oct 9 – Sun, Oct 11" for a range */
+const datePickerMenu = ref(false)
+// the calendar starts a fresh selection each time it opens: first click = that day, second click = range end
+const pickerValue = ref([] as Date[])
+watch(datePickerMenu, (open) => {
+    if (open) pickerValue.value = []
+})
+
+function onPickerChange(value: Date[]) {
+    if (value && value.length > 0) {
+        dateRangeValue.value = [...value]
+        updateDate()
+    }
+}
+const dateLabel = computed(() => {
+    const dates = (dateRangeValue.value ?? []).filter(d => d instanceof Date)
+    if (dates.length == 0) return ''
+    const fmt = (d: Date) => DateTime.fromJSDate(d).toLocaleString({weekday: 'short', month: 'short', day: 'numeric'})
+    const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime())
+    const first = sorted[0], last = sorted[sorted.length - 1]
+    return DateTime.fromJSDate(first).hasSame(DateTime.fromJSDate(last), 'day') ? fmt(first) : `${fmt(first)} – ${fmt(last)}`
+})
 
 watch(() => editingObj.value.mealType, (newType, oldType) => {
     if (newType?.time && newType?.time !== oldType?.time) {
@@ -233,6 +281,17 @@ function initializeEditor() {
                 editingObj.value.mealType = useUserPreferenceStore().userSettings.defaultMealType
             }
 
+            // home: without a default the API rejects the plan ("meal_type: required"); preselect the first meal type
+            if (!editingObj.value.mealType && !(props.itemDefaults as MealPlan)?.mealType) {
+                api.apiMealTypeList({pageSize: 1}).then(r => {
+                    if (!editingObj.value.mealType && r.results.length > 0) {
+                        const changed = editingObjChanged.value
+                        editingObj.value.mealType = r.results[0]
+                        nextTick(() => { editingObjChanged.value = changed })
+                    }
+                })
+            }
+
             editingObj.value.addshopping = useUserPreferenceStore().userSettings.mealplanAutoaddShopping
 
             applyItemDefaults(props.itemDefaults)
@@ -292,29 +351,57 @@ function initializeDateRange() {
             currentDate = DateTime.fromJSDate(currentDate).plus({day: 1}).toJSDate()
         }
     } else {
-        dateRangeValue.value = [editingObj.value.fromDate, editingObj.value.fromDate]
+        dateRangeValue.value = [editingObj.value.fromDate]
     }
 }
 
 </script>
 
 <style scoped>
-@media (min-width: 600px) {
-    .datetime-joined-group {
-        background: rgba(0, 0, 0, 0.04);
-        border-radius: 4px 4px 0 0;
-    }
-    .datetime-joined-group :deep(.v-field__overlay) {
-        display: none;
-    }
-    .datetime-joined-group :deep(.v-field) {
-        border-radius: 0;
-    }
-    .datetime-joined-group > :first-child :deep(.v-field) {
-        border-top-left-radius: 4px;
-    }
-    .datetime-joined-group > :last-child :deep(.v-field) {
-        border-top-right-radius: 4px;
-    }
+.mpe-section-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    margin: 20px 0 6px;
+}
+
+.mpe-date {
+    min-width: 260px;
+}
+
+.mpe-date :deep(.v-input) {
+    flex: 1 1 auto;
+}
+
+.mpe-time {
+    flex: 0 0 120px;
+}
+
+.mpe-mealtype {
+    min-width: 200px;
+}
+
+.mpe-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 40px;
+    padding: 0 4px;
+    border-radius: 10px;
+    background: rgba(var(--v-theme-on-surface), 0.04);
+    white-space: nowrap;
+}
+
+.mpe-stepper-value {
+    min-width: 76px;
+    text-align: center;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.mpe-recipe {
+    background: rgba(var(--v-theme-on-surface), 0.035);
 }
 </style>
