@@ -12,7 +12,7 @@
                     <v-row>
                         <v-col v-for="mealPlanGridItem in w">
 
-                            <v-list density="compact" class="pt-0 pb-0">
+                            <v-list density="compact" class="pt-0 pb-0 mp-day">
                                 <v-list-item class="text-center">
                                     <div class="d-flex ">
                                         <div class="flex-col align-self-start">
@@ -73,6 +73,9 @@
 
 
 <script lang="ts" setup>
+import {useI18n} from "vue-i18n";
+const {t} = useI18n()
+
 import {computed, onMounted, ref} from 'vue'
 import {useDisplay} from "vuetify";
 import {MealPlan} from "@/openapi";
@@ -107,12 +110,8 @@ const meal_plan_grid = computed(() => {
         grid.push({
             date: grid_day_date,
             create_default_date: grid_day_date.toISODate(), // improve meal plan edit modal to do formatting itself and accept dates
-            date_label: grid_day_date.toLocaleString({
-                weekday: 'short',
-                month: '2-digit',
-                day: '2-digit',
-                year: '2-digit',
-            }),
+            // home: "Today" / "Tomorrow" / "Sat, Oct 10" instead of "Sat, 10/10/26"
+            date_label: x == 0 ? t('Today') : (x == 1 ? t('Tomorrow', 'Tomorrow') : grid_day_date.toLocaleString({weekday: 'short', month: 'short', day: 'numeric'})),
             plan_entries: useMealPlanStore().planList.filter((m: MealPlan) => ((DateTime.fromJSDate(m.fromDate).startOf('day') <= grid_day_date.startOf('day')) && (DateTime.fromJSDate((m.toDate != undefined) ? m.toDate : m.fromDate).startOf('day') >= grid_day_date.startOf('day')))),
         } as MealPlanGridItem)
     }

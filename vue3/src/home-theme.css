@@ -215,3 +215,293 @@
         border-radius: 0 !important;
     }
 }
+
+/* ==== Round 2: sidebar, page headers, tiles, tables ======================================= */
+
+/* ---- Sidebar: lighter icons, consistent type, quiet footer ---------------------------- */
+.v-navigation-drawer .v-list-item__prepend > .v-icon {
+    font-size: 17px;
+    width: 20px;
+    margin-inline-end: 4px;
+}
+
+.v-navigation-drawer .v-list-item__spacer {
+    width: 14px !important;
+}
+
+.v-navigation-drawer .v-list-item-title,
+.v-navigation-drawer .v-list-item {
+    font-size: 0.925rem !important;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+.v-navigation-drawer .v-list-item {
+    min-height: 40px !important;
+}
+
+.v-navigation-drawer > .v-navigation-drawer__content > .v-list > .v-divider {
+    margin: 6px 16px;
+    opacity: 0.08;
+}
+
+.v-navigation-drawer .drawer-version {
+    min-height: 32px !important;
+}
+
+/* ---- Page headers: a title, not a boxed card ------------------------------------------ */
+.v-card.page-header {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 4px 0 8px;
+}
+
+.v-card.page-header > .v-card-item {
+    padding-inline: 0;
+    align-items: center;
+}
+
+.v-card.page-header .v-card-title {
+    font-family: var(--home-display-font);
+    font-size: 1.75rem !important;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.v-card.page-header .v-card-subtitle {
+    font-size: 0.925rem;
+    opacity: 1;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    max-width: 72ch;
+    margin-top: 4px;
+}
+
+.v-card.page-header > .v-card-item > .v-card-item__prepend > .v-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    border-radius: 12px;
+    background: rgba(var(--v-theme-primary), 0.10);
+    color: rgb(var(--v-theme-primary));
+    opacity: 1;
+}
+
+.v-card.page-header > .v-card-item > .v-card-item__prepend {
+    padding-inline-end: 16px;
+}
+
+/* ---- Tiles (Database, link tiles, books): icon chip, quiet chevron, lift on hover ------- */
+.v-card.home-tile {
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.v-card.home-tile:hover {
+    transform: translateY(-1px);
+}
+
+.v-card.home-tile > .v-card-item > .v-card-item__prepend > .v-icon,
+.v-card.home-tile .v-card-item__prepend > .v-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+    border-radius: 11px;
+    background: rgba(var(--v-theme-primary), 0.10);
+    color: rgb(var(--v-theme-primary));
+    opacity: 1;
+}
+
+.v-card.home-tile .v-card-item__prepend {
+    padding-inline-end: 14px;
+}
+
+.v-card.home-tile .v-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.v-card.home-tile .v-card-subtitle {
+    font-size: 0.825rem;
+}
+
+.v-card.home-tile .v-card-item__append > .v-icon {
+    font-size: 13px;
+    opacity: 0.35;
+}
+
+/* Database section headings */
+.v-container h2 {
+    font-family: var(--home-display-font);
+    font-size: 1.05rem;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+    margin-top: 12px;
+}
+
+/* ---- Outlined cards / option pickers (Import) ----------------------------------------- */
+.v-card--variant-outlined {
+    border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+    box-shadow: none !important;
+}
+
+.v-card--variant-outlined.text-primary,
+.v-card--variant-outlined.v-card--active {
+    border-color: rgb(var(--v-theme-primary)) !important;
+    background: rgba(var(--v-theme-primary), 0.05);
+}
+
+/* ---- Tables --------------------------------------------------------------------------- */
+.v-table {
+    border-radius: var(--home-radius);
+    box-shadow: 0 0 0 1px var(--home-hairline);
+    overflow: hidden;
+}
+
+.v-card .v-table {
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.v-table > .v-table__wrapper > table > thead > tr > th {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity)) !important;
+    background: rgba(var(--v-theme-on-surface), 0.02);
+}
+
+.v-table > .v-table__wrapper > table > tbody > tr:not(:last-child) > td {
+    border-bottom-color: var(--home-hairline) !important;
+}
+
+.v-table > .v-table__wrapper > table > tbody > tr:hover > td {
+    background: rgba(var(--v-theme-on-surface), 0.025);
+}
+
+/* ---- Pagination ----------------------------------------------------------------------- */
+.v-pagination__item--is-active .v-btn {
+    background: rgba(var(--v-theme-primary), 0.12);
+    color: rgb(var(--v-theme-primary));
+}
+
+.v-pagination__item--is-active .v-btn__overlay {
+    opacity: 0 !important;
+}
+
+/* ---- Secondary navigation (Settings) -------------------------------------------------- */
+.home-subnav .v-list-item {
+    border-radius: 10px;
+    margin-inline: 4px;
+    min-height: 40px !important;
+}
+
+.home-subnav .v-list-item--active {
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.10);
+}
+
+.home-subnav .v-list-item--active > .v-list-item__overlay {
+    opacity: 0 !important;
+}
+
+.home-subnav .v-list-item__prepend > .v-icon {
+    font-size: 16px;
+    opacity: 0.75;
+}
+
+.home-subnav .v-list-subheader {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ---- Steppers (Import) ---------------------------------------------------------------- */
+.v-stepper-header {
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--home-hairline);
+}
+
+/* softer outline on outlined fields; accent on focus */
+.v-field--variant-outlined {
+    --v-field-border-opacity: 0.16;
+}
+
+.v-field--variant-outlined:hover {
+    --v-field-border-opacity: 0.32;
+}
+
+.v-field--variant-outlined.v-field--focused .v-field__outline {
+    color: rgb(var(--v-theme-primary));
+}
+
+/* centre glyphs inside the icon chips */
+.v-card.page-header > .v-card-item > .v-card-item__prepend > .v-icon,
+.v-card.home-tile .v-card-item__prepend > .v-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* outlined labels float above the field; leave room so window/overflow containers don't clip them */
+.meal-plan-editor .v-window-item {
+    padding-top: 8px;
+}
+
+/* empty states */
+.books-empty {
+    padding: 64px 16px;
+}
+
+.books-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--v-theme-primary), 0.10);
+    color: rgb(var(--v-theme-primary));
+}
+
+/* small external-link glyphs on buttons */
+.v-btn .v-btn__append > .fa-arrow-up-right-from-square {
+    font-size: 0.7em;
+    opacity: 0.7;
+}
+
+/* ---- Home page meal plan strip --------------------------------------------------------- */
+.v-list.mp-day {
+    border-radius: var(--home-radius);
+    box-shadow: 0 0 0 1px var(--home-hairline);
+    overflow: hidden;
+}
+
+.v-list.mp-day > .v-list-item.text-center:first-child {
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-height: 44px;
+}
+
+.v-list.mp-day > .v-list-item.text-center:first-child .v-btn {
+    box-shadow: none;
+    background: transparent;
+}
+
+/* the "+" row: quiet until hovered */
+.v-list.mp-day > .v-list-item.cursor-pointer {
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    border-top: 1px dashed var(--home-hairline);
+}
+
+.v-list.mp-day > .v-list-item.cursor-pointer > .v-list-item__underlay {
+    opacity: 0 !important;
+}
+
+.v-list.mp-day > .v-list-item.cursor-pointer:hover {
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.06);
+}

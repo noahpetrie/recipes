@@ -4,7 +4,7 @@
     <v-container>
         <v-row dense>
             <v-col>
-                <v-card prepend-icon="$pantry" :title="$t('Pantry')">
+                <v-card prepend-icon="$pantry" :title="$t('Pantry')" class="page-header">
                     <template #subtitle>
                         <div class="text-wrap">
                             {{ $t('PantryHelp') }}

@@ -187,8 +187,8 @@ const showNote = ref(false)
 const dayCount = computed(() => {
     if (!dateRangeValue.value || dateRangeValue.value.length == 0) return 1
     const sorted = [...dateRangeValue.value].sort((a, b) => a.getTime() - b.getTime())
-    return Math.round(DateTime.fromJSDate(sorted[sorted.length - 1]).startOf('day')
-        .diff(DateTime.fromJSDate(sorted[0]).startOf('day'), 'days').days) + 1
+    return Math.round(DateTime.fromJSDate(sorted[sorted.length - 1]!).startOf('day')
+        .diff(DateTime.fromJSDate(sorted[0]!).startOf('day'), 'days').days) + 1
 })
 
 /** "Fri, Oct 9" for a single day, "Fri, Oct 9 – Sun, Oct 11" for a range */
@@ -210,7 +210,7 @@ const dateLabel = computed(() => {
     if (dates.length == 0) return ''
     const fmt = (d: Date) => DateTime.fromJSDate(d).toLocaleString({weekday: 'short', month: 'short', day: 'numeric'})
     const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime())
-    const first = sorted[0], last = sorted[sorted.length - 1]
+    const first = sorted[0]!, last = sorted[sorted.length - 1]!
     return DateTime.fromJSDate(first).hasSame(DateTime.fromJSDate(last), 'day') ? fmt(first) : `${fmt(first)} – ${fmt(last)}`
 })
 
@@ -286,7 +286,7 @@ function initializeEditor() {
                 api.apiMealTypeList({pageSize: 1}).then(r => {
                     if (!editingObj.value.mealType && r.results.length > 0) {
                         const changed = editingObjChanged.value
-                        editingObj.value.mealType = r.results[0]
+                        editingObj.value.mealType = r.results[0]!
                         nextTick(() => { editingObjChanged.value = changed })
                     }
                 })

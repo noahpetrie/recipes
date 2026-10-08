@@ -1,18 +1,14 @@
 <template>
     <v-container>
-        <v-row>
+        <v-row dense>
             <v-col>
-                <v-card>
-                    <v-card-text class="pt-2 pb-2">
-                        <v-btn variant="flat" @click="router.go(-1)" prepend-icon="fa-solid fa-arrow-left">{{ $t('Back') }}</v-btn>
-                    </v-card-text>
-                </v-card>
+                <v-btn variant="text" size="small" @click="router.go(-1)" prepend-icon="fa-solid fa-arrow-left" class="text-medium-emphasis px-2">{{ $t('Back') }}</v-btn>
             </v-col>
         </v-row>
 
         <v-row dense>
             <v-col>
-                <v-card :prepend-icon="genericModel.model.icon" :title="$t(genericModel.model.localizationKey)">
+                <v-card :prepend-icon="genericModel.model.icon" :title="$t(genericModel.model.localizationKey)" class="page-header">
                     <template #subtitle v-if="genericModel.model.localizationKeyDescription">
                         <div class="text-wrap">
                             {{ $t(genericModel.model.localizationKeyDescription) }}

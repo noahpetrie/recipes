@@ -48,6 +48,14 @@ export default createVuetify({
         VDialog: {
             VCard: {rounded: 'xl'}
         },
+        // Home theme: soft outlined form fields instead of underlined/filled ones
+        VTextField: {variant: 'outlined'},
+        VTextarea: {variant: 'outlined'},
+        VSelect: {variant: 'outlined'},
+        VAutocomplete: {variant: 'outlined'},
+        VCombobox: {variant: 'outlined'},
+        VNumberInput: {variant: 'outlined'},
+        VFileInput: {variant: 'outlined'},
     },
     locale: {
         locale: 'en',

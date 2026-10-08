@@ -16,14 +16,12 @@
 
         <p class="text-h6 mt-3">{{ $t('Account') }}</p>
         <v-divider class="mb-3"></v-divider>
-        <v-btn color="primary" class="mt-1" :href="getDjangoUrl('accounts/email/')" target="_blank">{{ $t('Manage_Emails') }}</v-btn>
-        <br/>
-        <v-btn color="primary" class="mt-1" :href="getDjangoUrl('accounts/password/change/')" target="_blank">{{ $t('Change_Password') }}</v-btn>
-        <br/>
-        <v-btn color="primary" class="mt-1" :href="getDjangoUrl('accounts/social/connections/')" target="_blank">{{ $t('Social_Authentication') }}</v-btn>
-        <br/>
-        <v-btn color="primary" class="mt-1" :href="getDjangoUrl('accounts/sessions/')" target="_blank">{{ $t('Manage_Sessions') }}</v-btn>
-        <br/>
+        <div class="d-flex flex-wrap ga-2">
+            <v-btn variant="tonal" color="primary" append-icon="fa-solid fa-arrow-up-right-from-square" :href="getDjangoUrl('accounts/email/')" target="_blank">{{ $t('Manage_Emails') }}</v-btn>
+            <v-btn variant="tonal" color="primary" append-icon="fa-solid fa-arrow-up-right-from-square" :href="getDjangoUrl('accounts/password/change/')" target="_blank">{{ $t('Change_Password') }}</v-btn>
+            <v-btn variant="tonal" color="primary" append-icon="fa-solid fa-arrow-up-right-from-square" :href="getDjangoUrl('accounts/social/connections/')" target="_blank">{{ $t('Social_Authentication') }}</v-btn>
+            <v-btn variant="tonal" color="primary" append-icon="fa-solid fa-arrow-up-right-from-square" :href="getDjangoUrl('accounts/sessions/')" target="_blank">{{ $t('Manage_Sessions') }}</v-btn>
+        </div>
 
         <p class="text-h6 mt-3">{{ $t('DeviceSettings') }}</p>
         <p class="text-disabled">{{ $t('DeviceSettingsHelp') }}</p>

@@ -79,8 +79,8 @@
             <template #append>
                 <v-list nav>
                     <v-list-item prepend-icon="fas fa-sliders" :title="$t('Settings')" :to="{ name: 'SettingsPage', params: {} }"></v-list-item>
-                    <v-list-item prepend-icon="fa-solid fa-heart" link>
-                        Tandoor {{ useUserPreferenceStore().serverSettings.version }}
+                    <v-list-item link class="drawer-version">
+                        <span class="text-caption text-medium-emphasis">Tandoor {{ useUserPreferenceStore().serverSettings.version }}</span>
                         <help-dialog></help-dialog>
                     </v-list-item>
                 </v-list>

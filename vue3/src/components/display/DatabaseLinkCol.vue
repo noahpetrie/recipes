@@ -2,7 +2,7 @@
     <v-col :cols="props.cols" :md="props.md" :lg="props.lg">
         <v-card :prepend-icon="props.prependIcon" :title="props.title" :subtitle="props.subtitle"
                 :to="props.to" :link="isLink" :href="props.href"
-                append-icon="fa-solid fa-arrow-right">
+                append-icon="fa-solid fa-chevron-right" class="home-tile">
         </v-card>
     </v-col>
 </template>

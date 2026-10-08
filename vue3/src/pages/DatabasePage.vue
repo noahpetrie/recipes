@@ -2,7 +2,7 @@
     <v-container>
         <v-row>
             <v-col>
-                <v-card prepend-icon="fa-solid fa-folder-tree" :title="$t('Database')">
+                <v-card prepend-icon="fa-solid fa-folder-tree" :title="$t('Database')" class="page-header">
                     <template #subtitle>
                         <div class="text-wrap">
                             {{ $t('DatabaseHelp') }}
