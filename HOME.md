@@ -22,6 +22,9 @@ public here, as the AGPL requires.
   icon-chip tiles; outlined form fields; rounded tables; rebuilt Books page with a
   working filter and empty state; pill Settings navigation; "Today / Tomorrow" meal
   plan strip on the home page.
+- **Cooking view.** Numbered steps with a round done-check, larger instruction text,
+  ingredient notes inline, ticked ingredients struck through, one-line provenance;
+  cleaner editor header, calendar (today pill) and shopping list.
 
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
