@@ -25,10 +25,10 @@
     <!--        </template>-->
     <!--    </v-data-table>-->
 
-    <v-table density="compact">
+    <v-table density="compact" class="ing-table">
         <tbody>
         <template v-for="(i, idx) in ingredients" :key="i.id">
-            <tr @click="i.checked = !i.checked">
+            <tr @click="i.checked = !i.checked" :class="{'ing-checked': i.checked && !i.isHeader}">
                 <template v-if="i.isHeader">
                     <td colspan="5" class="font-weight-bold">{{ i.note }}</td>
                 </template>
@@ -56,16 +56,11 @@
                             <span v-else>{{ ingredientToFoodString(i, ingredientFactor) }}</span>
 
                         </template>
+                        <!-- home: show notes inline instead of behind a tooltip icon -->
+                        <span class="ing-note" v-if="i.note && !useUserPreferenceStore().isPrintMode">{{ i.note }}</span>
                     </td>
                     <td v-if="useUserPreferenceStore().isPrintMode">
                         <span class="text-disabled font-italic"> {{ i.note }}</span>
-                    </td>
-                    <td style="width: 1%; text-wrap: nowrap" v-if="!useUserPreferenceStore().isPrintMode">
-                        <v-icon class="far fa-comment float-right"
-                                v-if="i.note != '' && i.note != undefined"
-                                @click.stop="openNoteIdx = openNoteIdx === idx ? null : idx">
-                            <v-tooltip :model-value="openNoteIdx === idx" activator="parent" location="start">{{ i.note }}</v-tooltip>
-                        </v-icon>
                     </td>
                     <td v-if="showActions">
                         <v-btn density="compact" variant="plain" @click.stop="" icon>

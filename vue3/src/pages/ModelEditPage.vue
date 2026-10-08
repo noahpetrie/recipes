@@ -1,15 +1,12 @@
 <template>
     <v-container>
-        <v-row>
-            <v-col>
-                <v-card>
-                    <v-card-text class="pt-2 pb-2">
-                        <v-btn variant="flat" @click="router.go(-1)" prepend-icon="fa-solid fa-arrow-left">{{ $t('Back') }}</v-btn>
-                        <v-btn variant="flat" @click="router.push({name : 'RecipeViewPage', params: {id: props.id}})" class="float-right" prepend-icon="fa-solid fa-eye"
-                               v-if="props.id && model.toLowerCase() == 'recipe'">{{ $t('View') }}
-                        </v-btn>
-                    </v-card-text>
-                </v-card>
+        <v-row dense>
+            <v-col class="d-flex align-center">
+                <v-btn variant="text" size="small" @click="router.go(-1)" prepend-icon="fa-solid fa-arrow-left" class="text-medium-emphasis px-2">{{ $t('Back') }}</v-btn>
+                <v-spacer></v-spacer>
+                <v-btn variant="tonal" size="small" @click="router.push({name : 'RecipeViewPage', params: {id: props.id}})" prepend-icon="fa-solid fa-eye"
+                       v-if="props.id && model.toLowerCase() == 'recipe'">{{ $t('View') }}
+                </v-btn>
             </v-col>
         </v-row>
         <v-row dense>

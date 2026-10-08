@@ -1,26 +1,22 @@
 <template>
-    <v-card>
-        <v-card-title>
-            <v-row>
-                <v-col>
-                    <span v-if="step.name">{{ step.name }}</span>
-                    <span v-else>{{ $t('Step') }} {{ props.stepNumber }}</span>
-                </v-col>
-                <v-col class="text-right">
-                    <v-btn-group density="compact" variant="tonal" class="d-print-none">
-                        <v-btn size="small" color="info" v-if="step.time != undefined && step.time > 0" @click="timerRunning = true"><i
-                            class="fas fa-stopwatch mr-1 fa-fw"></i> {{ step.time }}
-                        </v-btn>
-                        <v-btn size="small" color="success" v-if="hasDetails" @click="stepChecked = !stepChecked"><i class="fas fa-fw"
-                                                                                                                     :class="{'fa-check': !stepChecked, 'fa-times': stepChecked}"></i>
-                        </v-btn>
-                    </v-btn-group>
-                </v-col>
-            </v-row>
+    <v-card class="step-card" :class="{'step-done': stepChecked}">
+        <v-card-title class="d-flex align-center ga-3 step-title">
+            <span class="step-number" v-if="props.stepNumber">{{ props.stepNumber }}</span>
+            <span class="flex-grow-1 step-name" @click="hasDetails && (stepChecked = !stepChecked)">
+                <span v-if="step.name">{{ step.name }}</span>
+                <span v-else>{{ $t('Step') }} {{ props.stepNumber }}</span>
+            </span>
+            <v-btn size="small" variant="tonal" color="info" class="d-print-none" prepend-icon="fas fa-stopwatch"
+                   v-if="step.time != undefined && step.time > 0" @click="timerRunning = true">{{ step.time }} min
+            </v-btn>
+            <v-btn size="small" variant="text" icon class="d-print-none step-check" v-if="hasDetails" @click="stepChecked = !stepChecked"
+                   :title="stepChecked ? $t('Show', 'Show') : $t('Done')">
+                <v-icon :icon="stepChecked ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'"></v-icon>
+            </v-btn>
         </v-card-title>
         <template v-if="!stepChecked">
             <timer :seconds="step.time != undefined ? step.time*60 : 0" @stop="timerRunning = false" v-if="timerRunning"></timer>
-            <v-card-text v-if="step.ingredients.length > 0 || step.instruction != ''">
+            <v-card-text class="pt-1" v-if="step.ingredients.length > 0 || step.instruction != ''">
                 <v-row>
                     <v-col :cols="(useUserPreferenceStore().isPrintMode) ? 6 : 12" md="6" v-if="step.ingredients.length > 0 && (step.showIngredientsTable || step.show_ingredients_table)">
                         <ingredients-table v-model="step.ingredients" :ingredient-factor="ingredientFactor"></ingredients-table>

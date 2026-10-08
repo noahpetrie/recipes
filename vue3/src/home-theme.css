@@ -505,3 +505,290 @@
     color: rgb(var(--v-theme-primary));
     background: rgba(var(--v-theme-primary), 0.06);
 }
+
+/* ==== Round 3: recipe page, editor, calendar, shopping ==================================== */
+
+/* ---- Recipe steps: numbered, readable, easy to tick off --------------------------------- */
+.step-card .step-title {
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+    padding-top: 14px;
+    padding-bottom: 6px;
+    white-space: normal;
+}
+
+.step-card .step-number {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    background: rgba(var(--v-theme-primary), 0.12);
+    color: rgb(var(--v-theme-primary));
+}
+
+.step-card .step-check .v-icon {
+    font-size: 20px;
+    opacity: 0.45;
+}
+
+.step-card .step-check:hover .v-icon {
+    opacity: 0.9;
+    color: rgb(var(--v-theme-success));
+}
+
+.step-card.step-done .step-check .v-icon {
+    opacity: 1;
+    color: rgb(var(--v-theme-success));
+}
+
+.step-card.step-done .step-name {
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    text-decoration: line-through;
+    text-decoration-color: rgba(var(--v-theme-on-surface), 0.3);
+}
+
+.step-card.step-done .step-number {
+    background: rgba(var(--v-theme-success), 0.14);
+    color: rgb(var(--v-theme-success));
+}
+
+.step-card .step-name {
+    cursor: pointer;
+}
+
+/* instructions: comfortable reading size while cooking */
+.step-card .markdown-body,
+.step-card .markdown-body p,
+.step-card .markdown-body li {
+    font-size: 1rem;
+    line-height: 1.65;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+}
+
+/* ---- Ingredients ------------------------------------------------------------------------- */
+.v-table.ing-table {
+    box-shadow: none !important;
+    border-radius: 0;
+    background: transparent;
+}
+
+.v-table.ing-table > .v-table__wrapper > table > tbody > tr > td {
+    font-size: 0.95rem;
+    height: 38px !important;
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.v-table.ing-table > .v-table__wrapper > table > tbody > tr:hover > td {
+    background: rgba(var(--v-theme-primary), 0.04);
+}
+
+.v-table.ing-table > .v-table__wrapper > table > tbody > tr > td:nth-child(2) {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.v-table.ing-table .ing-note {
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    font-size: 0.85rem;
+    margin-left: 6px;
+}
+
+.v-table.ing-table .ing-note::before {
+    content: "· ";
+}
+
+.v-table.ing-table tr.ing-checked > td {
+    color: rgba(var(--v-theme-on-surface), 0.38);
+}
+
+.v-table.ing-table tr.ing-checked > td:not(:first-child) {
+    text-decoration: line-through;
+    text-decoration-color: rgba(var(--v-theme-on-surface), 0.25);
+}
+
+/* ---- Recipe provenance line --------------------------------------------------------------- */
+.recipe-meta {
+    font-size: 0.8rem;
+    column-gap: 18px;
+    row-gap: 4px;
+}
+
+.recipe-meta .recipe-meta-item {
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.recipe-meta a.recipe-meta-item:hover {
+    color: rgb(var(--v-theme-primary));
+}
+
+/* ---- Editors -------------------------------------------------------------------------------- */
+/* outlined labels inside tab windows were clipped by the window's overflow */
+.v-window .v-window-item {
+    padding-top: 6px;
+}
+
+.v-file-upload {
+    min-height: 0 !important;
+    padding-block: 20px !important;
+    border-color: rgba(var(--v-theme-on-surface), 0.16) !important;
+    border-radius: var(--home-radius) !important;
+}
+
+.v-file-upload .v-file-upload-title {
+    font-size: 1rem !important;
+    font-weight: 500;
+}
+
+.v-file-upload .v-file-upload-icon .v-icon {
+    font-size: 28px;
+    opacity: 0.5;
+}
+
+/* number inputs: lighter split controls */
+.v-number-input__control .v-btn {
+    opacity: 0.6;
+}
+
+.v-number-input__control .v-btn:hover {
+    opacity: 1;
+}
+
+/* ---- Outlined buttons and chips (toolbars) --------------------------------------------- */
+.v-btn--variant-outlined,
+.v-chip--variant-outlined {
+    border-color: rgba(var(--v-theme-on-surface), 0.16) !important;
+}
+
+/* ---- Navigation drawer forms (Meal Plan settings): room for floating labels and hints -- */
+.v-navigation-drawer .v-input {
+    margin-top: 10px;
+}
+
+/* ---- Meal plan calendar --------------------------------------------------------------- */
+.theme-default .cv-header,
+.theme-default .cv-header-day {
+    background-color: transparent !important;
+}
+
+.theme-default .cv-header-day {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    padding-block: 6px;
+}
+
+.theme-default .cv-header .periodLabel {
+    font-family: var(--home-display-font);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.cv-wrapper .cv-header-day,
+.cv-wrapper .cv-day,
+.cv-wrapper .cv-week,
+.cv-wrapper .cv-weeks,
+.cv-wrapper .cv-header-days,
+.cv-wrapper .cv-weeknumber,
+.cv-wrapper .cv-header {
+    border-color: rgba(var(--v-border-color), 0.08) !important;
+}
+
+.theme-default .cv-weeknumber {
+    background-color: transparent !important;
+    color: rgba(var(--v-theme-on-surface), 0.35) !important;
+    font-size: 0.75rem;
+}
+
+.theme-default .cv-day.past,
+.theme-default .cv-day.outsideOfMonth {
+    background-color: rgba(var(--v-theme-on-surface), 0.02) !important;
+}
+
+.theme-default .cv-day.today {
+    background-color: rgba(var(--v-theme-primary), 0.06) !important;
+}
+
+.theme-default .cv-day.today .cv-day-number {
+    display: inline-block;
+    width: auto !important;
+    min-width: 0;
+    right: auto !important;
+    background: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-on-primary));
+    border-radius: 999px;
+    padding: 0 7px;
+    font-weight: 600;
+}
+
+/* upstream's [aria-selected] rule matches every day (the attribute is "true" or "false") */
+.theme-default .cv-day[aria-selected] {
+    background-color: transparent !important;
+}
+
+.theme-default .cv-day.past[aria-selected],
+.theme-default .cv-day.outsideOfMonth[aria-selected] {
+    background-color: rgba(var(--v-theme-on-surface), 0.02) !important;
+}
+
+.theme-default .cv-day.today[aria-selected] {
+    background-color: rgba(var(--v-theme-primary), 0.06) !important;
+}
+
+.theme-default .cv-day[aria-selected="true"] {
+    background-color: rgba(var(--v-theme-primary), 0.10) !important;
+}
+
+.theme-default .cv-item {
+    border-color: rgba(var(--v-border-color), 0.10) !important;
+    border-radius: 8px !important;
+    background-color: rgb(var(--v-theme-surface)) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 0.85rem;
+}
+
+/* ---- Shopping ---------------------------------------------------------------------------- */
+.v-list-subheader {
+    font-style: normal !important;
+}
+
+.v-list.shopping-list {
+    border-radius: var(--home-radius);
+    box-shadow: 0 0 0 1px var(--home-hairline);
+    padding: 0;
+    overflow: hidden;
+}
+
+.v-list.shopping-list > .v-list-subheader {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(var(--v-theme-on-surface), 0.025);
+    min-height: 34px;
+}
+
+.v-list.shopping-list > .v-list-subheader i {
+    font-style: normal;
+}
+
+.v-list.shopping-list .shopping-border {
+    border-top-color: var(--home-hairline) !important;
+}
+
+.v-list.shopping-list .v-list-item:hover {
+    background: rgba(var(--v-theme-primary), 0.03);
+}

@@ -187,7 +187,7 @@
                             <v-skeleton-loader type="list-item"></v-skeleton-loader>
                             <v-skeleton-loader type="list-item"></v-skeleton-loader>
                         </v-list>
-                        <v-list class="mt-3" density="compact" v-model:selected="selectedLines" select-strategy="leaf" v-else>
+                        <v-list class="mt-3 shopping-list" density="compact" v-model:selected="selectedLines" select-strategy="leaf" v-else>
                             <template v-for="category in shoppingListItems" :key="category.name">
 
 

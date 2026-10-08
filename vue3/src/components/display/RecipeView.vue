@@ -147,49 +147,26 @@
 
         <property-view v-model="recipe" :ingredientFactor="ingredientFactor"></property-view>
 
-        <v-card class="mt-2">
-            <v-card-text>
-                <v-row dense>
-                    <v-col cols="12" :sm="(recipe.sourceUrl) ? 3 : 4">
-                        <v-card
-                            variant="outlined"
-                            :title="$t('CreatedBy')"
-                            :subtitle="recipe.createdBy.displayName"
-                            prepend-icon="fa-solid fa-user"
-                            :to="(useUserPreferenceStore().isAuthenticated) ?  {name: 'SearchPage', query: {createdby: recipe.createdBy.id!}}: undefined">
-                        </v-card>
-                    </v-col>
-                    <v-col cols="12" :sm="(recipe.sourceUrl) ? 3 : 4">
-                        <v-card
-                            variant="outlined"
-                            :title="$t('Created')"
-                            :subtitle="DateTime.fromJSDate(recipe.createdAt).toLocaleString(DateTime.DATETIME_MED)"
-                            prepend-icon="$create"
-                            :to="(useUserPreferenceStore().isAuthenticated) ? {name: 'SearchPage', query: {createdon: DateTime.fromJSDate(recipe.createdAt).toISODate()}} : undefined">
-                        </v-card>
-                    </v-col>
-                    <v-col cols="12" :sm="(recipe.sourceUrl) ? 3 : 4">
-                        <v-card
-                            variant="outlined"
-                            :title="$t('Updated')"
-                            :subtitle="DateTime.fromJSDate(recipe.updatedAt).toLocaleString(DateTime.DATETIME_MED)"
-                            prepend-icon="$edit"
-                            :to="(useUserPreferenceStore().isAuthenticated) ?  {name: 'SearchPage', query: {updatedon: DateTime.fromJSDate(recipe.updatedAt).toISODate()}}: undefined">
-                        </v-card>
-                    </v-col>
-                    <v-col cols="12" :sm="(recipe.sourceUrl) ? 3 : 4" v-if="recipe.sourceUrl">
-                        <v-card
-                            variant="outlined"
-                            :title="$t('Imported_From')"
-                            prepend-icon="$import">
-                            <template #subtitle>
-                                <a :href="recipe.sourceUrl" target="_blank">{{ recipe.sourceUrl }}</a>
-                            </template>
-                        </v-card>
-                    </v-col>
-                </v-row>
-            </v-card-text>
-        </v-card>
+        <!-- home: provenance as one quiet line instead of four boxes -->
+        <div class="recipe-meta d-flex flex-wrap align-center mt-3 mb-2 px-1">
+            <router-link class="recipe-meta-item" v-if="useUserPreferenceStore().isAuthenticated"
+                         :to="{name: 'SearchPage', query: {createdby: recipe.createdBy.id!}}">
+                <v-icon icon="fa-solid fa-user" size="x-small"></v-icon> {{ $t('CreatedBy') }} {{ recipe.createdBy.displayName }}
+            </router-link>
+            <span class="recipe-meta-item" v-else><v-icon icon="fa-solid fa-user" size="x-small"></v-icon> {{ recipe.createdBy.displayName }}</span>
+            <router-link class="recipe-meta-item" v-if="useUserPreferenceStore().isAuthenticated"
+                         :to="{name: 'SearchPage', query: {createdon: DateTime.fromJSDate(recipe.createdAt).toISODate()}}">
+                {{ $t('Created') }} {{ DateTime.fromJSDate(recipe.createdAt).toLocaleString(DateTime.DATE_MED) }}
+            </router-link>
+            <router-link class="recipe-meta-item" v-if="useUserPreferenceStore().isAuthenticated"
+                         :to="{name: 'SearchPage', query: {updatedon: DateTime.fromJSDate(recipe.updatedAt).toISODate()}}">
+                {{ $t('Updated') }} {{ DateTime.fromJSDate(recipe.updatedAt).toLocaleString(DateTime.DATE_MED) }}
+            </router-link>
+            <a class="recipe-meta-item" v-if="recipe.sourceUrl" :href="recipe.sourceUrl" target="_blank">
+                <v-icon icon="$import" size="x-small"></v-icon> {{ $t('Imported_From') }} {{ sourceHost }}
+                <v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small"></v-icon>
+            </a>
+        </div>
 
         <recipe-activity :recipe="recipe" :servings="servings" v-if="useUserPreferenceStore().userSettings.comments"></recipe-activity>
     </template>
@@ -223,6 +200,11 @@ const {doAiImport, fileApiLoading} = useFileApi()
 
 const loading = ref(false)
 const recipe = defineModel<Recipe>({required: true})
+
+/** host name of the import source, e.g. "chefsteps.com" */
+const sourceHost = computed(() => {
+    try { return new URL(recipe.value.sourceUrl ?? '').hostname.replace(/^www\./, '') } catch { return recipe.value.sourceUrl }
+})
 const props = defineProps<{
     servings: {type: Number, required: false},
 }>()
