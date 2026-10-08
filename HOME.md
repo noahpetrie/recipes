@@ -14,6 +14,15 @@ public here, as the AGPL requires.
   keyword chips, a command-palette style search dialog, a deeper terracotta accent that
   passes WCAG AA, refined dark palette, and a light wordmark logo for dark mode.
 
+- **Simpler meal plan dialog.** One column (recipe or title, then date, then details),
+  readable date label with arrows and a calendar, day/servings steppers, meal type
+  preselected, note behind "Add note", narrower dialog; editors get Cancel and solid
+  Create/Save.
+- **Pages.** Lighter sidebar; page headers as titles (Database, lists, Pantry, Books);
+  icon-chip tiles; outlined form fields; rounded tables; rebuilt Books page with a
+  working filter and empty state; pill Settings navigation; "Today / Tomorrow" meal
+  plan strip on the home page.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 
