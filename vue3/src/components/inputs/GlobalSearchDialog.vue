@@ -4,7 +4,7 @@
         <v-btn @click="dialog = true" variant="plain" class="d-print-none"  v-else>
             <v-icon icon="fa-solid fa-search" class="mr-1 fa-fw"></v-icon>
             <span class="d-none d-sm-block">{{ $t('Search') }}</span>
-            <v-chip size="x-small" variant="tonal" class="d-none d-md-flex ml-1" label>{{ $t('Ctrl+K') }}</v-chip>
+            <v-chip size="x-small" variant="tonal" class="d-none d-md-flex ml-1" label>{{ isMac ? '⌘K' : $t('Ctrl+K') }}</v-chip>
         </v-btn>
     </slot>
 
@@ -74,6 +74,7 @@ import {useDebouncedSearch} from "@/composables/useDebouncedSearch";
 
 const router = useRouter()
 const {mobile} = useDisplay()
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
 const {t} = useI18n()
 
 const dialog = ref(false)
@@ -163,7 +164,8 @@ function handleKeydown(e: KeyboardEvent) {
             goToSelectedRecipe(selectedResult.value)
         }
     } else {
-        if (e.key == 'k' && e.ctrlKey) {
+        // Cmd+K on macOS, Ctrl+K elsewhere (accept either so external keyboards work too)
+        if (e.key.toLowerCase() == 'k' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             dialog.value = true
         }

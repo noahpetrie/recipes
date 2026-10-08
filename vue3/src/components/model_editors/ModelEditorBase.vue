@@ -106,7 +106,7 @@ function closeDialog() {
  * @param e
  */
 function keyEvent(e: KeyboardEvent) {
-    if (e.code === "KeyS" && e.ctrlKey) {
+    if (e.code === "KeyS" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         emit('save')
     }
