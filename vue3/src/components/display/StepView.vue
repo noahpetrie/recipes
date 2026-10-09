@@ -43,7 +43,8 @@
                 </v-card>
             </template>
             <template v-if="step.file">
-                <v-img :src="step.file.preview" v-if="step.file.preview"></v-img>
+                <!-- home fork: a step photo at a readable size, not full width -->
+                <v-img :src="step.file.preview" v-if="step.file.preview" class="step-photo" max-height="380" cover rounded="lg"></v-img>
                 <a :href="step.file.fileDownload" v-else>{{ $t('Download') }}</a>
             </template>
         </template>

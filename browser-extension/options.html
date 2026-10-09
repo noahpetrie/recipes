@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Add to Kitchen – settings</title>
+    <link rel="stylesheet" href="popup.css">
+    <style>
+        body { width: auto; max-width: 520px; margin: 32px auto; padding: 0 16px; }
+        main { padding: 0; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Add to Kitchen</h1>
+    <p class="muted">Saves the recipe on the page you’re looking at to Kitchen, with its steps, photos and a link back.</p>
+
+    <label for="base" style="margin-top:20px">Kitchen address</label>
+    <input id="base" type="url" placeholder="https://kitchen.madiba.ca">
+    <p class="muted small">The extension signs in with your Kitchen login in this browser and keeps its own access key.</p>
+
+    <div class="actions" style="justify-content:flex-start">
+        <button id="save" class="primary">Save</button>
+        <button id="reset" class="outline">Forget access key</button>
+    </div>
+    <div id="msg" class="notice" hidden></div>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

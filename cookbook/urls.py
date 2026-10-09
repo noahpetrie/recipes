@@ -7,7 +7,7 @@ from rest_framework import routers
 
 from cookbook.version_info import TANDOOR_VERSION
 from recipes.settings import DEBUG, PLUGINS
-from .views import api, telegram, views, import_export, home_pantry
+from .views import api, telegram, views, import_export, home_pantry, home_clip
 from .views.api import CustomAuthToken
 
 
@@ -115,6 +115,9 @@ urlpatterns = [
     #path('api/ingredient-from-string/', api.ingredient_from_string, name='api_ingredient_from_string'),
     path('api/fdc-search/', api.FdcSearchView.as_view(), name='api_fdc_search'),
     path('api/barcode-lookup/', api.barcode_lookup, name='api_barcode_lookup'),  # home fork
+    # home fork: "Add to Kitchen" browser extension (cookbook/views/home_clip.py)
+    path('api/home/extension-token/', home_clip.extension_token, name='api_home_extension_token'),
+    path('api/home/clip/', home_clip.clip, name='api_home_clip'),
     # home fork: pantry stock layer (cookbook/views/home_pantry.py)
     path('api/pantry/lookup/', home_pantry.lookup, name='api_pantry_lookup'),
     path('api/pantry/stock/', home_pantry.stock, name='api_pantry_stock'),

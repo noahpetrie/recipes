@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Add to Kitchen",
+  "short_name": "Kitchen",
+  "version": "1.0.0",
+  "description": "Save the recipe on this page to Kitchen, with its steps, photos and a link back.",
+  "action": {
+    "default_title": "Add to Kitchen",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "options_page": "options.html",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://kitchen.madiba.ca/*"
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkLmCxth8rCXVlEWIWHFoioAcCfDD9PHlHfCkohiB7xu67nmbepdLv83aik/6qJkm20zdGBCUiuOjdOm/sIxgOwK7tJss8ugLAjd1fYcFUP5tz7vmw54/xI5CLWOCZP8h/jI4UJfFmYlMkoI3PIfu6/5rmLyLd5R4Ip/4Y6z5OsW3aN3xwxlwjA8771Ok8O9KarkR7Q+2YAdKcvsJXUyrHDoBW1Gb7RTHK/Z00aocJoSo/+Rtx7+hmvOBlGxyiwWZ4hsTazimOLXW5lG8hfsB2EDaeBRfccgujv8fg8X/hvJtKryJBKgAwEX0M0QT5d8oCpE0eudjXwf2uvI6Xz/axQIDAQAB",
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ]
+}

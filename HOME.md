@@ -59,6 +59,13 @@ public here, as the AGPL requires.
   home-site): Homebox books tagged "Cookbook" (auto-tagged once from Open Library subjects)
   appear on the Books shelf with cover, author and description.
 
+- **"Add to Kitchen" Chrome extension** (`browser-extension/`, see its README). Saves the recipe
+  on the current tab via `POST /api/home/clip/` (cookbook/views/home_clip.py): ChefSteps recipes
+  from the page data — members-only ones through ChefSteps' own loader with the browser's
+  sign-in — with step photos, °F/°C, equipment, tips and video link; other sites through the
+  normal scraper. Access key from `GET /api/home/extension-token/` (session login). Step photos
+  shown at card size.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

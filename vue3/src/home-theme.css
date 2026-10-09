@@ -1305,3 +1305,9 @@
 .v-date-picker .v-picker__body {
     padding: 0 !important;
 }
+
+/* ---- Step photos (e.g. imported from ChefSteps): sized like a card picture --------------------- */
+.step-card .step-photo {
+    max-width: 640px;
+    margin: 4px 16px 16px;
+}
