@@ -225,6 +225,12 @@ export interface Space {
      */
     logoColorSvg?: UserFileView | null;
     /**
+     * home fork: the name shown in the toolbar, browser tab and home-screen app
+     * @type {string}
+     * @memberof Space
+     */
+    appName?: string | null;
+    /**
      * 
      * @type {number}
      * @memberof Space
@@ -325,6 +331,7 @@ export function SpaceFromJSONTyped(json: any, ignoreDiscriminator: boolean): Spa
         'logoColor192': json['logo_color_192'] == null ? undefined : UserFileViewFromJSON(json['logo_color_192']),
         'logoColor512': json['logo_color_512'] == null ? undefined : UserFileViewFromJSON(json['logo_color_512']),
         'logoColorSvg': json['logo_color_svg'] == null ? undefined : UserFileViewFromJSON(json['logo_color_svg']),
+        'appName': json['app_name'] == null ? undefined : json['app_name'],
         'aiCreditsMonthly': json['ai_credits_monthly'] == null ? undefined : json['ai_credits_monthly'],
         'aiCreditsBalance': json['ai_credits_balance'] == null ? undefined : json['ai_credits_balance'],
         'aiMonthlyCreditsUsed': json['ai_monthly_credits_used'],
@@ -363,6 +370,7 @@ export function SpaceToJSONTyped(value?: Omit<Space, 'created_by'|'created_at'|'
         'logo_color_192': UserFileViewToJSON(value['logoColor192']),
         'logo_color_512': UserFileViewToJSON(value['logoColor512']),
         'logo_color_svg': UserFileViewToJSON(value['logoColorSvg']),
+        'app_name': value['appName'],
         'ai_credits_monthly': value['aiCreditsMonthly'],
         'ai_credits_balance': value['aiCreditsBalance'],
         'ai_enabled': value['aiEnabled'],

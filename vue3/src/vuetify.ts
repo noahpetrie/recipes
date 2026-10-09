@@ -53,6 +53,8 @@ export default createVuetify({
         VCombobox: {variant: 'outlined', density: 'compact'},
         VNumberInput: {variant: 'outlined', density: 'compact'},
         VFileInput: {variant: 'outlined', density: 'compact'},
+        // date pickers: one "October 2026 ▾" label with ‹ › (shadcn calendar), faded days from the next/previous month
+        VDatePicker: {controlVariant: 'modal', showAdjacentMonths: true},
         // flat buttons: no drop shadows
         VBtn: {rounded: 'lg', elevation: 0},
     },

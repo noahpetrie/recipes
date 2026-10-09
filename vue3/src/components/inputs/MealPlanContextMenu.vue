@@ -1,8 +1,10 @@
 <template>
     <!-- home: menu for a planned meal; opens from the ⋮ button or at the pointer on right-click (see openAt) -->
-    <v-btn icon variant="plain" class="d-print-none" @click.stop="point = undefined">
+    <!-- the button is optional (hideButton): the calendar opens this menu only by right-click -->
+    <v-btn v-if="!hideButton" icon variant="plain" class="d-print-none" @click.stop="openFromButton">
         <v-icon icon="$menu"></v-icon>
-        <v-menu activator="parent" v-model="menu" :target="point" :location="point ? 'bottom start' : undefined" close-on-content-click>
+    </v-btn>
+    <v-menu v-model="menu" :target="point" :location="pointerOpened ? 'bottom start' : 'bottom end'" close-on-content-click>
             <v-list density="compact">
                 <div class="home-menu-label">{{ planName }} · {{ shortDate }}</div>
                 <v-list-item v-if="plan.recipe" prepend-icon="fa-regular fa-file-lines" :to="recipeRoute">
@@ -28,8 +30,7 @@
                     {{ $t('HomeRemoveFromPlan', 'Remove from plan') }}
                 </v-list-item>
             </v-list>
-        </v-menu>
-    </v-btn>
+    </v-menu>
 
     <v-dialog v-model="confirmDelete" max-width="420">
         <v-card class="pa-2">
@@ -68,10 +69,18 @@ const {t} = useI18n()
 
 const props = defineProps({
     plan: {type: Object as PropType<MealPlan>, required: true},
+    hideButton: {type: Boolean, default: false},
 })
 
 const menu = ref(false)
-const point = ref<[number, number] | undefined>(undefined)
+const point = ref<[number, number] | Element | undefined>(undefined)
+const pointerOpened = ref(false)
+
+function openFromButton(e: MouseEvent) {
+    point.value = e.currentTarget as Element
+    pointerOpened.value = false
+    menu.value = true
+}
 const confirmDelete = ref(false)
 const deleting = ref(false)
 
@@ -90,6 +99,7 @@ const dateLabel = computed(() => DateTime.fromJSDate(props.plan.fromDate).toLoca
 
 function openAt(e: MouseEvent) {
     point.value = [e.clientX, e.clientY]
+    pointerOpened.value = true
     menu.value = true
 }
 

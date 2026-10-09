@@ -40,6 +40,8 @@
                                     :swatches="[['#ddbf86'],['#b98766'],['#b55e4f'],['#82aa8b'],['#385f84']]"></v-color-picker>
                     <v-btn class="mb-4" @click="editingObj.navBgColor = ''">{{ $t('Reset') }}</v-btn>
 
+                    <!-- home fork: white label — shown with the space icon in the toolbar, browser tab and home-screen app -->
+                    <v-text-field v-model="editingObj.appName" :label="$t('HomeAppName', 'App name')" :hint="$t('HomeAppNameHelp', 'Replaces \'Tandoor\' in the toolbar, browser tab and home-screen app.')" persistent-hint clearable class="mb-2"></v-text-field>
                     <user-file-field v-model="editingObj.navLogo" :label="$t('Logo')" :hint="$t('CustomNavLogoHelp')" persistent-hint></user-file-field>
 
                     <user-file-field v-model="editingObj.logoColor32" :label="$t('Logo') + ' 32x32px'"></user-file-field>

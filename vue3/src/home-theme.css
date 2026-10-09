@@ -1015,7 +1015,7 @@
 }
 
 /* dialogs: quieter dividers between header, body and actions */
-.v-dialog > .v-overlay__content > .v-card > .v-divider {
+.v-dialog .v-card > .v-divider {
     opacity: 0.6;
 }
 
@@ -1094,4 +1094,214 @@
 .global-search .v-card-text > .v-card,
 .global-search .v-card-text > .v-card.v-card--variant-tonal {
     border-radius: 8px !important;
+}
+
+/* account header at the top of the account menu (taller than the 32px menu rows) */
+.v-menu > .v-overlay__content > .v-list > .v-list-item.menu-user-info {
+    min-height: 52px !important;
+    padding: 6px 8px !important;
+    pointer-events: auto;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item.menu-user-info .v-list-item-title {
+    font-weight: 600;
+}
+
+/* ---- White-label toolbar brand: the space's icon and app name ------------------------------ */
+.home-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: rgb(var(--v-theme-on-surface));
+}
+
+.home-brand-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: block;
+}
+
+.home-brand-name {
+    font-family: var(--home-display-font);
+    font-size: 1.25rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+
+/* ---- Dialog editors: quieter header and footer (shadcn dialog) ------------------------------- */
+.v-dialog .v-card > .v-card-title {
+    padding: 16px 20px 10px !important;
+}
+
+.v-dialog .v-card > .v-card-title > .v-row > div:first-child {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+}
+
+/* the model icon before the title: small and muted */
+.v-dialog .v-card > .v-card-title > .v-row > div:first-child > i {
+    font-size: 0.875rem;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    margin-right: 6px;
+    vertical-align: 2px;
+}
+
+.v-dialog .v-card > .v-card-title .v-card-subtitle {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    margin-top: 2px;
+}
+
+.v-dialog .v-card > .v-card-title .v-btn {
+    opacity: 0.55;
+}
+
+.v-dialog .v-card > .v-divider {
+    border-color: rgba(var(--v-theme-on-surface), 0.08) !important;
+    opacity: 1 !important;
+}
+
+/* footer: compact buttons, Delete as a quiet red text button */
+.v-dialog .v-card > .v-card-actions {
+    padding: 12px 16px !important;
+    gap: 8px;
+}
+
+.v-dialog .v-card > .v-card-actions .v-btn {
+    height: 36px !important;
+    font-size: 0.875rem;
+    padding-inline: 14px;
+}
+
+.v-dialog .v-card > .v-card-actions .v-btn .v-btn__prepend .v-icon {
+    font-size: 14px;
+}
+
+.v-dialog .v-card > .v-card-actions .v-btn.text-delete {
+    padding-inline: 10px;
+}
+
+/* small outlined buttons used for secondary actions */
+.v-btn--variant-outlined.v-btn--size-small {
+    height: 32px !important;
+    font-size: 0.8125rem;
+}
+
+.v-btn--variant-outlined.v-btn--size-small .v-btn__prepend .v-icon {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* icons inside fields and tabs: small and muted, like the menus */
+.v-field__prepend-inner > .v-icon,
+.v-field__append-inner > .v-icon {
+    font-size: 15px;
+    opacity: 0.5;
+}
+
+.v-tabs .v-tab .v-btn__prepend .v-icon {
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+/* ---- Date pickers: compact calendar like shadcn's ------------------------------------------- */
+.v-date-picker {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+}
+
+.v-menu > .v-overlay__content > .v-date-picker {
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 12px 32px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.v-date-picker .v-date-picker-controls {
+    padding: 0 0 8px !important;
+    min-height: 32px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.v-date-picker .v-date-picker-controls .v-btn {
+    height: 28px !important;
+    width: auto;
+    min-width: 28px !important;
+    padding: 0 6px !important;
+    border-radius: 6px !important;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.v-date-picker .v-date-picker-controls .v-btn .v-icon {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* prev/next as small outlined squares */
+.v-date-picker .v-date-picker-controls > div:last-child .v-btn {
+    width: 28px !important;
+    padding: 0 !important;
+    box-shadow: inset 0 0 0 1px var(--home-border);
+}
+
+.v-date-picker .v-date-picker-month {
+    padding: 0 !important;
+    min-width: 0 !important;
+}
+
+.v-date-picker .v-date-picker-month__days {
+    flex: none !important;
+    grid-template-columns: repeat(7, 36px) !important;
+    column-gap: 2px;
+    row-gap: 2px;
+}
+
+.v-date-picker .v-date-picker-month__weekday {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    height: 28px;
+}
+
+.v-date-picker .v-date-picker-month__day {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.v-date-picker .v-date-picker-month__day .v-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+/* today: a soft grey fill instead of an outlined box */
+.v-date-picker .v-date-picker-month__day .v-btn--variant-outlined {
+    border: 0 !important;
+    background: rgba(var(--v-theme-on-surface), 0.07);
+    color: rgb(var(--v-theme-on-surface));
+    font-weight: 600;
+}
+
+.v-date-picker .v-date-picker-month__day--selected .v-btn {
+    font-weight: 600;
+}
+
+.v-date-picker .v-date-picker-month__day--adjacent {
+    opacity: 0.4;
+}
+
+.v-date-picker .v-date-picker-month__day-btn:hover > .v-btn__overlay {
+    opacity: 0.06;
+}
+
+.v-date-picker .v-picker__body {
+    padding: 0 !important;
 }

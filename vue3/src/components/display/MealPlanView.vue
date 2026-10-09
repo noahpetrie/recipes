@@ -10,6 +10,7 @@
                     :items="planItems"
                     class="theme-default"
                     :item-content-height="calendarItemHeight"
+                    item-top="2.1em"
                     :enable-drag-drop="true"
                     @dropOnDate="dropCalendarItemOnDate"
                     :display-period-uom="useUserPreferenceStore().deviceSettings.mealplan_displayPeriod"

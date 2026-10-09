@@ -39,6 +39,14 @@ public here, as the AGPL requires.
 - **shadcn/ui-style controls.** Compact 40px outlined fields with a focus ring, segmented
   tabs, flat buttons, 6px badges, sentence-case labels, shadcn-style menus. Warm palette kept.
 
+- **White label ("Kitchen").** A space's `app_name` (now in the space API and Space Settings
+  → App name) replaces "Tandoor" in the toolbar (space icon + name), browser tab titles
+  ("Books · Kitchen") and the sign-in page; icons come from the space's logo fields.
+- **Account details** live in the account menu, not the top of the sidebar.
+- **Meal plan calendar.** Right-click menu on entries, wrapped names, items clear of the
+  day number, shadcn-style toolbar (Today, ‹ ›, date button with picker); compact date
+  pickers app-wide; quieter dialog header/footer and secondary buttons.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

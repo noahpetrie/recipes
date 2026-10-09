@@ -9,7 +9,13 @@
                    flat density="comfortable" v-if="useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode"
                    :absolute="!useUserPreferenceStore().userSettings.navSticky"
                    :scroll-behavior="useUserPreferenceStore().userSettings.navSticky ? 'elevate' : ''">
-            <router-link :to="{ name: 'StartPage', params: {} }">
+            <!-- home: with an app name set for the space ("white label"), show its icon and name as text -->
+            <router-link :to="{ name: 'StartPage', params: {} }" class="home-brand ms-3"
+                         v-if="useUserPreferenceStore().userSettings.navShowLogo && useUserPreferenceStore().activeSpace.appName">
+                <img :src="spaceIcon" alt="" class="home-brand-icon">
+                <span class="home-brand-name">{{ useUserPreferenceStore().activeSpace.appName }}</span>
+            </router-link>
+            <router-link :to="{ name: 'StartPage', params: {} }" v-else>
                 <v-img :src="theme.global.current.value.dark ? brandLogoDark : brandLogo" width="140px" class="ms-2"
                        v-if="useUserPreferenceStore().userSettings.navShowLogo && !useUserPreferenceStore().activeSpace.navLogo"></v-img>
                 <v-img :src="useUserPreferenceStore().activeSpace.navLogo.preview" width="140px" class="ms-2"
@@ -69,8 +75,7 @@
         <!-- completely hide in print mode because setting d-print-node keeps layout -->
         <v-navigation-drawer v-if="lgAndUp && useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode">
             <v-list>
-                <menu-user-info></menu-user-info>
-                <v-divider></v-divider>
+                <!-- home: who you are lives in the account menu (top right), so the sidebar starts with navigation -->
                 <component :is="item.component" :="item" :key="item.title" v-for="item in useNavigation().getNavigationDrawer()"></component>
 
                 <navigation-drawer-context-menu></navigation-drawer-context-menu>
@@ -127,11 +132,12 @@ import GlobalSearchDialog from "@/components/inputs/GlobalSearchDialog.vue"
 import {useDisplay, useLocale, useTheme} from "vuetify"
 import brandLogo from "@/assets/brand_logo.svg"
 import brandLogoDark from "@/assets/brand_logo_dark.svg"
+import logoColor from "@/assets/logo_color.svg"
 import {toVuetifyLocale} from "@/vuetify"
 import VSnackbarQueued from "@/components/display/VSnackbarQueued.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import NavigationDrawerContextMenu from "@/components/display/NavigationDrawerContextMenu.vue";
-import {computed, nextTick, onMounted, ref} from "vue";
+import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {isSpaceAboveLimit} from "@/utils/logic_utils";
 import {useTitle} from "@vueuse/core";
 import HelpDialog from "@/components/dialogs/HelpDialog.vue";
@@ -153,7 +159,29 @@ const navBgColor = computed(() => {
 })
 const {t} = useI18n()
 
+// home: the space's own icon for the toolbar — the server already puts it in the page as the favicon
+// (theme_values.logo_color_svg), which also covers icons the file API can't preview (SVG)
+const spaceIcon = computed(() => {
+    const sp = useUserPreferenceStore().activeSpace
+    const favicon = (document.querySelector('link[rel="icon"]') as HTMLLinkElement | null)?.href
+    return sp.logoColorSvg || sp.logoColor192 ? (favicon || logoColor) : logoColor
+})
+
 const title = useTitle()
+
+// home: page titles read "Books · Kitchen" using the space's app name (once the space has loaded)
+const routeTitle = ref('')
+
+function applyTitle() {
+    const appName = useUserPreferenceStore().activeSpace?.appName || 'Tandoor'
+    title.value = routeTitle.value ? `${routeTitle.value} · ${appName}` : appName
+}
+
+watch(() => useUserPreferenceStore().activeSpace?.appName, (now, before) => {
+    // only touch the title if it is still the generic one (recipe pages set their own)
+    const before_ = before || 'Tandoor'
+    if (title.value == before_ || title.value?.endsWith(` · ${before_}`)) applyTitle()
+})
 const router = useRouter()
 
 onMounted(() => {
@@ -187,11 +215,8 @@ router.afterEach((to, from) => {
         router.push({name: 'HouseholdPage'})
     }
     nextTick(() => {
-        if (to.meta.title) {
-            title.value = t(to.meta.title)
-        } else {
-            title.value = 'Tandoor'
-        }
+        routeTitle.value = to.meta.title ? t(to.meta.title as string) : ''
+        applyTitle()
     })
 })
 

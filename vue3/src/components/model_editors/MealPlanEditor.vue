@@ -52,7 +52,7 @@
                             <template #append>
                                 <v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small" class="text-medium-emphasis me-2"></v-icon>
                                 <!-- home: the search field is hidden once a recipe is chosen; this brings it back -->
-                                <v-btn size="small" variant="tonal" @click.prevent.stop="editingObj.recipe = null; editingObj.servings = 1">{{ $t('HomeChange', 'Change') }}</v-btn>
+                                <v-btn size="small" variant="outlined" @click.prevent.stop="editingObj.recipe = null; editingObj.servings = 1">{{ $t('HomeChange', 'Change') }}</v-btn>
                             </template>
                         </v-list-item>
 
@@ -118,16 +118,19 @@
 
                         <v-switch :label="$t('AddToShopping')" v-model="editingObj.addshopping" hide-details density="compact" class="mt-2"
                                   v-if="editingObj.recipe && !isUpdate()"></v-switch>
-                        <v-btn prepend-icon="$shopping" color="create" variant="tonal" class="mt-3" v-if="!editingObj.shopping && editingObj.recipe && isUpdate()">
+                        <!-- home: secondary actions as one row of small outlined buttons -->
+                        <div class="d-flex flex-wrap align-center ga-2 mt-4">
+                        <v-btn prepend-icon="fa-solid fa-cart-shopping" variant="outlined" size="small" v-if="!editingObj.shopping && editingObj.recipe && isUpdate()">
                             {{ $t('AddToShopping') }}
                             <add-to-shopping-dialog :recipe="editingObj.recipe" :meal-plan="editingObj"
                                                     @created="editingObj.shopping = true;"></add-to-shopping-dialog>
                         </v-btn>
 
-                        <v-textarea :label="$t('Note')" v-model="editingObj.note" rows="2" auto-grow hide-details class="mt-3"
-                                    v-if="showNote || editingObj.note" :autofocus="showNote && !editingObj.note"></v-textarea>
-                        <v-btn variant="text" size="small" prepend-icon="fa-regular fa-note-sticky" class="mt-2 px-1 text-medium-emphasis" v-else
+                        <v-btn variant="outlined" size="small" prepend-icon="fa-regular fa-note-sticky" v-if="!(showNote || editingObj.note)"
                                @click="showNote = true">{{ $t('Add') }} {{ $t('Note').toLowerCase() }}</v-btn>
+                        </div>
+                        <v-textarea :label="$t('Note')" v-model="editingObj.note" rows="2" auto-grow hide-details class="mt-5"
+                                    v-if="showNote || editingObj.note" :autofocus="showNote && !editingObj.note"></v-textarea>
 
                     </v-form>
                 </v-tabs-window-item>
@@ -469,8 +472,10 @@ function initializeDateRange() {
     gap: 2px;
     height: 40px;
     padding: 0 4px;
-    border-radius: 10px;
-    background: rgba(var(--v-theme-on-surface), 0.04);
+    border-radius: 8px;
+    /* home: same white field with a hairline border as the inputs beside it */
+    background: rgb(var(--v-theme-surface));
+    box-shadow: inset 0 0 0 1px rgba(var(--v-theme-on-surface), 0.14);
     white-space: nowrap;
 }
 
@@ -482,6 +487,8 @@ function initializeDateRange() {
 }
 
 .mpe-recipe {
-    background: rgba(var(--v-theme-on-surface), 0.035);
+    background: rgb(var(--v-theme-surface));
+    box-shadow: inset 0 0 0 1px rgba(var(--v-theme-on-surface), 0.12);
+    border-radius: 10px !important;
 }
 </style>
