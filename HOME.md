@@ -26,6 +26,19 @@ public here, as the AGPL requires.
   ingredient notes inline, ticked ingredients struck through, one-line provenance;
   cleaner editor header, calendar (today pill) and shopping list.
 
+- **Books: cookbooks and collections.** A book is either a printed **Cookbook** (author and
+  cover photo, shown as a shelf of covers) or a **Collection** of your own recipes (shown as
+  albums with a collage of their photos). Adds `kind`, `author` and `cover` to RecipeBook
+  (migration `0243_home_recipebook_kind_author_cover`) and a `PUT /api/recipe-book/{id}/cover/`
+  action. **On upstream updates:** if upstream adds its own 0243, add a merge migration.
+- **Right-click menus.** Recipe cards and planned meals on the home page open their menu at
+  the pointer (Shift+right-click keeps the browser's). New "Add to book" dialog; planned meals
+  get Open recipe / Edit / shopping / book / Remove from plan.
+- **Plan a meal.** Pick a recipe from photos of the most recent ones; "No recipe?" reveals
+  the title field; Cancel discards without the leave-page prompt.
+- **shadcn/ui-style controls.** Compact 40px outlined fields with a focus ring, segmented
+  tabs, flat buttons, 6px badges, sentence-case labels, shadcn-style menus. Warm palette kept.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

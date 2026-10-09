@@ -24,7 +24,22 @@
                 <v-tabs-window-item value="book">
 
                     <v-form :disabled="loading">
+                        <!-- home fork: printed cookbook or a collection of your own recipes -->
+                        <v-btn-toggle v-model="editingObj.kind" mandatory color="primary" variant="outlined" density="comfortable" class="mb-4">
+                            <v-btn value="collection" prepend-icon="fa-solid fa-layer-group">{{ $t('HomeCollection', 'Collection') }}</v-btn>
+                            <v-btn value="cookbook" prepend-icon="$books">{{ $t('HomeCookbook', 'Cookbook') }}</v-btn>
+                        </v-btn-toggle>
                         <v-text-field :label="$t('Name')" v-model="editingObj.name"></v-text-field>
+                        <v-text-field v-if="editingObj.kind == 'cookbook'" :label="$t('HomeAuthor', 'Author')" v-model="editingObj.author"></v-text-field>
+                        <div v-if="isUpdate() && editingObj.kind == 'cookbook'" class="d-flex align-center ga-3 mb-5">
+                            <div class="book-cover-preview">
+                                <img v-if="editingObj.cover" :src="editingObj.cover" alt="">
+                                <v-icon v-else icon="$books" class="opacity-50"></v-icon>
+                            </div>
+                            <v-file-input :label="$t('HomeCover', 'Cover')" accept="image/*" prepend-icon="" prepend-inner-icon="fa-solid fa-image" hide-details
+                                          :loading="fileApiLoading" @update:model-value="uploadCover"></v-file-input>
+                            <v-btn v-if="editingObj.cover" variant="text" color="delete" @click="uploadCover(null)">{{ $t('Remove', 'Remove') }}</v-btn>
+                        </div>
                         <v-textarea :label="$t('Description')" v-model="editingObj.description" rows="3"></v-textarea>
                         <v-model-select model="User" v-model="editingObj.shared" chips multiple></v-model-select>
                         <v-model-select model="CustomFilter" v-model="editingObj.filter"></v-model-select>
@@ -58,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import {useFileApi} from "@/composables/useFileApi";
 
 import {onMounted, PropType, ref, watch} from "vue";
 import {ApiApi, Recipe, RecipeBook, RecipeBookEntry, User} from "@/openapi";
@@ -114,12 +130,28 @@ function initializeEditor() {
     setupState(props.item, props.itemId, {
         newItemFunction: () => {
             editingObj.value.shared = [] as User[]
+            editingObj.value.kind = editingObj.value.kind ?? 'collection'
             recipeBookEntries.value = []
         },
         existingItemFunction: () => {
             recipeBookEntries.value = []
         },
         itemDefaults: props.itemDefaults
+    })
+}
+
+/**
+ * home fork: upload (or with null, remove) the cover straight away; it isn't part of the normal save
+ */
+const {fileApiLoading, updateBookCover} = useFileApi()
+
+function uploadCover(file: File | File[] | null) {
+    const f = Array.isArray(file) ? file[0] : file
+    if (file != null && !f) return
+    updateBookCover(editingObj.value.id!, f ?? null).then(b => {
+        (editingObj.value as any).cover = b.cover
+    }).catch(err => {
+        useMessageStore().addError(ErrorMessageType.UPDATE_ERROR, err)
     })
 }
 
@@ -199,5 +231,21 @@ function loadRecipeBookEntries(options: VDataTableUpdateOptions) {
 </script>
 
 <style scoped>
+.book-cover-preview {
+    width: 48px;
+    height: 64px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--v-theme-on-surface), 0.06);
+}
 
+.book-cover-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 </style>

@@ -1207,6 +1207,14 @@ class RecipeBook(ExportModelOperationsMixin('book'), models.Model, PermissionMod
     filter = models.ForeignKey('cookbook.CustomFilter', null=True, blank=True, on_delete=models.SET_NULL)
     order = models.IntegerField(default=0)
 
+    # home fork: a printed cookbook on the shelf, or a collection of your own recipes
+    KIND_COLLECTION = 'collection'
+    KIND_COOKBOOK = 'cookbook'
+    KINDS = ((KIND_COLLECTION, _('Collection')), (KIND_COOKBOOK, _('Cookbook')))
+    kind = models.CharField(max_length=16, choices=KINDS, default=KIND_COLLECTION)
+    author = models.CharField(max_length=256, blank=True)
+    cover = models.ImageField(upload_to='books/', blank=True, null=True)
+
     space = models.ForeignKey(Space, on_delete=models.CASCADE)
     objects = ScopedManager(space='space')
 

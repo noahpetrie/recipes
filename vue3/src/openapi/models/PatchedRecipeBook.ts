@@ -76,6 +76,24 @@ export interface PatchedRecipeBook {
      * @memberof PatchedRecipeBook
      */
     order?: number;
+    /**
+     * home fork: 'cookbook' (printed) or 'collection'
+     * @type {string}
+     * @memberof PatchedRecipeBook
+     */
+    kind?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PatchedRecipeBook
+     */
+    author?: string;
+    /**
+     * cover image URL, set through the cover action
+     * @type {string}
+     * @memberof PatchedRecipeBook
+     */
+    readonly cover?: string | null;
 }
 
 /**
@@ -102,6 +120,9 @@ export function PatchedRecipeBookFromJSONTyped(json: any, ignoreDiscriminator: b
         'createdBy': json['created_by'] == null ? undefined : UserFromJSON(json['created_by']),
         'filter': json['filter'] == null ? undefined : CustomFilterFromJSON(json['filter']),
         'order': json['order'] == null ? undefined : json['order'],
+        'kind': json['kind'] == null ? undefined : json['kind'],
+        'author': json['author'] == null ? undefined : json['author'],
+        'cover': json['cover'] == null ? undefined : json['cover'],
     };
 }
 
@@ -122,6 +143,8 @@ export function PatchedRecipeBookToJSONTyped(value?: Omit<PatchedRecipeBook, 'cr
         'shared': value['shared'] == null ? undefined : ((value['shared'] as Array<any>).map(UserToJSON)),
         'filter': CustomFilterToJSON(value['filter']),
         'order': value['order'],
+        'kind': value['kind'],
+        'author': value['author'],
     };
 }
 

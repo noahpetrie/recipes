@@ -162,6 +162,69 @@
     backdrop-filter: blur(2px);
 }
 
+/* Menus in the shadcn/ui style: compact 32px rows, 14px text, small muted icons, a soft
+   rounded hover, hairline separators and a small muted label on top */
+.v-menu > .v-overlay__content > .v-list {
+    padding: 4px !important;
+    min-width: 208px;
+    border-radius: 10px !important;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item {
+    min-height: 32px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    font-size: 0.875rem;
+    letter-spacing: 0;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item .v-list-item-title {
+    font-size: 0.875rem;
+    font-weight: 450;
+    letter-spacing: 0;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item > .v-list-item__prepend > .v-icon {
+    font-size: 15px;
+    opacity: 0.6;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item > .v-list-item__prepend > .v-list-item__spacer {
+    width: 10px !important;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item:hover > .v-list-item__overlay {
+    opacity: 0.06;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-divider {
+    margin: 4px -4px !important;
+    opacity: 1;
+    border-color: var(--home-hairline);
+}
+
+/* destructive rows (base-color="delete"): red text and icon, red-tinted hover */
+.v-menu > .v-overlay__content > .v-list > .v-list-item.text-delete > .v-list-item__prepend > .v-icon {
+    opacity: 0.9;
+}
+
+.v-menu > .v-overlay__content > .v-list > .v-list-item.text-delete:hover > .v-list-item__overlay {
+    background: rgb(var(--v-theme-delete));
+    opacity: 0.08;
+}
+
+/* the label at the top of a menu: what it acts on */
+.home-menu-label {
+    padding: 6px 8px 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* ---- Cmd+K search: command-palette style list --------------------------------------- */
 .global-search .v-field--variant-solo {
     box-shadow: 0 0 0 1px var(--home-hairline) !important;
@@ -791,4 +854,244 @@
 
 .v-list.shopping-list .v-list-item:hover {
     background: rgba(var(--v-theme-primary), 0.03);
+}
+
+
+/* =========================================================================================
+ * shadcn/ui alignment: compact controls, hairline borders, segmented tabs, quiet labels.
+ * The warm palette stays; this layer only changes shape, size and weight.
+ * ========================================================================================= */
+:root {
+    --home-border: rgba(var(--v-theme-on-surface), 0.14);
+    --home-ring: rgba(var(--v-theme-primary), 0.18);
+}
+
+/* ---- Buttons: medium weight, no shadows ---------------------------------------------- */
+.v-btn {
+    font-weight: 500;
+}
+
+.v-btn--variant-elevated,
+.v-btn--variant-flat {
+    box-shadow: none !important;
+}
+
+.v-btn--variant-outlined {
+    border-color: var(--home-border) !important;
+    background: rgb(var(--v-theme-surface));
+}
+
+.v-btn--variant-outlined:hover > .v-btn__overlay {
+    opacity: 0.04;
+}
+
+.v-btn:focus-visible {
+    box-shadow: 0 0 0 3px var(--home-ring) !important;
+}
+
+/* ---- Form fields: 8px corners, hairline border, soft focus ring ---------------------- */
+.v-field--variant-outlined {
+    border-radius: 8px !important;
+    transition: box-shadow .15s ease;
+}
+
+.v-field--variant-outlined:not(.v-field--focused):not(.v-field--error) .v-field__outline {
+    --v-field-border-opacity: 0.14;
+}
+
+.v-field--variant-outlined.v-field--focused {
+    box-shadow: 0 0 0 3px var(--home-ring);
+}
+
+.v-field--variant-outlined.v-field--focused .v-field__outline {
+    --v-field-border-width: 1px;
+}
+
+.v-field__input,
+.v-field .v-label.v-field-label:not(.v-field-label--floating) {
+    font-size: 0.875rem;
+}
+
+/* filled fields (e.g. the shopping list entry) look like the outlined ones */
+.v-field--variant-filled {
+    border-radius: 8px !important;
+    background: rgb(var(--v-theme-surface));
+    box-shadow: inset 0 0 0 1px var(--home-border);
+}
+
+.v-field--variant-filled .v-field__overlay {
+    opacity: 0 !important;
+}
+
+.v-field--variant-filled .v-field__outline {
+    display: none;
+}
+
+.v-field--variant-filled.v-field--focused {
+    box-shadow: inset 0 0 0 1px rgb(var(--v-theme-primary)), 0 0 0 3px var(--home-ring);
+}
+
+.v-input__details {
+    padding-inline: 2px !important;
+}
+
+/* ---- Tabs: a segmented control (grey track, white pill for the active tab) ------------ */
+.v-tabs:not(.v-tabs--vertical) {
+    background: rgba(var(--v-theme-on-surface), 0.05);
+    border-radius: 10px;
+    padding: 3px;
+    height: auto !important;
+}
+
+.v-tabs:not(.v-tabs--vertical) .v-tab.v-btn {
+    height: 32px !important;
+    min-width: 0;
+    border-radius: 7px !important;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.v-tabs:not(.v-tabs--vertical) .v-tab--selected {
+    background: rgb(var(--v-theme-surface));
+    color: rgb(var(--v-theme-on-surface));
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.v-tabs:not(.v-tabs--vertical) .v-tab--selected > .v-btn__overlay {
+    opacity: 0 !important;
+}
+
+.v-tabs:not(.v-tabs--vertical) .v-tab__slider {
+    display: none;
+}
+
+/* tabs that sit inside a card get a little room around them */
+.v-card > .v-tabs:not(.v-tabs--vertical),
+.v-card > .v-card-text > .v-tabs:not(.v-tabs--vertical) {
+    margin: 12px 16px 0;
+}
+
+.v-card > .v-card-text.pa-0 > .v-tabs:not(.v-tabs--vertical) {
+    margin: 12px 16px 0;
+}
+
+/* ---- Chips: small rounded badges ------------------------------------------------------- */
+.v-chip,
+.v-chip--label {
+    border-radius: 6px !important;
+}
+
+.v-chip.v-chip--size-x-small {
+    font-weight: 500;
+}
+
+/* ---- Labels: small, grey, sentence case (no SHOUTING) ------------------------------------- */
+.v-table > .v-table__wrapper > table > thead > tr > th {
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0;
+    text-transform: none;
+    background: transparent;
+}
+
+.v-list-subheader,
+.mpe-section-label,
+.shopping-list .v-list-subheader__text {
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+}
+
+/* ---- Cards: a hairline and the faintest shadow ------------------------------------------- */
+.v-card--variant-elevated {
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.v-card-title {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* dialogs: quieter dividers between header, body and actions */
+.v-dialog > .v-overlay__content > .v-card > .v-divider {
+    opacity: 0.6;
+}
+
+/* ---- Tooltips: small and dark -------------------------------------------------------------- */
+.v-tooltip > .v-overlay__content {
+    background: #1c1917 !important;
+    color: #fafaf9 !important;
+    font-size: 0.75rem !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+}
+
+/* ---- Pagination: small square buttons -------------------------------------------------------- */
+.v-pagination .v-btn {
+    border-radius: 8px !important;
+    height: 32px !important;
+    width: 32px !important;
+    font-size: 0.875rem;
+}
+
+/* ---- Snackbars: rounded toasts -------------------------------------------------------------- */
+.v-snackbar__wrapper {
+    border-radius: 10px !important;
+}
+
+/* ---- Multiselect inputs (shopping list entry, older selects): match the outlined fields --- */
+.v-application .material-multiselect {
+    --ms-bg: rgb(var(--v-theme-surface));
+    --ms-border-color: var(--home-border);
+    --ms-border-color-active: rgb(var(--v-theme-primary));
+    --ms-radius: 8px;
+    --ms-ring-width: 3px;
+    --ms-ring-color: var(--home-ring);
+    --ms-font-size: 0.875rem;
+    --ms-py: 0.55rem;
+    --ms-tag-bg: rgba(var(--v-theme-primary), 0.12);
+    --ms-tag-color: rgb(var(--v-theme-primary));
+    --ms-tag-radius: 6px;
+    --ms-option-bg-pointed: rgba(var(--v-theme-on-surface), 0.06);
+    --ms-option-color-pointed: rgb(var(--v-theme-on-surface));
+    --ms-option-bg-selected: rgba(var(--v-theme-primary), 0.12);
+    --ms-option-color-selected: rgb(var(--v-theme-primary));
+    --ms-dropdown-radius: 10px;
+    --ms-dropdown-border-color: var(--home-hairline);
+    border: 1px solid var(--home-border) !important;
+    border-radius: 8px !important;
+}
+
+.v-application .multiselect-tag {
+    background-color: rgba(var(--v-theme-primary), 0.12) !important;
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+/* ---- Tab bars that don't stretch: only as wide as their tabs ----------------------------- */
+.v-tabs:not(.v-tabs--vertical):not(.v-tabs--grow) {
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 8px;
+}
+
+/* ---- Cmd+K: neutral highlight for the selected result, like the menus --------------------- */
+.global-search .v-card-text > .v-card.v-card--variant-tonal {
+    background: rgba(var(--v-theme-on-surface), 0.06);
+    color: rgb(var(--v-theme-on-surface));
+}
+
+.global-search .v-card-text > .v-card {
+    border-radius: 8px;
+}
+
+.global-search .v-card-text > .v-card.v-card--variant-tonal > .v-card__underlay,
+.global-search .v-card-text > .v-card.v-card--variant-tonal > .v-card__overlay {
+    opacity: 0 !important;
+}
+
+.global-search .v-card-text > .v-card,
+.global-search .v-card-text > .v-card.v-card--variant-tonal {
+    border-radius: 8px !important;
 }

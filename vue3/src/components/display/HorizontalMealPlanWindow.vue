@@ -29,12 +29,13 @@
                                 </v-list-item>
                                 <v-progress-linear v-if="loading" height="1" indeterminate></v-progress-linear>
                                 <v-divider v-if="mealPlanGridItem.plan_entries.length > 0"></v-divider>
-                                <v-list-item v-for="p in mealPlanGridItem.plan_entries" :key="p.id" @click="clickMealPlan(p)" link>
+                                <v-list-item v-for="p in mealPlanGridItem.plan_entries" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)">
                                     <template #prepend>
-                                        <v-avatar :image="p.recipe.image" v-if="p.recipe?.image"></v-avatar>
-                                        <v-avatar image="../../assets/recipe_no_image.svg" v-else></v-avatar>
+                                        <!-- home: square photo thumbnails, like the rest of the app -->
+                                        <v-avatar :image="p.recipe.image" v-if="p.recipe?.image" rounded="lg" size="44" class="mp-thumb"></v-avatar>
+                                        <v-avatar v-else rounded="lg" size="44" class="mp-thumb"><v-icon icon="fa-solid fa-pizza-slice" size="small" class="opacity-60"></v-icon></v-avatar>
                                     </template>
-                                    <v-list-item-title>
+                                    <v-list-item-title class="mp-title">
                                         <span v-if="p.recipe">{{ p.recipe.name }}</span>
                                         <span v-else>{{ p.title }}</span>
                                     </v-list-item-title>
@@ -43,23 +44,15 @@
                                     </v-list-item-subtitle>
                                     <model-edit-dialog model="MealPlan" :item="p" v-if="!p.recipe"></model-edit-dialog>
                                     <template #append>
-                                        <v-btn icon variant="plain">
-                                            <v-icon icon="$menu"></v-icon>
-                                            <v-menu activator="parent">
-                                                <v-list>
-                                                    <v-list-item prepend-icon="$edit" link>
-                                                        {{ $t('Edit') }}
-                                                        <model-edit-dialog model="MealPlan" :item="p"></model-edit-dialog>
-                                                    </v-list-item>
-                                                </v-list>
-                                            </v-menu>
-                                        </v-btn>
+                                        <meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p"></meal-plan-context-menu>
                                     </template>
                                 </v-list-item>
-                                <v-list-item class="text-center cursor-pointer" variant="tonal">
-                                    <model-edit-dialog model="MealPlan" :item-defaults="{fromDate: mealPlanGridItem.date.toJSDate()}" :close-after-create="false"
-                                                       :close-after-save="false"></model-edit-dialog>
-                                    <v-icon icon="$create" size="small"></v-icon>
+                                <v-list-item class="text-center cursor-pointer mp-add" :class="{'mp-add-empty': mealPlanGridItem.plan_entries.length == 0}" variant="tonal">
+                                    <model-edit-dialog model="MealPlan" :item-defaults="{fromDate: mealPlanGridItem.date.toJSDate()}"></model-edit-dialog>
+                                    <!-- home: an empty day says so instead of showing a bare + -->
+                                    <span v-if="mealPlanGridItem.plan_entries.length == 0" class="text-body-2 text-medium-emphasis">{{ $t('HomeNothingPlanned', 'Nothing planned') }} · </span>
+                                    <v-icon icon="$create" size="x-small"></v-icon>
+                                    <span v-if="mealPlanGridItem.plan_entries.length == 0" class="text-body-2 text-primary ms-1">{{ $t('Add') }}</span>
                                 </v-list-item>
                             </v-list>
                         </v-col>
@@ -84,6 +77,7 @@ import {DateTime} from "luxon";
 import {homePageCols} from "@/utils/breakpoint_utils";
 import ModelEditDialog from "@/components/dialogs/ModelEditDialog.vue";
 import {useRouter} from "vue-router";
+import MealPlanContextMenu from "@/components/inputs/MealPlanContextMenu.vue";
 
 const router = useRouter()
 const {name} = useDisplay()
@@ -145,6 +139,20 @@ onMounted(() => {
     })
 })
 
+// home: right-click a planned meal for its menu (Shift+right-click keeps the browser's)
+const menuRefs: Record<number, InstanceType<typeof MealPlanContextMenu> | null> = {}
+
+function setMenuRef(id: number, el: unknown) {
+    menuRefs[id] = (el as InstanceType<typeof MealPlanContextMenu> | null) ?? null
+}
+
+function openMenu(plan: MealPlan, e: MouseEvent) {
+    const m = menuRefs[plan.id!]
+    if (e.shiftKey || !m) return
+    e.preventDefault()
+    m.openAt(e)
+}
+
 function clickMealPlan(plan: MealPlan) {
     if (plan.recipe) {
         router.push({
@@ -159,5 +167,17 @@ function clickMealPlan(plan: MealPlan) {
 
 
 <style scoped>
+.mp-thumb {
+    background: rgba(var(--v-theme-on-surface), 0.06);
+}
 
+/* two lines for long recipe names instead of "Butter Chicken (…" */
+.mp-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+}
 </style>

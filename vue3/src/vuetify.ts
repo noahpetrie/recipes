@@ -42,20 +42,19 @@ export default createVuetify({
         VCard: {
             rounded: 'lg'
         },
-        VBtn: {
-            rounded: 'lg'
-        },
         VDialog: {
             VCard: {rounded: 'xl'}
         },
-        // Home theme: soft outlined form fields instead of underlined/filled ones
-        VTextField: {variant: 'outlined'},
-        VTextarea: {variant: 'outlined'},
-        VSelect: {variant: 'outlined'},
-        VAutocomplete: {variant: 'outlined'},
-        VCombobox: {variant: 'outlined'},
-        VNumberInput: {variant: 'outlined'},
-        VFileInput: {variant: 'outlined'},
+        // Home theme: compact outlined form fields (40px, shadcn/ui-style) instead of 56px underlined/filled ones
+        VTextField: {variant: 'outlined', density: 'compact'},
+        VTextarea: {variant: 'outlined', density: 'compact'},
+        VSelect: {variant: 'outlined', density: 'compact'},
+        VAutocomplete: {variant: 'outlined', density: 'compact'},
+        VCombobox: {variant: 'outlined', density: 'compact'},
+        VNumberInput: {variant: 'outlined', density: 'compact'},
+        VFileInput: {variant: 'outlined', density: 'compact'},
+        // flat buttons: no drop shadows
+        VBtn: {rounded: 'lg', elevation: 0},
     },
     locale: {
         locale: 'en',

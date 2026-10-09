@@ -1,29 +1,37 @@
 <template>
-    <v-btn v-bind="props" icon="fa-solid fa-ellipsis-v" variant="plain" :size="props.size" class="d-print-none">
+    <v-btn v-bind="props" icon="fa-solid fa-ellipsis-v" variant="plain" :size="props.size" class="d-print-none" @click="point = undefined">
         <v-icon icon="fa-solid fa-ellipsis-v"></v-icon>
-        <v-menu activator="parent" close-on-content-click>
-            <v-list density="compact" class="pt-1 pb-1">
-                <v-list-item :to="{ name: 'ModelEditPage', params: {model: 'recipe', id: recipe.id} }" prepend-icon="$edit">
+        <!-- home: also opens at the pointer on right-click (see openAt) -->
+        <v-menu activator="parent" close-on-content-click v-model="menu" :target="point" :location="point ? 'bottom start' : undefined">
+            <v-list density="compact">
+                <div class="home-menu-label">{{ recipe.name }}</div>
+                <v-list-item :to="{ name: 'ModelEditPage', params: {model: 'recipe', id: recipe.id} }" prepend-icon="fa-regular fa-pen-to-square">
                     {{ $t('Edit') }}
                 </v-list-item>
-                <v-list-item prepend-icon="$mealplan" @click="mealPlanDialog = true">
-                    {{ $t('Add_to_Plan') }}
+                <v-divider></v-divider>
+                <v-list-item prepend-icon="fa-regular fa-calendar-plus" @click="mealPlanDialog = true">
+                    {{ $t('HomeAddToPlan', 'Add to meal plan') }}
                 </v-list-item>
-                <v-list-item prepend-icon="$shopping" link>
-                    {{ $t('Add_to_Shopping') }}
+                <v-list-item prepend-icon="fa-solid fa-cart-shopping" link>
+                    {{ $t('HomeAddToShopping', 'Add to shopping list') }}
                     <add-to-shopping-dialog :recipe="props.recipe"></add-to-shopping-dialog>
                 </v-list-item>
-                <v-list-item :to="{ name: 'PropertyEditorPage', query: {recipe: recipe.id} }" prepend-icon="fa-solid fa-table" link>
+                <v-list-item prepend-icon="fa-regular fa-bookmark" link>
+                    {{ $t('HomeAddToBook', 'Add to book') }}
+                    <add-to-book-dialog :recipe="props.recipe"></add-to-book-dialog>
+                </v-list-item>
+                <v-divider></v-divider>
+                <v-list-item :to="{ name: 'PropertyEditorPage', query: {recipe: recipe.id} }" prepend-icon="fa-solid fa-table-list" link>
                     {{ $t('Property_Editor') }}
                 </v-list-item>
                 <v-list-item prepend-icon="$pantry" @click="addToPantry()" :loading="pantryLoading" link>
                     {{ $t('Pantry') }}
                 </v-list-item>
-                <v-list-item prepend-icon="fa-solid fa-share-nodes" link>
+                <v-list-item prepend-icon="fa-solid fa-arrow-up-from-bracket" link>
                     {{ $t('Share') }}
                     <recipe-share-dialog :recipe="props.recipe"></recipe-share-dialog>
                 </v-list-item>
-                <v-list-item @click.stop="duplicateRecipe()" prepend-icon="$copy" :disabled="duplicateLoading">
+                <v-list-item @click.stop="duplicateRecipe()" prepend-icon="fa-regular fa-copy" :disabled="duplicateLoading">
                     {{ $t('Duplicate') }}
                     <template #append>
                         <v-progress-circular v-if="duplicateLoading" indeterminate size="small"></v-progress-circular>
@@ -55,6 +63,7 @@ import {useRouter} from "vue-router";
 import {useFileApi} from "@/composables/useFileApi.ts";
 import {useI18n} from "vue-i18n";
 import PantryBookingDialog from "@/components/dialogs/PantryBookingDialog.vue";
+import AddToBookDialog from "@/components/dialogs/AddToBookDialog.vue";
 
 const router = useRouter()
 const {t} = useI18n()
@@ -67,6 +76,17 @@ const props = defineProps({
 })
 
 const mealPlanDialog = ref(false)
+
+// home: right-click on a recipe card opens this menu where the pointer is
+const menu = ref(false)
+const point = ref<[number, number] | undefined>(undefined)
+
+function openAt(e: MouseEvent) {
+    point.value = [e.clientX, e.clientY]
+    menu.value = true
+}
+
+defineExpose({openAt})
 const duplicateLoading = ref(false)
 const pantryDialog = ref(false)
 const pantryLoading = ref(false)

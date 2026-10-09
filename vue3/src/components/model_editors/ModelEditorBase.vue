@@ -1,7 +1,7 @@
 <template>
     <v-card :loading="loading"  class="mb-10">
         <v-closable-card-title
-            :sub-title="isUpdate ? $t(modelClass.model.localizationKey) + ((isChanged) ? ` (${$t('unsaved')})` : '') : ((isChanged) ? $t('unsaved') : '')"
+            :sub-title="isUpdate ? $t(modelClass.model.localizationKey) + ((isChanged) ? ` (${$t('unsaved')})` : '') : ''"
             :title="objectName"
             :icon="modelClass.model.icon"
             @close="closeDialog()"
@@ -23,7 +23,8 @@
             </v-btn>
 
             <v-spacer></v-spacer>
-            <v-btn variant="text" @click="closeDialog()" v-if="dialog" :disabled="loading">{{ $t('Cancel') }}</v-btn>
+            <!-- home: Cancel already means "discard", so it doesn't ask again (the X still does) -->
+            <v-btn variant="text" @click="emit('close')" v-if="dialog" :disabled="loading">{{ $t('Cancel') }}</v-btn>
             <v-btn color="save" variant="flat" prepend-icon="$create" @click="emit('save')" v-if="!isUpdate && !modelClass.model.disableCreate" :loading="loading">{{ $t('Create') }}</v-btn>
             <v-btn color="save" variant="flat" prepend-icon="$save" @click="emit('save')" v-if="isUpdate && !modelClass.model.disableUpdate" :loading="loading"> {{ $t('Save') }}</v-btn>
         </v-card-actions>

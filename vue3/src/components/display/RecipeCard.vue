@@ -1,5 +1,7 @@
 <template>
     <template v-if="!props.loading">
+      <!-- home: right-click anywhere on the card for the recipe menu -->
+      <div @contextmenu="onContextMenu">
 
         <router-link :to="dest" :target="linkTarget">
             <recipe-image :style="{height: props.height}" :recipe="props.recipe" rounded="lg" class="mr-3 ml-3">
@@ -13,7 +15,7 @@
                 </div>
                 <div class="mt-1">
                     <!--                    <v-btn icon="fas fa-ellipsis-v" size="small" variant="plain"></v-btn>-->
-                    <recipe-context-menu :recipe="props.recipe" size="small" v-if="props.showMenu"></recipe-context-menu>
+                    <recipe-context-menu ref="contextMenu" :recipe="props.recipe" size="small" v-if="props.showMenu"></recipe-context-menu>
                 </div>
             </div>
             <!--            <p class="text-disabled">{{ props.recipe.createdBy.displayName}}</p>-->
@@ -34,6 +36,7 @@
                 </template>
             </keywords-component>
         </div>
+      </div>
 
 
         <v-card :to="dest" :style="{'height': props.height}" v-if="false">
@@ -97,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, PropType} from 'vue'
+import {computed, PropType, ref} from 'vue'
 import KeywordsComponent from "@/components/display/KeywordsBar.vue";
 import {Recipe, RecipeOverview} from "@/openapi";
 
@@ -118,6 +121,15 @@ const props = defineProps({
 })
 
 const router = useRouter()
+
+const contextMenu = ref<InstanceType<typeof RecipeContextMenu> | null>(null)
+
+function onContextMenu(e: MouseEvent) {
+    // keep the browser menu with Shift held, or when the menu is hidden
+    if (e.shiftKey || !contextMenu.value) return
+    e.preventDefault()
+    contextMenu.value.openAt(e)
+}
 
 const dest = computed(() => {
     const route: any = { name: 'RecipeViewPage', params: { id: props.recipe.id } };

@@ -106,7 +106,7 @@ from cookbook.serializer import (AccessTokenSerializer, AutomationSerializer, Au
                                  ImportLogSerializer, IngredientSerializer, IngredientSimpleSerializer,
                                  InviteLinkSerializer, KeywordSerializer, MealPlanSerializer, MealTypeSerializer,
                                  PropertySerializer, PropertyTypeSerializer,
-                                 RecipeBookEntrySerializer, RecipeBookSerializer, RecipeExportSerializer,
+                                 RecipeBookCoverSerializer, RecipeBookEntrySerializer, RecipeBookSerializer, RecipeExportSerializer,
                                  RecipeFlatSerializer, RecipeFromSourceSerializer, RecipeImageSerializer,
                                  RecipeOverviewSerializer, RecipeSerializer, RecipeShoppingUpdateSerializer,
                                  RecipeSimpleSerializer, ShoppingListEntryBulkSerializer,
@@ -1446,6 +1446,36 @@ class RecipeBookViewSet(LoggingMixin, StandardFilterModelViewSet, DeleteRelation
         self.queryset = self.queryset.filter(Q(created_by=self.request.user) | Q(shared=self.request.user)).filter(
             space=self.request.space).distinct().order_by(*ordering)
         return super().get_queryset()
+
+    # home fork: book covers, handled like recipe images
+    @decorators.action(detail=True, methods=['PUT'], serializer_class=RecipeBookCoverSerializer,
+                       parser_classes=[MultiPartParser], )
+    def cover(self, request, pk):
+        obj = self.get_object()
+        serializer = self.serializer_class(obj, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, 400)
+
+        image = None
+        filetype = ".jpeg"
+        if serializer.validated_data.get('cover'):
+            image = serializer.validated_data['cover']
+            filetype = mimetypes.guess_extension(image.content_type) or filetype
+        elif serializer.validated_data.get('cover_url'):
+            try:
+                response = safe_request('GET', serializer.validated_data['cover_url'], headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"})
+                image = File(io.BytesIO(response.content))
+                filetype = mimetypes.guess_extension(response.headers['content-type']) or filetype
+            except Exception as e:
+                return Response({'cover_url': [str(e)]}, 400)
+
+        if image is not None:
+            obj.cover.save(f'{uuid.uuid4()}_{obj.pk}{filetype}', handle_image(request, image, filetype))
+        else:
+            obj.cover = None
+        obj.save()
+        return Response(RecipeBookSerializer(obj, context={'request': request}).data)
 
 
 @extend_schema_view(list=extend_schema(parameters=[

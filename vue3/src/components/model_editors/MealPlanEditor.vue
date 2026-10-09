@@ -8,7 +8,7 @@
         :is-update="isUpdate()"
         :is-changed="editingObjChanged"
         :model-class="modelClass"
-        :object-name="editingObjName()"
+        :object-name="isUpdate() ? editingObjName() : $t('HomePlanMeal', 'Plan a meal')"
         :editing-object="editingObj">
 
         <!-- tabs only matter once the plan exists (the shopping tab is unavailable for new plans) -->
@@ -23,10 +23,22 @@
                     <v-form :disabled="loading">
 
                         <!-- what -->
-                        <v-model-select model="Recipe" v-model="editingObj.recipe" hide-details
+                        <v-model-select v-if="!editingObj.recipe" model="Recipe" v-model="editingObj.recipe" hide-details
                                         @update:modelValue="editingObj.servings = editingObj.recipe ? editingObj.recipe.servings : 1"></v-model-select>
 
-                        <v-list-item v-if="editingObj && editingObj.recipe" class="mpe-recipe mt-2" rounded="lg"
+                        <!-- home: pick a recipe with one click from photos, instead of searching -->
+                        <div v-if="!editingObj.recipe && quickPicks.length && !editingObj.title" class="mpe-picks mt-3">
+                            <button v-for="r in quickPicks" :key="r.id" type="button" class="mpe-pick" :title="r.name"
+                                    @click="editingObj.recipe = r as any; editingObj.servings = r.servings ?? 1">
+                                <span class="mpe-pick-img">
+                                    <img v-if="r.image" :src="r.image" alt="">
+                                    <v-icon v-else icon="fa-solid fa-pizza-slice" class="opacity-50"></v-icon>
+                                </span>
+                                <span class="mpe-pick-name">{{ r.name }}</span>
+                            </button>
+                        </div>
+
+                        <v-list-item v-if="editingObj && editingObj.recipe" class="mpe-recipe" rounded="lg"
                                      :to="{name: 'RecipeViewPage', params: {id: editingObj.recipe.id}}" target="_blank">
                             <template #prepend>
                                 <v-avatar rounded="lg" size="48" :image="editingObj.recipe.image" class="me-1" v-if="editingObj.recipe.image"></v-avatar>
@@ -38,16 +50,22 @@
                                 {{ (editingObj.recipe.workingTime ?? 0) + (editingObj.recipe.waitingTime ?? 0) }} min
                             </v-list-item-subtitle>
                             <template #append>
-                                <v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small" class="text-medium-emphasis"></v-icon>
+                                <v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small" class="text-medium-emphasis me-2"></v-icon>
+                                <!-- home: the search field is hidden once a recipe is chosen; this brings it back -->
+                                <v-btn size="small" variant="tonal" @click.prevent.stop="editingObj.recipe = null; editingObj.servings = 1">{{ $t('HomeChange', 'Change') }}</v-btn>
                             </template>
                         </v-list-item>
 
-                        <v-text-field v-model="editingObj.title" hide-details class="mt-3"
-                                      :label="editingObj.recipe ? $t('Title') : $t('or') + ' ' + $t('Title').toLowerCase()"
-                                      :placeholder="editingObj.recipe ? editingObj.recipe.name : ''"></v-text-field>
+                        <!-- home: a plan without a recipe (e.g. "Leftovers", "Eating out") is the exception, so its title field waits behind a link -->
+                        <v-text-field v-if="showTitle || editingObj.title" v-model="editingObj.title" hide-details class="mt-3"
+                                      :label="editingObj.recipe ? $t('Title') : $t('HomePlanTitle', 'What are you having?')"
+                                      :placeholder="editingObj.recipe ? editingObj.recipe.name : $t('HomePlanTitleHint', 'e.g. Leftovers, eating out')"
+                                      :autofocus="showTitle && !editingObj.title"></v-text-field>
+                        <v-btn v-else-if="!editingObj.recipe" variant="text" size="small" prepend-icon="fa-solid fa-pen" class="mt-2 px-1 text-medium-emphasis"
+                               @click="showTitle = true">{{ $t('HomeNoRecipe', 'No recipe? Write what you\'re having') }}</v-btn>
 
                         <!-- when -->
-                        <div class="mpe-section-label">{{ $t('Date') }}</div>
+                        <div class="mpe-section-label">{{ $t('HomeWhen', 'When') }}</div>
                         <div class="d-flex align-center ga-2 flex-wrap">
                             <div class="d-flex align-center flex-grow-1 mpe-date">
                                 <v-btn icon="fa-solid fa-chevron-left" variant="text" size="small" density="comfortable" :title="$t('Previous_Day')"
@@ -78,7 +96,7 @@
                             <div class="mpe-stepper" :title="$t('Days')">
                                 <v-btn icon="fa-solid fa-minus" variant="text" size="x-small" :disabled="dayCount <= 1"
                                        @click="adjustDateRangeLength(dateRangeValue,-1); updateDate()"></v-btn>
-                                <span class="mpe-stepper-value">{{ dayCount }} {{ (dayCount == 1 ? $t('Day') : $t('Days')).toLowerCase() }}</span>
+                                <span class="mpe-stepper-value">{{ $t('HomeFor', 'for') }} {{ dayCount }} {{ (dayCount == 1 ? $t('Day') : $t('Days')).toLowerCase() }}</span>
                                 <v-btn icon="fa-solid fa-plus" variant="text" size="x-small"
                                        @click="adjustDateRangeLength(dateRangeValue,+1); updateDate()"></v-btn>
                             </div>
@@ -129,7 +147,7 @@
 <script setup lang="ts">
 
 import {computed, nextTick, onMounted, onUnmounted, PropType, ref, toRaw, watch} from "vue";
-import {ApiApi, MealPlan, MealType, ShoppingListRecipe} from "@/openapi";
+import {ApiApi, MealPlan, MealType, RecipeOverview, ShoppingListRecipe} from "@/openapi";
 import ModelEditorBase from "@/components/model_editors/ModelEditorBase.vue";
 import {useModelEditorFunctions} from "@/composables/useModelEditorFunctions";
 import {DateTime} from "luxon";
@@ -182,6 +200,15 @@ const dateRangeValue = ref([] as Date[])
 const timePickerMenu = ref(false)
 const mealPlanTime = ref('12:00')
 const showNote = ref(false)
+const showTitle = ref(false)
+
+// home: a few recipes to pick from with one click (most recently added first)
+const quickPicks = ref([] as RecipeOverview[])
+onMounted(() => {
+    new ApiApi().apiRecipeList({pageSize: 8, sortOrder: '-created_at'}).then(r => {
+        quickPicks.value = r.results
+    }).catch(() => {})
+})
 
 /** number of days covered by the selected range (a plan can span several days) */
 const dayCount = computed(() => {
@@ -358,6 +385,59 @@ function initializeDateRange() {
 </script>
 
 <style scoped>
+.mpe-picks {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 600px) {
+    .mpe-picks {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.mpe-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    min-width: 0;
+    border-radius: 10px;
+    padding: 4px;
+    transition: background .15s;
+}
+
+.mpe-pick:hover, .mpe-pick:focus-visible {
+    background: rgba(var(--v-theme-primary), 0.08);
+    outline: none;
+}
+
+.mpe-pick-img {
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.mpe-pick-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mpe-pick-name {
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .mpe-section-label {
     font-size: 0.75rem;
     font-weight: 600;

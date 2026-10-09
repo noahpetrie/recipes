@@ -1333,6 +1333,7 @@ class RecipeBookSerializer(SpacedModelSerializer, WritableNestedModelSerializer)
     created_by = UserSerializer(read_only=True)
     shared = UserSerializer(many=True)
     filter = CustomFilterSerializer(allow_null=True, required=False)
+    cover = serializers.ImageField(read_only=True)  # home fork: set through the /cover/ action
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
@@ -1340,8 +1341,18 @@ class RecipeBookSerializer(SpacedModelSerializer, WritableNestedModelSerializer)
 
     class Meta:
         model = RecipeBook
-        fields = ('id', 'name', 'description', 'shared', 'created_by', 'filter', 'order')
-        read_only_fields = ('created_by',)
+        fields = ('id', 'name', 'description', 'shared', 'created_by', 'filter', 'order', 'kind', 'author', 'cover')
+        read_only_fields = ('created_by', 'cover')
+
+
+class RecipeBookCoverSerializer(serializers.ModelSerializer):
+    """home fork: upload a book cover as a file or from a URL; send neither to remove it"""
+    cover = serializers.ImageField(required=False, allow_null=True)
+    cover_url = serializers.CharField(max_length=4096, required=False, allow_null=True, write_only=True)
+
+    class Meta:
+        model = RecipeBook
+        fields = ('cover', 'cover_url')
 
 
 class RecipeBookEntrySerializer(serializers.ModelSerializer):

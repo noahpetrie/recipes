@@ -1,7 +1,7 @@
 import {useDjangoUrls} from "@/composables/useDjangoUrls";
 import {ref} from "vue";
 import {getCookie} from "@/utils/cookie";
-import {AiProvider, RecipeFromSourceResponseFromJSON, RecipeImageFromJSON, ResponseError, UserFile, UserFileFromJSON} from "@/openapi";
+import {AiProvider, RecipeBookFromJSON, RecipeFromSourceResponseFromJSON, RecipeImageFromJSON, ResponseError, UserFile, UserFileFromJSON} from "@/openapi";
 import {tr} from "vuetify/locale";
 
 
@@ -82,6 +82,30 @@ export function useFileApi() {
     }
 
     /**
+     * home fork: set a recipe book's cover from a file or URL (neither removes it)
+     */
+    function updateBookCover(bookId: number, file: File | null, coverUrl?: string) {
+        let formData = new FormData()
+        if (file != null) {
+            formData.append('cover', file)
+        }
+        if (coverUrl) {
+            formData.append('cover_url', coverUrl)
+        }
+        fileApiLoading.value = true
+        return fetch(getDjangoUrl(`api/recipe-book/${bookId}/cover/`), {
+            method: 'PUT',
+            headers: {'X-CSRFToken': getCookie('csrftoken')},
+            body: formData
+        }).then(r => {
+            if (!r.ok) throw new Error(`cover upload failed (${r.status})`)
+            return r.json().then(r => RecipeBookFromJSON(r))
+        }).finally(() => {
+            fileApiLoading.value = false
+        })
+    }
+
+    /**
      * uploads the given file to the image recognition endpoint
      * @param file file object to upload
      * @param text text to import
@@ -149,5 +173,5 @@ export function useFileApi() {
         })
     }
 
-    return {fileApiLoading, createOrUpdateUserFile, updateRecipeImage, doAiImport, doAppImport}
+    return {fileApiLoading, createOrUpdateUserFile, updateRecipeImage, updateBookCover, doAiImport, doAppImport}
 }

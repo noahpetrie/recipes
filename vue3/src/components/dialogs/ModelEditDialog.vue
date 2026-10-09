@@ -14,7 +14,7 @@ import {MealPlan} from "@/openapi";
 
 const {t} = useI18n()
 
-const emit = defineEmits(['create', 'save', 'delete'])
+const emit = defineEmits(['create', 'save', 'delete', 'closed'])
 
 const props = defineProps({
     model: { type: String as PropType<EditorSupportedModels>, required: true, },
@@ -48,6 +48,8 @@ watch(() => props.model, () => {
  */
 watch(dialog, (value, oldValue, onCleanup) => {
     dialog.value = !!value
+    // home: let callers refresh after the dialog closes (e.g. recipes added to a book in its editor)
+    if (oldValue && !value) emit('closed')
 })
 
 /**
