@@ -878,6 +878,8 @@ class FoodSimpleSerializer(serializers.ModelSerializer):
 
 
 class FoodSerializer(UniqueFieldsMixin, WritableNestedModelSerializer, ExtendedRecipeMixin, OpenDataModelMixin):
+    # Saved retail-product photography, distinct from a related recipe image.
+    product_image = serializers.CharField(source='product_info.image', read_only=True, default='', allow_null=True)
     supermarket_category = SupermarketCategorySerializer(allow_null=True, required=False)
     recipe = RecipeSimpleSerializer(allow_null=True, required=False)
     shopping = serializers.CharField(source='shopping_status', read_only=True)
@@ -991,7 +993,7 @@ class FoodSerializer(UniqueFieldsMixin, WritableNestedModelSerializer, ExtendedR
             'id', 'name', 'plural_name', 'description', 'shopping', 'recipe', 'url', 'properties', 'properties_food_amount', 'properties_food_unit', 'fdc_id',
             'food_onhand', 'supermarket_category', 'image', 'parent', 'numchild', 'numrecipe', 'inherit_fields', 'full_name', 'ignore_shopping',
             'substitute', 'substitute_siblings', 'substitute_children', 'substitute_onhand', 'child_inherit_fields', 'open_data_slug', 'shopping_lists',
-            'barcodes',
+            'barcodes', 'product_image',
         )
         read_only_fields = ('id', 'numchild', 'parent', 'image', 'numrecipe')
 

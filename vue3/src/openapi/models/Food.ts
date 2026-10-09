@@ -103,6 +103,8 @@ import {
  * @interface Food
  */
 export interface Food {
+    /** Saved retail-product image URL; read-only, never written with food edits. */
+    readonly productImage?: string | null;
     /**
      * 
      * @type {number}
@@ -311,6 +313,7 @@ export function FoodFromJSONTyped(json: any, ignoreDiscriminator: boolean): Food
         'openDataSlug': json['open_data_slug'] == null ? undefined : json['open_data_slug'],
         'shoppingLists': json['shopping_lists'] == null ? undefined : ((json['shopping_lists'] as Array<any>).map(ShoppingListFromJSON)),
         'barcodes': json['barcodes'] == null ? undefined : json['barcodes'],
+        'productImage': json['product_image'] == null ? undefined : json['product_image'],
     };
 }
 

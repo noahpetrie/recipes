@@ -30,3 +30,6 @@ vue/package.json
 vue/tsconfig.json
 vue/src/utils/openapi
 venv
+# Development-only fixture previews and tests
+vue3/tests
+vue3/src/**/__tests__

@@ -594,16 +594,38 @@ async function showFood(foodId: number, opts: { entryId?: number, tab?: string }
         state.value = 'product'
         applyModeDefaults()
         loadHistory()
+        let targetBatch: Batch | undefined
         if (opts.entryId) {
             const b = stock.value.batches.find(x => x.id == opts.entryId)
             if (b) {
+                targetBatch = b
                 useEntryId.value = b.id
                 moveEntryId.value = b.id
                 detailBatch.value = b
                 setEditFields(b)
             }
         }
-        if (opts.tab) selectTab(opts.tab)
+        if (opts.tab === 'duplicate' && targetBatch) {
+            duplicateOpen.value = true
+            tab.value = 'details'
+        } else if (opts.tab) {
+            // Direct batch actions retain that batch's location/unit and expiry context.
+            tab.value = opts.tab
+            if (targetBatch && opts.tab === 'add') {
+                addPreferredEntryId.value = targetBatch.id
+                addLocationId.value = targetBatch.location.id
+                addUnitId.value = targetBatch.unit?.id ?? 0
+                addExpires.value = targetBatch.expires ?? ''
+                addShelf.value = targetBatch.sub_location ?? ''
+            }
+            if (targetBatch && opts.tab === 'count') {
+                setLocationId.value = targetBatch.location.id
+                setUnitId.value = targetBatch.unit?.id ?? 0
+                await nextTick()
+                resetSetValue()
+                setEntry.value = targetBatch.id
+            }
+        }
     } catch (err: any) {
         error.value = err.message
         state.value = 'error'
@@ -691,7 +713,10 @@ function unitOfFood(): number {
     return result.value?.food?.preferred_unit?.id ?? (stock.value.totals.length == 1 ? stock.value.totals[0]!.unit?.id ?? 0 : defaultCountUnitId())
 }
 
+const addPreferredEntryId = ref<number | null>(null)
+
 function applyModeDefaults() {
+    addPreferredEntryId.value = null
     const unit = unitOfFood()
     addAmount.value = 1
     addUnitId.value = unit
@@ -730,8 +755,9 @@ function recordedAt(locationId: number | null, unitId: number): number {
 const addHere = computed(() => recordedAt(addLocationId.value, addUnitId.value))
 const addTarget = computed(() => {
     if (addNewBatch.value || addCode.value.trim()) return null
-    return stock.value.batches.find(b => b.location.id == addLocationId.value && (b.unit?.id ?? 0) == addUnitId.value
-        && (b.sub_location || '') == addShelf.value.trim() && (b.expires || '') == (addExpires.value || '')) ?? null
+    const matching = stock.value.batches.filter(b => b.location.id == addLocationId.value && (b.unit?.id ?? 0) == addUnitId.value
+        && (b.sub_location || '') == addShelf.value.trim() && (b.expires || '') == (addExpires.value || ''))
+    return matching.find(b => b.id === addPreferredEntryId.value) ?? matching[0] ?? null
 })
 const addTargetText = computed(() => addTarget.value ? t('HomeJoinsBatch', {code: addTarget.value.code}, 'Joins batch #{code}') : t('HomeNewBatch', 'New batch'))
 
