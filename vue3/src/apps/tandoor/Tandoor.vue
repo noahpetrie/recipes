@@ -30,6 +30,7 @@
                     <v-list>
                         <v-list-item prepend-icon="$add" :to="{ name: 'ModelEditPage', params: {model: 'recipe'} }">{{ $t('Create Recipe') }}</v-list-item>
                         <v-list-item prepend-icon="fa-solid fa-globe" :to="{ name: 'RecipeImportPage', params: {} }">{{ $t('Import Recipe') }}</v-list-item>
+                        <v-list-item prepend-icon="fa-solid fa-barcode" @click="openScanPanel()">{{ $t('HomeScanBarcode', 'Scan a barcode') }}</v-list-item>
                     </v-list>
                 </v-menu>
             </v-btn>
@@ -117,6 +118,13 @@
             </v-btn>
         </v-bottom-navigation>
 
+        <!-- home fork: pantry barcode scanning (handheld scanner anywhere, camera from the + menu or Pantry) -->
+        <template v-if="useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode">
+            <hardware-scanner></hardware-scanner>
+            <camera-scan-dialog></camera-scan-dialog>
+            <pantry-scan-panel></pantry-scan-panel>
+        </template>
+
         <v-snackbar-queued
             :vertical="true"
             location="top center"
@@ -133,6 +141,10 @@ import {useDisplay, useLocale, useTheme} from "vuetify"
 import brandLogo from "@/assets/brand_logo.svg"
 import brandLogoDark from "@/assets/brand_logo_dark.svg"
 import logoColor from "@/assets/logo_color.svg"
+import HardwareScanner from "@/components/inputs/HardwareScanner.vue"
+import CameraScanDialog from "@/components/dialogs/CameraScanDialog.vue"
+import PantryScanPanel from "@/components/dialogs/PantryScanPanel.vue"
+import {openScanPanel} from "@/composables/useScan"
 import {toVuetifyLocale} from "@/vuetify"
 import VSnackbarQueued from "@/components/display/VSnackbarQueued.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";

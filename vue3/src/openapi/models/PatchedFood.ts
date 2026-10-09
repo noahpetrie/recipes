@@ -254,6 +254,12 @@ export interface PatchedFood {
      * @memberof PatchedFood
      */
     shoppingLists?: Array<ShoppingList>;
+    /**
+     * home fork: product barcodes (UPC/EAN) for this food, space separated
+     * @type {string}
+     * @memberof PatchedFood
+     */
+    barcodes?: string;
 }
 
 /**
@@ -298,6 +304,7 @@ export function PatchedFoodFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'childInheritFields': json['child_inherit_fields'] == null ? undefined : ((json['child_inherit_fields'] as Array<any>).map(FoodInheritFieldFromJSON)),
         'openDataSlug': json['open_data_slug'] == null ? undefined : json['open_data_slug'],
         'shoppingLists': json['shopping_lists'] == null ? undefined : ((json['shopping_lists'] as Array<any>).map(ShoppingListFromJSON)),
+        'barcodes': json['barcodes'] == null ? undefined : json['barcodes'],
     };
 }
 
@@ -332,6 +339,7 @@ export function PatchedFoodToJSONTyped(value?: Omit<PatchedFood, 'shopping'|'par
         'child_inherit_fields': value['childInheritFields'] == null ? undefined : ((value['childInheritFields'] as Array<any>).map(FoodInheritFieldToJSON)),
         'open_data_slug': value['openDataSlug'],
         'shopping_lists': value['shoppingLists'] == null ? undefined : ((value['shoppingLists'] as Array<any>).map(ShoppingListToJSON)),
+        'barcodes': value['barcodes'],
     };
 }
 

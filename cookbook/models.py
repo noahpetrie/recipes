@@ -802,6 +802,10 @@ class Food(ExportModelOperationsMixin('food'), TreeModel, PermissionModelMixin):
     preferred_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, default=None, related_name='preferred_unit')
     preferred_shopping_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, default=None, related_name='preferred_shopping_unit')
     fdc_id = models.IntegerField(null=True, default=None, blank=True)
+    # home fork: product barcodes (UPC/EAN) that mean this food, space separated, for pantry scanning
+    barcodes = models.TextField(blank=True, default='')
+    # home fork: what the barcode lookup said about the retail product (name, brand, quantity, image)
+    product_info = models.JSONField(blank=True, null=True, default=None)
 
     open_data_slug = models.CharField(max_length=128, null=True, blank=True, default=None)
     space = models.ForeignKey(Space, on_delete=models.CASCADE)
@@ -1214,6 +1218,8 @@ class RecipeBook(ExportModelOperationsMixin('book'), models.Model, PermissionMod
     kind = models.CharField(max_length=16, choices=KINDS, default=KIND_COLLECTION)
     author = models.CharField(max_length=256, blank=True)
     cover = models.ImageField(upload_to='books/', blank=True, null=True)
+    # home fork: the Homebox item this cookbook was synced from (sync_homebox_cookbooks)
+    homebox_id = models.CharField(max_length=64, blank=True, null=True)
 
     space = models.ForeignKey(Space, on_delete=models.CASCADE)
     objects = ScopedManager(space='space')
@@ -1392,6 +1398,7 @@ class InventoryEntry(models.Model, PermissionModelMixin):
     expires = models.DateField(null=True, blank=True)
 
     note = models.CharField(max_length=256, null=True, blank=True)
+    counted_at = models.DateTimeField(null=True, blank=True)  # home fork: last physical count that confirmed this batch
 
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1411,10 +1418,16 @@ class InventoryLog(models.Model, PermissionModelMixin):
     B_ADD = 'add'
     B_REMOVE = 'remove'
     B_MOVE = 'move'
+    B_COUNT = 'count'  # home fork: set to a physically counted amount
+    B_EDIT = 'edit'  # home fork: expiry / shelf / label changed, amount unchanged
+    B_UNDO = 'undo'  # home fork: reverts an earlier booking
     BOOKING_TYPES = [
         (B_ADD, _('Add')),
         (B_REMOVE, _('Remove')),
         (B_MOVE, _('Move')),
+        (B_COUNT, _('Count')),
+        (B_EDIT, _('Edit')),
+        (B_UNDO, _('Undo')),
     ]
 
     entry = models.ForeignKey(InventoryEntry, on_delete=models.CASCADE)
@@ -1427,12 +1440,52 @@ class InventoryLog(models.Model, PermissionModelMixin):
 
     note = models.CharField(max_length=256, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)  # home fork
 
     space = models.ForeignKey(Space, on_delete=models.CASCADE)
     objects = ScopedManager(space='space')
 
     class Meta:
         ordering = ('created_at',)
+
+
+class StockCount(models.Model, PermissionModelMixin):
+    """home fork: a physical stock count of one location, drafted line by line and applied after review"""
+    S_OPEN = 'open'
+    S_APPLIED = 'applied'
+    S_DISCARDED = 'discarded'
+    STATUSES = ((S_OPEN, _('Open')), (S_APPLIED, _('Applied')), (S_DISCARDED, _('Discarded')))
+
+    inventory_location = models.ForeignKey(InventoryLocation, on_delete=models.CASCADE)
+    sub_location = models.CharField(max_length=64, blank=True, default='')
+    status = models.CharField(max_length=16, choices=STATUSES, default=S_OPEN)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    space = models.ForeignKey(Space, on_delete=models.CASCADE)
+    objects = ScopedManager(space='space')
+
+    class Meta:
+        ordering = ('-created_at',)
+
+
+class StockCountLine(models.Model, PermissionModelMixin):
+    """home fork: what was recorded for one product when it was first counted, and what was counted"""
+    count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name='lines')
+    food = models.ForeignKey(Food, on_delete=models.CASCADE)
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True)
+    recorded = models.DecimalField(default=0, decimal_places=16, max_digits=32)
+    counted = models.DecimalField(default=0, decimal_places=16, max_digits=32)
+    applied = models.BooleanField(default=False)
+    result = models.CharField(max_length=256, blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    space = models.ForeignKey(Space, on_delete=models.CASCADE)
+    objects = ScopedManager(space='space')
+
+    class Meta:
+        ordering = ('id',)
 
 
 class ShareLink(ExportModelOperationsMixin('share_link'), models.Model, PermissionModelMixin):

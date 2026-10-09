@@ -7,7 +7,7 @@ from rest_framework import routers
 
 from cookbook.version_info import TANDOOR_VERSION
 from recipes.settings import DEBUG, PLUGINS
-from .views import api, telegram, views, import_export
+from .views import api, telegram, views, import_export, home_pantry
 from .views.api import CustomAuthToken
 
 
@@ -114,6 +114,18 @@ urlpatterns = [
     path('api/import-open-data/', api.ImportOpenData.as_view(), name='api_import_open_data'),
     #path('api/ingredient-from-string/', api.ingredient_from_string, name='api_ingredient_from_string'),
     path('api/fdc-search/', api.FdcSearchView.as_view(), name='api_fdc_search'),
+    path('api/barcode-lookup/', api.barcode_lookup, name='api_barcode_lookup'),  # home fork
+    # home fork: pantry stock layer (cookbook/views/home_pantry.py)
+    path('api/pantry/lookup/', home_pantry.lookup, name='api_pantry_lookup'),
+    path('api/pantry/stock/', home_pantry.stock, name='api_pantry_stock'),
+    path('api/pantry/link-barcode/', home_pantry.link_barcode, name='api_pantry_link_barcode'),
+    path('api/pantry/adjust/', home_pantry.adjust, name='api_pantry_adjust'),
+    path('api/pantry/activity/', home_pantry.activity, name='api_pantry_activity'),
+    path('api/pantry/counts/', home_pantry.counts, name='api_pantry_counts'),
+    path('api/pantry/counts/<int:pk>/', home_pantry.count_detail, name='api_pantry_count'),
+    path('api/pantry/counts/<int:pk>/line/', home_pantry.count_line, name='api_pantry_count_line'),
+    path('api/pantry/counts/<int:pk>/apply/', home_pantry.count_apply, name='api_pantry_count_apply'),
+    path('api/pantry/counts/<int:pk>/finish/', home_pantry.count_finish, name='api_pantry_count_finish'),
     path('api/share-link/<int:pk>', api.share_link, name='api_share_link'),
     path('api/reset-food-inheritance/', api.reset_food_inheritance, name='api_reset_food_inheritance'),
     path('api/switch-active-space/<int:space_id>/', api.switch_active_space, name='api_switch_active_space'),

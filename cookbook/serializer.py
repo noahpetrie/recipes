@@ -991,6 +991,7 @@ class FoodSerializer(UniqueFieldsMixin, WritableNestedModelSerializer, ExtendedR
             'id', 'name', 'plural_name', 'description', 'shopping', 'recipe', 'url', 'properties', 'properties_food_amount', 'properties_food_unit', 'fdc_id',
             'food_onhand', 'supermarket_category', 'image', 'parent', 'numchild', 'numrecipe', 'inherit_fields', 'full_name', 'ignore_shopping',
             'substitute', 'substitute_siblings', 'substitute_children', 'substitute_onhand', 'child_inherit_fields', 'open_data_slug', 'shopping_lists',
+            'barcodes',
         )
         read_only_fields = ('id', 'numchild', 'parent', 'image', 'numrecipe')
 
@@ -1756,7 +1757,7 @@ class InventoryLocationSerializer(UniqueFieldsMixin, SpacedModelSerializer, Writ
 class InventoryEntrySerializer(SpacedModelSerializer, WritableNestedModelSerializer):
     inventory_location = InventoryLocationSerializer()
     food = FoodSerializer()
-    unit = UnitSerializer()
+    unit = UnitSerializer(allow_null=True, required=False)  # home fork: "1 jar of Nutella" needs no unit
     label = serializers.SerializerMethodField('get_label')
 
     def get_label(self, obj):

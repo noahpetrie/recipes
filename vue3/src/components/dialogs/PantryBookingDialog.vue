@@ -49,8 +49,15 @@
 
                             <v-text-field :label="$t('SubLocation')" :hint="$t('SubLocationHelp')" v-model="subLocation" v-if="['add','move'].includes(bookingMode)"></v-text-field>
 
-                            <closable-help-alert :text="$t('CodeHelp')" class="mb-2"></closable-help-alert>
-                            <v-text-field :label="$t('Code')" v-model="code" v-if="['add'].includes(bookingMode)"></v-text-field>
+                            <!-- home fork: the product barcode lives on the food; this code is a label for this one item -->
+                            <template v-if="['add'].includes(bookingMode)">
+                                <p v-if="food?.barcodes" class="text-body-2 text-medium-emphasis mb-3">
+                                    <v-icon icon="fa-solid fa-barcode" size="x-small" class="me-1"></v-icon>
+                                    {{ $t('HomeBarcodeSaved', {code: food.barcodes.split(' ').join(', '), food: food.name}, 'Product barcode {code} is saved on {food}, so any package of it scans straight here.') }}
+                                </p>
+                                <v-text-field :label="$t('HomeLabelCode', 'Label code (optional)')" v-model="code" persistent-hint class="mb-4"
+                                              :hint="$t('HomeLabelCodeHelp', 'A short code for this one item, to write on a jar, bag or freezer label and scan later. Leave empty and Kitchen makes one.')"></v-text-field>
+                            </template>
 
                             <v-btn block @click="save" prepend-icon="$save" color="save">{{ $t('Save') }}</v-btn>
                         </v-form>
@@ -139,6 +146,7 @@ const formLoading = ref(false)
 const freezerExpiryDialog = ref(false)
 
 const bookingMode = ref('add')
+const LAST_LOCATION_KEY = 'kitchen:lastInventoryLocation'
 const food = ref<Food | null>(null)
 const inventoryEntry = ref<InventoryEntry | null>(null)
 const inventoryLocation = ref<InventoryLocation | null>(null)
@@ -198,7 +206,25 @@ watch(dialog, (newValue, oldValue) => {
             let api = new ApiApi()
             promises.push(api.apiFoodRetrieve({id: props.foodId}).then(r => {
                 food.value = r
+                // home fork: a scanned product is counted in packages ("2 Kraft Dinner"), not grams
+                if (props.bookingMode == 'add' && r.barcodes) unit.value = r.preferredUnit ?? null
             }))
+        }
+
+        // home fork: start from the storage place used last time
+        if (props.bookingMode == 'add' && !inventoryLocation.value) {
+            let lastId: number | null = null
+            try { lastId = Number(localStorage.getItem(LAST_LOCATION_KEY)) || null } catch (e) { /* private mode */ }
+            if (lastId) {
+                promises.push(api.apiInventoryLocationRetrieve({id: lastId}).then(r => {
+                    if (!inventoryLocation.value) inventoryLocation.value = r
+                }).catch(() => {}))
+            } else {
+                // first time on this device: the place called "Pantry", else the first one
+                promises.push(api.apiInventoryLocationList({pageSize: 50}).then(r => {
+                    if (!inventoryLocation.value) inventoryLocation.value = r.results.find(l => l.name.toLowerCase() == 'pantry') ?? r.results[0] ?? null
+                }).catch(() => {}))
+            }
         }
 
         api.apiInventoryEntryList({pageSize: 1}).then(r => {
@@ -268,6 +294,7 @@ function addInventory() {
     } as InventoryEntry
 
     api.apiInventoryEntryCreate({inventoryEntry: inventoryEntry}).then(r => {
+        try { if (r.inventoryLocation?.id) localStorage.setItem(LAST_LOCATION_KEY, String(r.inventoryLocation.id)) } catch (e) { /* private mode */ }
         useMessageStore().addPreparedMessage(PreparedMessage.CREATE_SUCCESS)
         bookingConfirmEntry.value = r
         bookingMode.value = 'confirm'

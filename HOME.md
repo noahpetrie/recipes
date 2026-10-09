@@ -47,6 +47,18 @@ public here, as the AGPL requires.
   day number, shadcn-style toolbar (Today, ‹ ›, date button with picker); compact date
   pickers app-wide; quieter dialog header/footer and secondary buttons.
 
+- **Pantry scanning** (cookbook/views/home_pantry.py, PantryScanPanel.vue, StockCountPage.vue).
+  A scan *finds* things; stock changes only through an explicit Add / Count / Use / Move / Edit,
+  each previewed, logged (who, reason) and undoable. Retail barcodes live on Food (`barcodes`,
+  `product_info`; looked up on Open Food Facts → UPCitemDB); pantry label codes identify one
+  batch. Modes: Look up (default), Restock (optional quick add), Stock count (draft counts,
+  review page, per-line apply with conflict checks; uncounted ≠ zero). Writes take a request id
+  (idempotent) and absolute counts an expected value (409 on stale). Handheld scanners work
+  anywhere (HardwareScanner.vue); camera via barcode-detector. Migrations 0244–0245.
+- **Cookbooks from Homebox** (`manage.py sync_homebox_cookbooks`, run every 5 min by launchd in
+  home-site): Homebox books tagged "Cookbook" (auto-tagged once from Open Library subjects)
+  appear on the Books shelf with cover, author and description.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

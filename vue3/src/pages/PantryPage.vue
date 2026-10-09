@@ -11,8 +11,12 @@
                         </div>
                     </template>
                     <template #append>
-                        <v-btn class="float-right" icon="$create" color="create" @click="bookingDialog = true; bookingMode = 'add';">
-                        </v-btn>
+                        <!-- home fork: scanning looks things up; Restock adds; Stock count reconciles -->
+                        <div class="d-flex flex-wrap ga-2 justify-end">
+                            <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" @click="openScanPanel({mode: 'lookup'})">{{ $t('HomeScan', 'Scan') }}</v-btn>
+                            <v-btn variant="outlined" prepend-icon="fa-solid fa-list-check" @click="openScanPanel({mode: 'count'})">{{ $t('HomeStockCount', 'Stock count') }}</v-btn>
+                            <v-btn color="create" prepend-icon="$create" @click="openScanPanel({mode: 'restock'})">{{ $t('HomeRestock', 'Restock') }}</v-btn>
+                        </div>
 
                     </template>
                 </v-card>
@@ -65,10 +69,11 @@
                                 </span>
                             </template>
                             <template #item.action="{item}">
+                                <!-- home fork: the same actions as after a scan -->
                                 <v-btn-group divided border density="comfortable">
-                                    <v-btn icon="fa-solid fa-clock-rotate-left" @click="entryLogDialog = true; entryLogEntry = item"></v-btn>
-                                    <v-btn icon="fa-solid fa-minus" @click="bookingDialog = true; bookingMode = 'remove'; bookingEntry = item"></v-btn>
-                                    <v-btn icon="fa-solid fa-arrow-right" @click="bookingDialog = true; bookingMode = 'move'; bookingEntry = item"></v-btn>
+                                    <v-btn icon="fa-solid fa-minus" :title="$t('HomeUseRemove', 'Use')" @click="openScanPanel({foodId: item.food.id, entryId: item.id, tab: 'use'})"></v-btn>
+                                    <v-btn icon="fa-solid fa-arrow-right" :title="$t('Move')" @click="openScanPanel({foodId: item.food.id, entryId: item.id, tab: 'move'})"></v-btn>
+                                    <v-btn icon="fa-solid fa-ellipsis" :title="$t('HomeDetails', 'Details')" @click="openScanPanel({foodId: item.food.id, entryId: item.id, tab: 'details'})"></v-btn>
                                 </v-btn-group>
 
                             </template>
@@ -80,6 +85,34 @@
                                                @update="loadItems({page: page, itemsPerPage: pageSize})"></pantry-booking-dialog>
                     </v-card-text>
                 </v-card>
+            </v-col>
+        </v-row>
+
+        <!-- home fork: counts in progress and recent stock changes -->
+        <v-row v-if="openCounts.length">
+            <v-col cols="12">
+                <div class="pantry-section">{{ $t('HomeOpenCounts', 'Counts in progress') }}</div>
+                <div class="d-flex flex-wrap ga-2">
+                    <v-btn v-for="c in openCounts" :key="c.id" variant="outlined" size="small" :to="{name: 'StockCountPage', params: {id: c.id}}">
+                        {{ c.location.name }} · {{ c.counted }} {{ $t('HomeCountedLower', 'counted') }}
+                    </v-btn>
+                </div>
+            </v-col>
+        </v-row>
+        <v-row>
+            <v-col cols="12">
+                <div class="pantry-section">{{ $t('HomeRecentActivity', 'Recent activity') }}</div>
+                <div class="pantry-activity">
+                    <div v-if="!activity.length" class="text-body-2 text-medium-emphasis pa-3">{{ $t('HomeNoActivity', 'Nothing yet.') }}</div>
+                    <div v-for="h in activity" :key="h.id" class="pantry-activity-row">
+                        <span class="pantry-kind" :class="'k-' + h.type">{{ kindLabel(h.type, h.note) }}</span>
+                        <span class="flex-grow-1 min-w-0">
+                            <a href="#" class="font-weight-medium" @click.prevent="openScanPanel({foodId: h.food.id, entryId: h.entry_id, tab: 'details'})">{{ h.food.name }}</a>
+                            <span class="text-medium-emphasis"> · {{ activityText(h) }}</span>
+                        </span>
+                        <span class="text-medium-emphasis text-no-wrap">{{ fmtDate(h.created_at) }}</span>
+                    </div>
+                </div>
             </v-col>
         </v-row>
     </v-container>
@@ -100,6 +133,7 @@ import {useUserPreferenceStore} from "@/stores/UserPreferenceStore.ts";
 import PantryBookingDialog from "@/components/dialogs/PantryBookingDialog.vue";
 import ModelSelect from "@/components/inputs/ModelSelect.vue";
 import VModelSelect from "@/components/inputs/VModelSelect.vue";
+import {fmtDate, noteText, openScanPanel, pantryApi, pantryVersion, qty} from "@/composables/useScan";
 
 const {t} = useI18n()
 
@@ -140,6 +174,37 @@ watch(inventoryLocation, () => {
 /**
  * load inventory data based on current props
  */
+// home fork: refresh after any change made from the scan panel
+watch(pantryVersion, () => {
+    loadItems({page: page.value, itemsPerPage: pageSize.value} as VDataTableUpdateOptions)
+    loadActivity()
+})
+
+const activity = ref<any[]>([])
+const openCounts = ref<any[]>([])
+
+function loadActivity() {
+    pantryApi('activity/?limit=15').then(r => activity.value = r.results).catch(() => {})
+    pantryApi('counts/?status=open').then(r => openCounts.value = r.results).catch(() => {})
+}
+
+onMounted(loadActivity)
+
+const REASON_KIND: Record<string, string> = {discarded: 'Thrown out', spoiled: 'Spoiled', donated: 'Given away', other: 'Removed'}
+
+function kindLabel(k: string, note = '') {
+    if (k == 'remove' && REASON_KIND[note.split(' ')[0]!]) return t('HomeReason_' + note.split(' ')[0], REASON_KIND[note.split(' ')[0]!]!)
+    return ({add: t('HomeKAdd', 'Added'), remove: t('HomeKRemove', 'Used'), move: t('HomeKMove', 'Moved'), count: t('HomeKCount', 'Counted'),
+        edit: t('HomeKEdit', 'Edited'), undo: t('HomeKUndo', 'Undone')} as any)[k] ?? k
+}
+
+function activityText(h: any) {
+    const d = h.delta
+    const change = d == 0 ? '' : `${d > 0 ? '+' : '−'}${qty(Math.abs(d), h.unit)} · `
+    const place = h.type == 'move' && h.old_location?.id != h.new_location?.id ? `${h.old_location.name} → ${h.new_location.name}` : h.new_location?.name
+    return `${change}${place}${noteText(h.type, h.note) ? ' · ' + noteText(h.type, h.note) : ''}${h.by ? ' · ' + h.by : ''}`
+}
+
 function loadItems(options: VDataTableUpdateOptions) {
     let api = new ApiApi()
 
@@ -174,5 +239,46 @@ function loadItems(options: VDataTableUpdateOptions) {
 </script>
 
 <style scoped>
+.pantry-section {
+    font-weight: 600;
+    margin: 4px 0 8px;
+}
+
+.pantry-activity {
+    border-radius: 12px;
+    background: rgb(var(--v-theme-surface));
+    box-shadow: 0 0 0 1px rgba(var(--v-theme-on-surface), 0.1);
+}
+
+.pantry-activity-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.pantry-activity-row:first-child {
+    border-top: 0;
+}
+
+.pantry-activity-row a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.pantry-activity-row a:hover {
+    text-decoration: underline;
+}
+
+.pantry-kind {
+    min-width: 64px;
+    font-weight: 600;
+}
+
+.pantry-kind.k-add { color: rgb(var(--v-theme-success)); }
+.pantry-kind.k-remove { color: rgb(var(--v-theme-error)); }
+
 
 </style>

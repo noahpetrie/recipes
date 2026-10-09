@@ -48,7 +48,6 @@
     <model-edit-dialog model="MealPlan" :itemDefaults="{recipe: recipe, servings: recipe.servings}" :close-after-create="false" :close-after-save="false"
                        v-model="mealPlanDialog"></model-edit-dialog>
 
-    <pantry-booking-dialog booking-mode="add" v-model="pantryDialog" :food-id="pantryFoodId"></pantry-booking-dialog>
 
 </template>
 
@@ -62,7 +61,7 @@ import {ErrorMessageType, useMessageStore} from "@/stores/MessageStore.ts";
 import {useRouter} from "vue-router";
 import {useFileApi} from "@/composables/useFileApi.ts";
 import {useI18n} from "vue-i18n";
-import PantryBookingDialog from "@/components/dialogs/PantryBookingDialog.vue";
+import {openScanPanel} from "@/composables/useScan";
 import AddToBookDialog from "@/components/dialogs/AddToBookDialog.vue";
 
 const router = useRouter()
@@ -88,9 +87,7 @@ function openAt(e: MouseEvent) {
 
 defineExpose({openAt})
 const duplicateLoading = ref(false)
-const pantryDialog = ref(false)
 const pantryLoading = ref(false)
-const pantryFoodId = ref<number | undefined>(undefined)
 
 /**
  * create a duplicate of the recipe by pulling its current data and creating a new recipe with the same data
@@ -145,12 +142,12 @@ function duplicateRecipe() {
  * create a food based on the recipe name (or re-use existing one) and open the pantry booking dialog
  */
 function addToPantry() {
+    // home fork: open the pantry panel on Add for a food named like the recipe (created if needed)
     const api = new ApiApi()
     if (props.recipe) {
         pantryLoading.value = true
         api.apiFoodCreate({food: {name: props.recipe.name}}).then(r => {
-            pantryFoodId.value = r.id
-            pantryDialog.value = true
+            openScanPanel({mode: 'lookup', foodId: r.id, tab: 'add'})
         }).catch(err => {
             useMessageStore().addError(ErrorMessageType.CREATE_ERROR, err)
         }).finally(() => {

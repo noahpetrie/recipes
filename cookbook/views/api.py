@@ -1,3 +1,4 @@
+import logging
 import base64
 import datetime
 import io
@@ -3523,3 +3524,77 @@ def meal_plans_to_ical(queryset, filename):
     response["Content-Disposition"] = f'inline; filename={filename}'
 
     return response
+
+
+# ---- home fork: pantry barcode scanning ------------------------------------------------------
+PRODUCT_CACHE_SECONDS = 7 * 24 * 3600
+
+
+def _lookup_product(code):
+    """
+    Look a product barcode up online: Open Food Facts first (best for groceries), then the
+    UPCitemDB trial API. Found products are cached for a week; misses aren't, so a product
+    added to the databases later still turns up.
+    """
+    key = f'home_barcode_product_{code}'
+    hit = caches['default'].get(key)
+    if hit:
+        return hit
+    product = None
+    headers = {'User-Agent': 'Kitchen (Tandoor home fork) - https://github.com/noahpetrie/recipes'}
+    try:
+        r = safe_request('GET', f'https://world.openfoodfacts.org/api/v2/product/{code}.json'
+                                '?fields=product_name,generic_name,brands,quantity,image_front_url,image_url', headers=headers, timeout=8)
+        d = r.json()
+        p = d.get('product') or {}
+        if d.get('status') == 1 and (p.get('product_name') or p.get('generic_name')):
+            product = {'name': (p.get('product_name') or p.get('generic_name')).strip(), 'brand': (p.get('brands') or '').split(',')[0].strip(),
+                       'quantity': p.get('quantity') or '', 'image': p.get('image_front_url') or p.get('image_url') or '',
+                       'source': 'openfoodfacts.org'}
+    except Exception as e:
+        logging.getLogger('recipes').info(f'open food facts lookup failed for {code}: {e}')
+    if product is None:
+        try:
+            r = safe_request('GET', f'https://api.upcitemdb.com/prod/trial/lookup?upc={code}', headers=headers, timeout=8)
+            items = r.json().get('items') or []
+            if items:
+                i = items[0]
+                product = {'name': (i.get('title') or '').strip(), 'brand': i.get('brand') or '', 'quantity': i.get('size') or '',
+                           'image': (i.get('images') or [''])[0], 'source': 'upcitemdb.com'}
+        except Exception as e:
+            logging.getLogger('recipes').info(f'upcitemdb lookup failed for {code}: {e}')
+    if product:
+        caches['default'].set(key, product, PRODUCT_CACHE_SECONDS)
+    return product
+
+
+@extend_schema(parameters=[OpenApiParameter(name='code', description='scanned barcode or pantry label code', type=str)])
+@api_view(['GET'])
+@permission_classes([CustomIsUser & CustomTokenHasReadWriteScope])
+def barcode_lookup(request):
+    """
+    What a scanned code means: a pantry label (an inventory entry's own code), a food that has
+    this product barcode, and/or the product looked up online.
+    """
+    code = re.sub(r'[^0-9A-Za-z]', '', request.query_params.get('code', ''))[:32]
+    if not code:
+        return Response({'error': 'code required'}, status=400)
+
+    label_entry = InventoryEntry.objects.filter(space=request.space, code__iexact=code).first() if len(code) <= 16 else None
+    food = None
+    if label_entry:
+        food = label_entry.food
+    elif code.isdigit():
+        food = Food.objects.filter(space=request.space, barcodes__regex=rf'(^|\s){code}(\s|$)').first()
+
+    entries = InventoryEntry.objects.filter(space=request.space, food=food).order_by('expires', 'id') if food else InventoryEntry.objects.none()
+    product = _lookup_product(code) if (code.isdigit() and len(code) >= 8 and not label_entry) else None
+
+    ctx = {'request': request}
+    return Response({
+        'code': code,
+        'label_entry': InventoryEntrySerializer(label_entry, context=ctx).data if label_entry else None,
+        'food': FoodSerializer(food, context=ctx).data if food else None,
+        'entries': InventoryEntrySerializer(entries, many=True, context=ctx).data,
+        'product': product,
+    })
