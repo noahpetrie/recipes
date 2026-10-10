@@ -5,12 +5,16 @@ import {useDjangoUrls} from "@/composables/useDjangoUrls";
 import {getCookie} from "@/utils/cookie";
 
 export type ScanSource = 'camera' | 'handheld' | 'typed'
-export type ScanMode = 'lookup' | 'restock' | 'count'
+export type ScanMode = 'lookup' | 'restock' | 'count' | 'label'
 
 export const scanRequest = ref<{ code: string, source: ScanSource, at: number } | null>(null)
 export const cameraOpen = ref(false)
 /** bumped after any stock change made from the panel, so open pantry lists refresh */
 export const pantryVersion = ref(0)
+/** what the scanner is doing, for the status pill in the Pantry header and the panel */
+export const scanStatus = ref<'ready' | 'looking' | 'found' | 'new' | 'paused'>('ready')
+/** a text box outside the scan panel has focus, so a handheld scanner types into it instead */
+export const inputPaused = ref(false)
 
 const KEEP_MODE_KEY = 'kitchen:scanKeepMode'
 const MODE_KEY = 'kitchen:scanMode'

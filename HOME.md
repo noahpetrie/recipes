@@ -55,6 +55,12 @@ public here, as the AGPL requires.
   review page, per-line apply with conflict checks; uncounted ≠ zero). Writes take a request id
   (idempotent) and absolute counts an expected value (409 on stale). Handheld scanners work
   anywhere (HardwareScanner.vue); camera via barcode-detector. Migrations 0244–0245.
+  The panel is a side drawer (full screen on phones): product overview (on hand, per location,
+  earliest expiry) → Add stock / Set quantity / Use / remove / View batches screens; zero stock
+  offers Add to shopping; unknown barcodes offer Create product prefilled from the lookup; item
+  labels open that one item (Item label mode forces label lookups). A scan arriving during an
+  unsaved edit asks to discard or waits ("Finish this first"); a retail barcode scanned into a
+  panel field is taken as a scan and the field restored. Scanner status pill in the Pantry header.
 - **Cookbooks from Homebox** (`manage.py sync_homebox_cookbooks`, run every 5 min by launchd in
   home-site): Homebox books tagged "Cookbook" (auto-tagged once from Open Library subjects)
   appear on the Books shelf with cover, author and description.

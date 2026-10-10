@@ -1,13 +1,17 @@
 <template>
-    <!-- home fork: one panel for pantry scanning. A scan finds the product or labelled item and shows
-         what's on hand; stock only changes through the action chosen below it (Add, Count, Use, Move). -->
-    <v-dialog v-model="scanPanel.open" max-width="640" :fullscreen="xs" scrollable class="psp-dialog">
-        <v-card class="psp" ref="panelCard">
+    <!-- home fork: one panel for pantry scanning. A scan only finds the product or labelled item and
+         shows what's on hand; stock changes only through an action chosen and confirmed below it.
+         On a computer it's a drawer at the side (the Pantry stays visible), on a phone full screen. -->
+    <v-dialog v-model="scanPanel.open" :fullscreen="xs" scrollable class="psp-dialog" :class="{'psp-dialog-side': !xs}"
+              :width="xs ? undefined : 480" :max-width="xs ? undefined : '100%'"
+              :transition="xs ? 'dialog-bottom-transition' : 'slide-x-reverse-transition'">
+        <v-card class="psp" ref="panelCard" data-scan-capture>
             <!-- header -->
             <div class="psp-head">
                 <div class="d-flex align-center ga-2">
                     <v-icon icon="fa-solid fa-barcode" size="small" class="opacity-60"></v-icon>
                     <span class="psp-title">{{ $t('HomeScan', 'Scan') }}</span>
+                    <span class="psp-status" :class="'s-' + scanStatus" role="status"><span class="psp-dot"></span>{{ statusText }}</span>
                     <v-spacer></v-spacer>
                     <v-btn icon="$close" variant="text" size="small" :aria-label="$t('Close')" @click="scanPanel.open = false"></v-btn>
                 </div>
@@ -20,7 +24,7 @@
                 <p class="psp-mode-help">{{ modeHelp }}</p>
 
                 <!-- the scan input: a handheld scanner types here (or anywhere outside a text box) -->
-                <div class="d-flex align-center ga-2">
+                <div class="d-flex align-center ga-2" data-scan-input>
                     <v-text-field ref="codeInput" v-model="codeText" hide-details :placeholder="$t('HomeScanOrType', 'Scan or type a barcode')"
                                   prepend-inner-icon="fa-solid fa-barcode" autocomplete="off" inputmode="numeric" class="flex-grow-1"
                                   :aria-label="$t('HomeBarcode', 'Barcode')" @keydown="onCodeKey"></v-text-field>
@@ -32,7 +36,7 @@
                     <span>{{ $t('HomeAddingTo', 'Adding to') }}</span>
                     <v-select v-model="restockLocationId" :items="locations" item-title="name" item-value="id" hide-details density="compact" class="psp-inline-select"></v-select>
                     <v-spacer></v-spacer>
-                    <v-switch v-model="quickAdd" hide-details density="compact" color="primary" :label="$t('HomeQuickAdd', 'Quick add 1 per scan')"></v-switch>
+                    <v-switch v-model="quickAdd" hide-details density="compact" color="primary" :label="$t('HomeQuickRestock', 'Quick restock: add 1 per scan')"></v-switch>
                 </div>
                 <div v-if="scanPanel.mode == 'count'" class="psp-context">
                     <template v-if="count">
@@ -46,11 +50,26 @@
             <v-divider></v-divider>
 
             <v-card-text class="psp-body">
+                <!-- a new scan arrived while something is being edited: never throw the edit away silently -->
+                <div v-if="pendingScan" class="psp-pending" role="alertdialog" aria-labelledby="psp-pending-title">
+                    <div id="psp-pending-title" class="font-weight-medium"><v-icon icon="fa-solid fa-barcode" size="x-small" class="me-1"></v-icon>{{ $t('HomeNewScanWhileEditing', {code: pendingScan.code}, 'New scan: {code}') }}</div>
+                    <p class="text-body-2 text-medium-emphasis mt-1 mb-2">{{ $t('HomeUnsavedHere', 'You have unsaved changes here.') }}</p>
+                    <div class="d-flex flex-wrap ga-2">
+                        <v-btn size="small" variant="flat" class="psp-cta" @click="discardAndTake">{{ $t('HomeDiscardAndShow', 'Discard changes and show it') }}</v-btn>
+                        <v-btn size="small" variant="outlined" @click="finishFirst">{{ $t('HomeFinishFirst', 'Finish this first') }}</v-btn>
+                    </div>
+                </div>
+                <div v-else-if="queuedScan" class="psp-queued" role="status">
+                    <v-icon icon="fa-solid fa-hourglass-half" size="x-small"></v-icon>
+                    <span class="flex-grow-1">{{ $t('HomeNextScanWaiting', {code: queuedScan.code}, 'Next scan ({code}) opens when you save or go back.') }}</span>
+                    <v-btn size="x-small" variant="text" @click="queuedScan = null">{{ $t('HomeDrop', 'Drop it') }}</v-btn>
+                </div>
+
                 <!-- count mode needs a count first -->
                 <div v-if="scanPanel.mode == 'count' && !count" class="psp-empty">
                     <div class="psp-section-title mt-0">{{ $t('HomeStartCount', 'Start a stock count') }}</div>
                     <p class="text-body-2 text-medium-emphasis">{{ $t('HomeStartCountHelp', 'Scan each product in one place and enter how many you actually have. Nothing changes until you review and apply the count. Products you don’t scan are left alone.') }}</p>
-                    <div class="d-flex ga-2 align-center">
+                    <div class="d-flex ga-2 align-center mt-5">
                         <v-select v-model="countLocationId" :items="locations" item-title="name" item-value="id" :label="$t('HomeWhere', 'Where')" hide-details class="flex-grow-1"></v-select>
                         <v-btn color="primary" variant="flat" :disabled="!countLocationId" :loading="busy" @click="startCount">{{ $t('HomeStart', 'Start') }}</v-btn>
                     </div>
@@ -65,9 +84,15 @@
 
                 <!-- nothing scanned yet -->
                 <div v-else-if="state == 'idle'" class="psp-empty">
-                    <p class="text-body-2 text-medium-emphasis mb-3">{{ idleHelp }}</p>
-                    <label class="psp-label">{{ $t('HomeNoBarcode', 'No barcode? Find a food') }}</label>
-                    <v-model-select model="Food" v-model="pickFood" hide-details @update:model-value="f => f && showFood(f.id)"></v-model-select>
+                    <div class="psp-ready">
+                        <div class="psp-ready-icon"><v-icon :icon="scanPanel.mode == 'label' ? 'fa-solid fa-tag' : 'fa-solid fa-barcode'"></v-icon></div>
+                        <div class="psp-ready-title">{{ $t('HomeScannerReady', 'Scanner ready') }}</div>
+                        <p class="text-body-2 text-medium-emphasis">{{ idleHelp }}</p>
+                    </div>
+                    <template v-if="scanPanel.mode != 'label'">
+                        <label class="psp-label">{{ $t('HomeNoBarcode', 'No barcode? Find a food') }}</label>
+                        <v-model-select model="Food" v-model="pickFood" hide-details @update:model-value="f => f && showFood(f.id)"></v-model-select>
+                    </template>
                 </div>
 
                 <div v-else-if="state == 'loading'" class="psp-empty text-center py-8" aria-live="polite">
@@ -78,7 +103,10 @@
                 <!-- something to fix about the scan itself -->
                 <v-alert v-else-if="state == 'error'" type="warning" variant="tonal" density="compact" class="mb-2" role="alert">
                     {{ error }}
-                    <div class="text-body-2 mt-1">{{ $t('HomeScanAgainOrType', 'Scan again, or type the number under the barcode.') }}</div>
+                    <div v-if="errorLookupCode" class="mt-2">
+                        <v-btn size="small" variant="outlined" @click="lookUpAsProduct">{{ $t('HomeLookUpAsProduct', 'Look it up as a product') }}</v-btn>
+                    </div>
+                    <div v-else class="text-body-2 mt-1">{{ $t('HomeScanAgainOrType', 'Scan again, or type the number under the barcode.') }}</div>
                 </v-alert>
 
                 <!-- a code that is both a label and a product barcode -->
@@ -90,286 +118,356 @@
                     </div>
                 </div>
 
-                <!-- unknown product: say which food it is (remembered for next time) -->
+                <!-- unknown barcode: create the product, filled in from the online lookup where possible -->
                 <template v-else-if="state == 'unknown'">
-                    <div class="psp-product">
-                        <div class="psp-thumb">
+                    <div class="psp-found"><v-icon icon="fa-solid fa-circle-question" size="small" class="text-warning"></v-icon>{{ $t('HomeNewBarcode', 'Not in Kitchen yet') }}</div>
+                    <div class="psp-hero">
+                        <div class="psp-thumb lg">
                             <img v-if="result.product?.image" :src="result.product.image" alt="">
                             <v-icon v-else icon="fa-solid fa-jar" class="opacity-40"></v-icon>
                         </div>
                         <div class="min-w-0 flex-grow-1">
-                            <div class="psp-name">{{ result.product?.name ?? $t('HomeUnknownProduct', 'Unknown product') }}</div>
-                            <div class="psp-meta">{{ [result.product?.brand, result.product?.quantity].filter(Boolean).join(' · ') || $t('HomeNotFoundOnline', 'Not found in the online product databases.') }}</div>
-                            <div class="psp-code">{{ result.code }}</div>
+                            <div class="psp-name lg">{{ result.product?.name ?? $t('HomeUnknownProduct', 'Unknown product') }}</div>
+                            <div class="psp-meta">{{ productMeta(result.product) || $t('HomeNotFoundOnline', 'Not found in the online product databases.') }}</div>
+                            <div class="psp-code">{{ $t('HomeBarcodeColon', 'Barcode:') }} {{ result.code }}</div>
                         </div>
                     </div>
-                    <div class="psp-section-title">{{ $t('HomeWhichFood', 'Which food is this?') }}</div>
-                    <p class="text-body-2 text-medium-emphasis mb-3">{{ $t('HomeWhichFoodHelp', 'Kitchen will remember this barcode, so next time it goes straight to the food.') }}</p>
-                    <div class="psp-fields">
-                        <div>
-                            <label class="psp-label">{{ $t('HomeNewFood', 'Create a new food') }}</label>
-                            <v-text-field v-model="newName" :disabled="!!linkFood" hide-details :placeholder="$t('Name')" @keydown.enter="linkBarcode"></v-text-field>
+
+                    <div class="psp-ask">{{ $t('HomeCreateProduct', 'Create product') }}</div>
+                    <p class="text-body-2 text-medium-emphasis mb-3">{{ result.product ? $t('HomeCreateProductFound', 'Filled in from the product lookup. Kitchen remembers this barcode, so next time it goes straight to the product.') : $t('HomeCreateProductHelp', 'Give it a name. Kitchen remembers this barcode, so next time it goes straight to the product.') }}</p>
+                    <label class="psp-label">{{ $t('Name') }}</label>
+                    <v-text-field v-model="newName" hide-details :placeholder="$t('Name')" @keydown.enter="createProduct"></v-text-field>
+                    <v-btn block size="large" variant="flat" class="psp-cta mt-4" prepend-icon="fa-solid fa-plus" :loading="busy && !linkFood" :disabled="!newName.trim()" @click="createProduct">{{ $t('HomeCreateProduct', 'Create product') }}</v-btn>
+
+                    <details class="psp-more mt-4">
+                        <summary>{{ $t('HomeAlreadyHaveFood', 'Already in Kitchen under another name?') }}</summary>
+                        <div class="d-flex align-center ga-2 mt-2">
+                            <v-model-select model="Food" v-model="linkFood" hide-details class="flex-grow-1"></v-model-select>
+                            <v-btn variant="outlined" :disabled="!linkFood" :loading="busy && !!linkFood" @click="linkBarcode">{{ $t('HomeUseThisFood', 'Use this') }}</v-btn>
                         </div>
-                        <div class="psp-or"><span>{{ $t('or') }}</span></div>
-                        <div>
-                            <label class="psp-label">{{ $t('HomeExistingFood', 'Use a food you already have') }}</label>
-                            <v-model-select model="Food" v-model="linkFood" hide-details></v-model-select>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-end mt-4">
-                        <v-btn color="primary" variant="flat" :loading="busy" :disabled="!linkFood && !newName.trim()" @click="linkBarcode">{{ $t('HomeSaveAndContinue', 'Save and continue') }}</v-btn>
-                    </div>
+                    </details>
                 </template>
 
                 <!-- a product, or one labelled item -->
                 <template v-else-if="(state == 'product' || state == 'label') && result">
-                    <div class="psp-product">
-                        <div class="psp-thumb">
-                            <img v-if="product?.image" :src="product.image" alt="">
-                            <v-icon v-else icon="fa-solid fa-jar" class="opacity-40"></v-icon>
-                        </div>
-                        <div class="min-w-0 flex-grow-1">
-                            <div class="psp-name">{{ result.food.name }}</div>
-                            <div class="psp-meta">{{ [product?.brand, product?.quantity && `${product.quantity} ${$t('HomePerPackage', 'per package')}`].filter(Boolean).join(' · ') }}</div>
-                            <div v-if="result.food.barcodes?.length" class="psp-code">{{ result.food.barcodes.join(', ') }}</div>
-                        </div>
-                        <v-btn v-if="result.code && state == 'product'" size="small" variant="text" @click="changeProduct">{{ $t('HomeChange', 'Change') }}</v-btn>
-                    </div>
 
-                    <!-- the one item behind a scanned label -->
-                    <div v-if="state == 'label' && labelEntry" class="psp-item">
-                        <div class="psp-section-title mt-0">{{ $t('HomeLabelledItem', 'Labelled item') }} #{{ labelEntry.code }}</div>
-                        <div class="psp-batch">
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="font-weight-medium">{{ qty(labelEntry.amount, labelEntry.unit) }}</div>
-                                <div class="psp-meta">{{ where(labelEntry) }}</div>
-                            </div>
-                            <span v-if="labelEntry.expires" class="psp-expiry" :class="expiryClass(labelEntry.expires)">{{ expiryText(labelEntry.expires) }}</span>
+                    <!-- ===== overview: what it is and what's on hand ===== -->
+                    <template v-if="!tab">
+                        <div class="psp-found">
+                            <template v-if="state == 'label' && labelEntry"><v-icon icon="fa-solid fa-tag" size="small" class="text-primary"></v-icon>{{ $t('HomeItemLabel', 'Item label') }} #{{ labelEntry.code }}</template>
+                            <template v-else><v-icon icon="fa-solid fa-circle-check" size="small" class="text-success"></v-icon>{{ $t('HomeProductFound', 'Product found') }}</template>
                         </div>
-                        <div v-if="labelEntry.amount == 0" class="text-body-2 text-medium-emphasis mt-1">{{ $t('HomeUsedUp', 'This item is used up.') }}</div>
-                    </div>
+                        <div class="psp-hero">
+                            <div class="psp-thumb lg">
+                                <img v-if="product?.image" :src="product.image" alt="">
+                                <v-icon v-else icon="fa-solid fa-jar" class="opacity-40"></v-icon>
+                            </div>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="psp-name lg">{{ result.food.name }}</div>
+                                <div v-if="productMeta(product, true)" class="psp-meta">{{ productMeta(product, true) }}</div>
+                                <div v-if="barcodeText" class="psp-code">{{ $t('HomeBarcodeColon', 'Barcode:') }} {{ barcodeText }}</div>
+                            </div>
+                            <v-btn v-if="result.code && state == 'product'" size="small" variant="text" @click="changeProduct">{{ $t('HomeChange', 'Change') }}</v-btn>
+                        </div>
 
-                    <!-- what's on hand -->
-                    <div class="psp-stock" aria-live="polite">
-                        <template v-if="stock.totals.length">
-                            <div class="psp-total">
-                                <span v-for="(t, i) in stock.totals" :key="i">{{ qty(t.amount, t.unit) }}<template v-if="i < stock.totals.length - 1"> + </template></span>
-                                <span class="psp-total-sub">{{ stock.locations.length > 1 ? $t('HomeAcrossLocations', {n: stock.locations.length}, 'across {n} places') : $t('HomeOnHand', 'on hand') }}</span>
+                        <!-- the one item behind a scanned label -->
+                        <template v-if="state == 'label' && labelEntry">
+                            <div class="psp-onhand">
+                                <div class="psp-onhand-label">{{ $t('HomeThisItem', 'This item') }}</div>
+                                <div class="psp-onhand-total">{{ labelEntry.amount > 0 ? qty(labelEntry.amount, labelEntry.unit) : $t('HomeUsedUpShort', 'Used up') }}</div>
+                                <div class="psp-onhand-sub">{{ where(labelEntry) }}</div>
                             </div>
-                            <div class="psp-locs">
-                                <span v-for="l in stock.locations" :key="l.location.id" class="psp-chip">
-                                    <v-icon v-if="l.location.is_freezer" icon="fa-solid fa-snowflake" size="x-small" class="me-1"></v-icon>
-                                    {{ l.location.name }} {{ l.totals.map(t => qty(t.amount, t.unit)).join(' + ') }}
-                                </span>
-                            </div>
-                            <p v-if="stock.mixed_units" class="psp-warn"><v-icon icon="fa-solid fa-circle-info" size="x-small" class="me-1"></v-icon>{{ $t('HomeMixedUnits', 'Counted in different units, so they’re shown separately rather than added up.') }}</p>
-                            <p v-if="stock.expired" class="psp-warn text-error"><v-icon icon="fa-solid fa-triangle-exclamation" size="x-small" class="me-1"></v-icon>{{ $t('HomeExpiredBatches', {n: stock.expired}, '{n} batch(es) past their date') }}</p>
-                            <details class="psp-batches" :open="stock.batches.length > 1 && stock.batches.length <= 4">
-                                <summary>{{ $t('HomeBatches', 'Batches') }} ({{ stock.batches.length }})</summary>
-                                <div v-for="b in stock.batches" :key="b.id" class="psp-batch">
-                                    <div class="flex-grow-1 min-w-0">
-                                        <div>{{ qty(b.amount, b.unit) }} <span class="psp-meta">· #{{ b.code }}</span></div>
-                                        <div class="psp-meta">{{ where(b) }}<template v-if="b.counted_at"> · {{ $t('HomeCounted', 'counted') }} {{ fmtDate(b.counted_at) }}</template></div>
-                                    </div>
-                                    <span v-if="b.expires" class="psp-expiry" :class="expiryClass(b.expires)">{{ expiryText(b.expires) }}</span>
-                                    <v-btn size="small" variant="text" icon="fa-solid fa-ellipsis" :aria-label="$t('HomeBatchDetails', 'Batch details')" @click="openBatch(b)"></v-btn>
+                            <div class="psp-facts">
+                                <div class="psp-fact"><v-icon icon="fa-regular fa-calendar" size="small"></v-icon>
+                                    <span>{{ $t('HomeBestBeforeColon', 'Best before:') }} <b v-if="labelEntry.expires" :class="expiryClass(labelEntry.expires)">{{ fmtDate(labelEntry.expires) }}</b><span v-else class="text-medium-emphasis">{{ $t('HomeNotRecorded', 'not recorded') }}</span></span>
                                 </div>
-                            </details>
-                        </template>
-                        <div v-else class="d-flex align-center flex-wrap ga-2">
-                            <div class="psp-total psp-none flex-grow-1">{{ $t('HomeNotStocked', 'Not currently stocked') }}</div>
-                            <v-btn size="small" variant="outlined" prepend-icon="fa-solid fa-cart-shopping" :loading="shopping" @click="addToShopping">{{ $t('HomeAddToShopping', 'Add to shopping list') }}</v-btn>
-                        </div>
-                    </div>
-
-                    <!-- count mode: record a count (a draft until reviewed) -->
-                    <div v-if="scanPanel.mode == 'count' && count" class="psp-form">
-                        <div class="psp-form-title">{{ $t('HomeHowManyHere', {place: count.location.name}, 'How many do you have in {place}?') }}</div>
-                        <div class="d-flex align-center ga-2 flex-wrap">
-                            <div class="psp-stepper">
-                                <v-btn icon="fa-solid fa-minus" variant="text" size="small" :disabled="countValue <= 0" @click="countValue = Math.max(0, countValue - 1)"></v-btn>
-                                <input v-model.number="countValue" type="number" min="0" step="any" inputmode="decimal" :aria-label="$t('HomeCountedAmount', 'Counted amount')" @keydown.enter.prevent="saveCountLine()">
-                                <v-btn icon="fa-solid fa-plus" variant="text" size="small" @click="countValue++"></v-btn>
+                                <div v-if="labelEntry.counted_at" class="psp-fact"><v-icon icon="fa-solid fa-list-check" size="small"></v-icon><span>{{ $t('HomeLastCounted', 'Last counted') }} {{ fmtDate(labelEntry.counted_at) }}</span></div>
                             </div>
-                            <v-select v-model="countUnitId" :items="unitItems" item-title="title" item-value="value" hide-details density="compact" class="psp-unit"></v-select>
-                        </div>
-                        <p class="psp-preview">{{ $t('HomeOnFile', 'On file') }} {{ qty(countRecorded, unitById(countUnitId)) }} → {{ $t('HomeCounted', 'counted') }} {{ qty(countValue, unitById(countUnitId)) }}
-                            <b :class="countValue - countRecorded == 0 ? '' : (countValue > countRecorded ? 'text-success' : 'text-error')">({{ deltaText(countValue - countRecorded) }})</b>
-                        </p>
-                        <div class="d-flex justify-end">
-                            <v-btn color="primary" variant="flat" :loading="busy" @click="saveCountLine">{{ $t('HomeSaveCount', 'Save count') }}</v-btn>
-                        </div>
-                    </div>
-
-                    <!-- actions -->
-                    <template v-else>
-                        <div class="psp-actions" role="tablist">
-                            <button v-for="a in actions" :key="a.value" type="button" role="tab" :aria-selected="tab == a.value" :class="{active: tab == a.value}"
-                                    :disabled="a.disabled" @click="selectTab(a.value)">
-                                <v-icon :icon="a.icon" size="x-small" class="me-1"></v-icon>{{ a.title }}
+                            <v-divider class="my-4"></v-divider>
+                            <div class="psp-ask">{{ $t('HomeWhatToDo', 'What would you like to do?') }}</div>
+                            <div class="psp-grid">
+                                <v-btn size="large" variant="flat" class="psp-cta" prepend-icon="fa-solid fa-minus" :disabled="!(labelEntry.amount > 0)" @click="go('use')">{{ $t('HomeUseRemove', 'Use / remove') }}</v-btn>
+                                <v-btn size="large" variant="outlined" prepend-icon="fa-regular fa-clipboard" @click="openSetFor(labelEntry)">{{ $t('HomeSetQuantity', 'Set quantity') }}</v-btn>
+                                <v-btn size="large" variant="outlined" prepend-icon="fa-solid fa-arrow-right" :disabled="!(labelEntry.amount > 0)" @click="openMove(labelEntry)">{{ $t('Move') }}</v-btn>
+                                <v-btn size="large" variant="outlined" prepend-icon="fa-solid fa-pen" @click="openBatch(labelEntry)">{{ $t('HomeEditDetails', 'Edit details') }}</v-btn>
+                            </div>
+                            <button type="button" class="psp-link mt-4" @click="state = 'product'">
+                                {{ $t('HomeSeeAllStock', {food: result.food.name}, 'See all {food} stock') }}<template v-if="stock.totals.length"> · {{ onHandText }}</template> →
                             </button>
-                        </div>
+                        </template>
 
-                        <!-- Add -->
-                        <div v-if="tab == 'add'" class="psp-form">
-                            <div class="psp-form-title">{{ $t('HomeHowManyAdding', 'How many are you adding?') }}</div>
-                            <div class="d-flex align-center ga-2 flex-wrap">
-                                <div class="psp-stepper">
-                                    <v-btn icon="fa-solid fa-minus" variant="text" size="small" :disabled="addAmount <= 1" @click="addAmount = Math.max(1, addAmount - 1)"></v-btn>
-                                    <input v-model.number="addAmount" type="number" min="0" step="any" inputmode="decimal" :aria-label="$t('Amount')" @keydown.enter.prevent="doAdd">
-                                    <v-btn icon="fa-solid fa-plus" variant="text" size="small" @click="addAmount++"></v-btn>
-                                </div>
-                                <v-select v-model="addUnitId" :items="unitItems" item-title="title" item-value="value" hide-details density="compact" class="psp-unit"></v-select>
-                                <span class="text-body-2 text-medium-emphasis">{{ $t('HomeTo', 'to') }}</span>
-                                <v-select v-model="addLocationId" :items="locations" item-title="name" item-value="id" hide-details density="compact" class="psp-unit"></v-select>
+                        <!-- the product: total, where, earliest expiry -->
+                        <template v-else>
+                            <div class="psp-onhand" aria-live="polite">
+                                <div class="psp-onhand-label">{{ $t('HomeCurrentlyOnHand', 'Currently on hand') }}</div>
+                                <template v-if="stock.totals.length">
+                                    <div class="psp-onhand-total">{{ onHandText }}</div>
+                                    <div class="psp-onhand-sub">{{ $t('HomeAcrossEntries', {n: stock.batches.length}, stock.batches.length == 1 ? 'In 1 inventory entry' : 'Across {n} inventory entries') }}</div>
+                                </template>
+                                <template v-else>
+                                    <div class="psp-onhand-total none">{{ $t('HomeNotStocked', 'Not currently stocked') }}</div>
+                                    <div class="psp-onhand-sub">{{ $t('HomeNotStockedHelp', 'Nothing of this product is in any storage place.') }}</div>
+                                </template>
                             </div>
-                            <div class="d-flex align-center ga-2 mt-3 flex-wrap">
-                                <label class="psp-label mb-0">{{ $t('HomeBestBefore', 'Best before') }}</label>
-                                <input v-model="addExpires" type="date" class="psp-date" :aria-label="$t('HomeBestBefore', 'Best before')">
-                                <span class="text-body-2 text-medium-emphasis">{{ $t('HomeOptional', 'optional') }}</span>
-                            </div>
-                            <details class="psp-more">
-                                <summary>{{ $t('HomeMoreDetails', 'More details') }}</summary>
-                                <div class="psp-fields mt-2">
-                                    <v-text-field v-model="addShelf" :label="$t('HomeShelf', 'Shelf or bin')" hide-details></v-text-field>
-                                    <v-text-field v-model="addCode" :label="$t('HomeLabelCode', 'Label code (optional)')" persistent-hint
-                                                  :hint="$t('HomeLabelCodeHelp', 'For one item you’ll put a label on. Leave empty and Kitchen makes one.')"></v-text-field>
-                                    <v-checkbox v-model="addNewBatch" hide-details density="compact" :label="$t('HomeSeparateBatch', 'Keep as a separate batch')"></v-checkbox>
-                                </div>
-                            </details>
-                            <p class="psp-preview">
-                                {{ addTargetText }} · {{ locName(addLocationId) }} {{ qty(addHere, unitById(addUnitId)) }} → {{ qty(addHere + (addAmount || 0), unitById(addUnitId)) }}
-                                <b class="text-success">(+{{ fmtAmount(addAmount || 0) }})</b>
-                            </p>
-                            <div class="d-flex justify-end ga-2">
-                                <v-btn color="create" variant="flat" :loading="busy" :disabled="!(addAmount > 0) || !addLocationId" @click="doAdd">
-                                    {{ scanPanel.mode == 'restock' ? $t('HomeAddAndScanNext', 'Add & scan next') : $t('HomeAddN', {q: qty(addAmount || 0, unitById(addUnitId))}, 'Add {q}') }}
-                                </v-btn>
-                            </div>
-                        </div>
-
-                        <!-- Count / correct -->
-                        <div v-if="tab == 'count'" class="psp-form">
-                            <div class="psp-form-title">{{ $t('HomeHowManyHave', 'How many do you physically have?') }}</div>
-                            <div class="d-flex align-center ga-2 flex-wrap">
-                                <span class="text-body-2">{{ $t('HomeIn', 'In') }}</span>
-                                <v-select v-model="setLocationId" :items="locations" item-title="name" item-value="id" hide-details density="compact" class="psp-unit"></v-select>
-                                <div class="psp-stepper">
-                                    <v-btn icon="fa-solid fa-minus" variant="text" size="small" :disabled="setValue <= 0" @click="setValue = Math.max(0, setValue - 1)"></v-btn>
-                                    <input v-model.number="setValue" type="number" min="0" step="any" inputmode="decimal" :aria-label="$t('HomeCountedAmount', 'Counted amount')" @keydown.enter.prevent="doSet">
-                                    <v-btn icon="fa-solid fa-plus" variant="text" size="small" @click="setValue++"></v-btn>
-                                </div>
-                                <v-select v-model="setUnitId" :items="unitItems" item-title="title" item-value="value" hide-details density="compact" class="psp-unit"></v-select>
-                            </div>
-                            <div v-if="setBatches.length > 1 && setValue != setRecorded" class="mt-3">
-                                <label class="psp-label">{{ $t('HomeWhichBatchChanged', 'Which batch changed?') }}</label>
-                                <v-select v-model="setEntry" :items="setBatchItems" item-title="title" item-value="value" hide-details density="compact"></v-select>
-                            </div>
-                            <p class="psp-preview">{{ $t('HomeRecorded', 'Recorded') }} {{ qty(setRecorded, unitById(setUnitId)) }} → {{ $t('HomeCounted', 'counted') }} {{ qty(setValue || 0, unitById(setUnitId)) }}
-                                <b :class="setValue == setRecorded ? '' : (setValue > setRecorded ? 'text-success' : 'text-error')">({{ setValue == setRecorded ? $t('HomeNoChange', 'no change') : deltaText(setValue - setRecorded) }})</b>
-                            </p>
-                            <div class="d-flex justify-end">
-                                <v-btn color="primary" variant="flat" :loading="busy" :disabled="setValue < 0 || setValue === '' || (setBatches.length > 1 && setValue != setRecorded && !setEntry)" @click="doSet">
-                                    {{ setValue == setRecorded ? $t('HomeConfirmCount', 'Confirm count') : $t('HomeSetTo', {q: qty(setValue || 0, unitById(setUnitId))}, 'Set to {q}') }}
-                                </v-btn>
-                            </div>
-                        </div>
-
-                        <!-- Use / remove -->
-                        <div v-if="tab == 'use'" class="psp-form">
-                            <div class="psp-form-title">{{ $t('HomeHowManyRemoving', 'How many are you using or removing?') }}</div>
-                            <label class="psp-label">{{ $t('HomeFromBatch', 'From') }}</label>
-                            <v-select v-model="useEntryId" :items="batchItems" item-title="title" item-value="value" hide-details density="compact" class="mb-3"></v-select>
-                            <div class="d-flex align-center ga-2 flex-wrap">
-                                <div class="psp-stepper">
-                                    <v-btn icon="fa-solid fa-minus" variant="text" size="small" :disabled="useAmount <= 1" @click="useAmount = Math.max(1, useAmount - 1)"></v-btn>
-                                    <input v-model.number="useAmount" type="number" min="0" step="any" inputmode="decimal" :aria-label="$t('Amount')" @keydown.enter.prevent="doUse">
-                                    <v-btn icon="fa-solid fa-plus" variant="text" size="small" :disabled="!useBatch || useAmount >= useBatch.amount" @click="useAmount++"></v-btn>
-                                </div>
-                                <span class="text-body-2 text-medium-emphasis">{{ useBatch?.unit ? (useAmount == 1 ? useBatch.unit.name : useBatch.unit.plural_name) : '' }}</span>
-                                <v-btn size="small" variant="text" :disabled="!useBatch" @click="useAmount = useBatch!.amount">{{ $t('HomeAll', 'All') }}</v-btn>
-                            </div>
-                            <div class="psp-reasons" role="radiogroup" :aria-label="$t('HomeReason', 'Reason')">
-                                <button v-for="r in reasons" :key="r.value" type="button" role="radio" :aria-checked="useReason == r.value" :class="{active: useReason == r.value}" @click="useReason = r.value">{{ r.title }}</button>
-                            </div>
-                            <p v-if="useBatch" class="psp-preview">#{{ useBatch.code }} {{ qty(useBatch.amount, useBatch.unit) }} → {{ qty(Math.max(0, useBatch.amount - (useAmount || 0)), useBatch.unit) }}
-                                <b class="text-error">(−{{ fmtAmount(useAmount || 0) }})</b>
-                                <span v-if="(useAmount || 0) > useBatch.amount" class="text-error"> · {{ $t('HomeOnlyN', {q: qty(useBatch.amount, useBatch.unit)}, 'only {q} there') }}</span>
-                            </p>
-                            <div class="d-flex justify-end">
-                                <v-btn color="primary" variant="flat" :loading="busy" :disabled="!useBatch || !(useAmount > 0) || useAmount > useBatch.amount" @click="doUse">
-                                    {{ $t('HomeRemoveN', {q: useBatch ? qty(useAmount || 0, useBatch.unit) : ''}, 'Remove {q}') }}
-                                </v-btn>
-                            </div>
-                        </div>
-
-                        <!-- Move -->
-                        <div v-if="tab == 'move'" class="psp-form">
-                            <div class="psp-form-title">{{ $t('HomeMoveWhere', 'Move to another place') }}</div>
-                            <label class="psp-label">{{ $t('HomeFromBatch', 'From') }}</label>
-                            <v-select v-model="moveEntryId" :items="batchItems" item-title="title" item-value="value" hide-details density="compact" class="mb-3"></v-select>
-                            <div class="d-flex align-center ga-2 flex-wrap">
-                                <div class="psp-stepper">
-                                    <v-btn icon="fa-solid fa-minus" variant="text" size="small" :disabled="moveAmount <= 1" @click="moveAmount = Math.max(1, moveAmount - 1)"></v-btn>
-                                    <input v-model.number="moveAmount" type="number" min="0" step="any" inputmode="decimal" :aria-label="$t('Amount')">
-                                    <v-btn icon="fa-solid fa-plus" variant="text" size="small" :disabled="!moveBatch || moveAmount >= moveBatch.amount" @click="moveAmount++"></v-btn>
-                                </div>
-                                <span class="text-body-2 text-medium-emphasis">{{ $t('HomeTo', 'to') }}</span>
-                                <v-select v-model="moveToId" :items="locations.filter(l => l.id != moveBatch?.location.id)" item-title="name" item-value="id" hide-details density="compact" class="psp-unit"></v-select>
-                                <v-text-field v-model="moveShelf" :placeholder="$t('HomeShelf', 'Shelf or bin')" hide-details density="compact" class="psp-unit"></v-text-field>
-                            </div>
-                            <p v-if="moveBatch && moveToId" class="psp-preview">{{ moveBatch.location.name }} −{{ fmtAmount(moveAmount || 0) }} · {{ locName(moveToId) }} +{{ fmtAmount(moveAmount || 0) }} · {{ $t('HomeTotalUnchanged', 'total unchanged') }}</p>
-                            <div class="d-flex justify-end">
-                                <v-btn color="primary" variant="flat" :loading="busy" :disabled="!moveBatch || !moveToId || !(moveAmount > 0) || moveAmount > moveBatch.amount" @click="doMove">
-                                    {{ $t('HomeMoveN', {q: moveBatch ? qty(moveAmount || 0, moveBatch.unit) : ''}, 'Move {q}') }}
-                                </v-btn>
-                            </div>
-                        </div>
-
-                        <!-- Details: one batch (expiry, shelf, label), duplicate, print, history -->
-                        <div v-if="tab == 'details'" class="psp-form">
-                            <template v-if="detailBatch">
-                                <div class="psp-form-title">{{ $t('HomeBatch', 'Batch') }} #{{ detailBatch.code }} · {{ qty(detailBatch.amount, detailBatch.unit) }} · {{ where(detailBatch) }}</div>
-                                <div class="psp-fields">
-                                    <div class="d-flex align-center ga-2 flex-wrap">
-                                        <label class="psp-label mb-0">{{ $t('HomeBestBefore', 'Best before') }}</label>
-                                        <input v-model="editExpires" type="date" class="psp-date">
-                                        <v-btn v-if="editExpires" size="small" variant="text" @click="editExpires = ''">{{ $t('HomeClear', 'Clear') }}</v-btn>
+                            <template v-if="stock.totals.length">
+                                <div class="psp-locrows">
+                                    <div v-for="l in stock.locations" :key="l.location.id" class="psp-locrow">
+                                        <v-icon :icon="l.location.is_freezer ? 'fa-solid fa-snowflake' : 'fa-solid fa-box-archive'" size="small" class="opacity-60"></v-icon>
+                                        <span class="flex-grow-1">{{ l.location.name }}</span>
+                                        <b>{{ l.totals.map(t => qty(t.amount, t.unit)).join(' + ') }}</b>
                                     </div>
-                                    <v-text-field v-model="editShelf" :label="$t('HomeShelf', 'Shelf or bin')" hide-details></v-text-field>
-                                    <v-text-field v-model="editCode" :label="$t('HomeLabelCodeShort', 'Label code')" hide-details></v-text-field>
                                 </div>
-                                <div class="d-flex flex-wrap ga-2 mt-3">
-                                    <v-btn variant="flat" color="primary" :loading="busy" @click="doEdit">{{ $t('Save') }}</v-btn>
-                                    <v-btn variant="outlined" prepend-icon="fa-regular fa-copy" @click="duplicateOpen = !duplicateOpen">{{ $t('HomeDuplicate', 'Duplicate') }}</v-btn>
-                                    <v-btn variant="outlined" prepend-icon="fa-solid fa-print" @click="printLabel(detailBatch)">{{ $t('HomePrintLabel', 'Print label') }}</v-btn>
-                                    <v-btn variant="outlined" prepend-icon="fa-regular fa-clipboard" @click="copyCode(detailBatch.code)">{{ $t('HomeCopyCode', 'Copy code') }}</v-btn>
-                                </div>
-                                <div v-if="duplicateOpen" class="psp-duplicate">
-                                    <div class="psp-label">{{ $t('HomeCopyFields', 'Start a new batch with the same:') }}</div>
-                                    <div class="d-flex flex-wrap ga-1">
-                                        <v-chip v-for="f in copyFieldOptions" :key="f.value" :variant="copyFields.includes(f.value) ? 'flat' : 'outlined'" size="small" filter
-                                                :color="copyFields.includes(f.value) ? 'primary' : undefined" @click="toggleCopy(f.value)">{{ f.title }}</v-chip>
+                                <div class="psp-facts">
+                                    <div class="psp-fact"><v-icon icon="fa-regular fa-calendar" size="small"></v-icon>
+                                        <span v-if="stock.earliest_expiry">{{ $t('HomeEarliestExpiry', 'Earliest known expiry:') }} <b :class="expiryClass(stock.earliest_expiry)">{{ fmtDate(stock.earliest_expiry) }}</b></span>
+                                        <span v-else class="text-medium-emphasis">{{ $t('HomeNoExpiryRecorded', 'No expiry dates recorded') }}</span>
                                     </div>
-                                    <p class="text-body-2 text-medium-emphasis mt-2 mb-2">{{ $t('HomeDuplicateHelp', 'The new batch gets its own label code. Nothing is added until you save it on the Add tab.') }}</p>
-                                    <v-btn size="small" variant="flat" color="primary" @click="duplicateBatch">{{ $t('HomeContinueToAdd', 'Continue to Add') }}</v-btn>
+                                    <div v-if="stock.expired" class="psp-fact text-error"><v-icon icon="fa-solid fa-triangle-exclamation" size="small"></v-icon><span>{{ $t('HomeExpiredBatches', {n: stock.expired}, '{n} batch(es) past their date') }}</span></div>
+                                    <div v-if="stock.mixed_units" class="psp-fact text-medium-emphasis"><v-icon icon="fa-solid fa-circle-info" size="small"></v-icon><span>{{ $t('HomeMixedUnits', 'Counted in different units, so they’re shown separately rather than added up.') }}</span></div>
                                 </div>
                             </template>
-                            <p v-else class="text-body-2 text-medium-emphasis">{{ $t('HomeChooseBatch', 'Choose a batch above (…) to change its date, shelf or label.') }}</p>
 
-                            <div class="psp-section-title">{{ $t('HomeRecentActivity', 'Recent activity') }}</div>
-                            <div v-if="!history.length" class="text-body-2 text-medium-emphasis">{{ $t('HomeNoActivity', 'Nothing yet.') }}</div>
-                            <div v-for="h in history" :key="h.id" class="psp-history">
-                                <span class="psp-history-kind" :class="'k-' + h.type">{{ kindLabel(h.type, h.note) }}</span>
-                                <span class="flex-grow-1">{{ historyText(h) }}</span>
-                                <span class="psp-meta text-no-wrap">{{ fmtDate(h.created_at) }}</span>
+                            <!-- count mode: record a count (a draft until reviewed) -->
+                            <div v-if="scanPanel.mode == 'count' && count" class="psp-form">
+                                <div class="psp-form-title">{{ $t('HomeHowManyHere', {place: count.location.name}, 'How many do you have in {place}?') }}</div>
+                                <pantry-stepper v-model="countValue" :unit="unitWord(countValue, countUnitId)" :label="$t('HomeCountedAmount', 'Counted amount')" @enter="saveCountLine()"></pantry-stepper>
+                                <v-select v-model="countUnitId" :items="unitItems" item-title="title" item-value="value" :label="$t('HomeCountedIn', 'Counted in')" hide-details density="compact" class="mt-3"></v-select>
+                                <p class="psp-preview">{{ $t('HomeOnFile', 'On file') }} {{ qty(countRecorded, unitById(countUnitId)) }} → {{ $t('HomeCounted', 'counted') }} {{ qty(countValue || 0, unitById(countUnitId)) }}
+                                    <b :class="countValue - countRecorded == 0 ? '' : (countValue > countRecorded ? 'text-success' : 'text-error')">({{ deltaText((countValue || 0) - countRecorded) }})</b>
+                                </p>
+                                <v-btn block variant="flat" class="psp-cta" :loading="busy" @click="saveCountLine()">{{ $t('HomeSaveCount', 'Save count') }}</v-btn>
+                            </div>
+
+                            <template v-else>
+                                <v-divider v-if="stock.totals.length" class="my-4"></v-divider>
+                                <div class="psp-ask" :class="{'mt-5': !stock.totals.length}">{{ $t('HomeWhatToDo', 'What would you like to do?') }}</div>
+                                <div class="psp-grid">
+                                    <v-btn size="large" variant="flat" class="psp-cta" prepend-icon="fa-solid fa-plus" @click="go('add')">{{ $t('HomeAddStockBtn', 'Add stock') }}</v-btn>
+                                    <template v-if="stock.batches.length">
+                                        <v-btn size="large" variant="outlined" prepend-icon="fa-regular fa-clipboard" @click="go('set')">{{ $t('HomeSetQuantity', 'Set quantity') }}</v-btn>
+                                        <v-btn size="large" variant="outlined" prepend-icon="fa-solid fa-minus" @click="go('use')">{{ $t('HomeUseRemove', 'Use / remove') }}</v-btn>
+                                        <v-btn size="large" variant="outlined" prepend-icon="fa-solid fa-layer-group" @click="go('batches')">{{ $t('HomeViewBatches', 'View batches') }}</v-btn>
+                                    </template>
+                                    <v-btn v-else size="large" variant="outlined" prepend-icon="fa-solid fa-cart-shopping" :loading="shopping" @click="addToShopping">{{ $t('HomeAddToShoppingShort', 'Add to shopping') }}</v-btn>
+                                </div>
+                                <button v-if="!stock.batches.length" type="button" class="psp-link mt-3" @click="go('batches')">{{ $t('HomeSeeActivity', 'See activity') }} →</button>
+                            </template>
+                        </template>
+                    </template>
+
+                    <!-- ===== Add stock ===== -->
+                    <div v-else-if="tab == 'add'">
+                        <div class="psp-sub-head">
+                            <v-btn icon="fa-solid fa-arrow-left" variant="text" size="small" :aria-label="$t('Back')" @click="back"></v-btn>
+                            <span class="psp-sub-title">{{ $t('HomeAddStockBtn', 'Add stock') }}</span>
+                            <span class="psp-badge">{{ $t('HomeExistingProduct', 'Existing product') }}</span>
+                        </div>
+                        <div class="psp-product">
+                            <div class="psp-thumb">
+                                <img v-if="product?.image" :src="product.image" alt="">
+                                <v-icon v-else icon="fa-solid fa-jar" class="opacity-40"></v-icon>
+                            </div>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="psp-name">{{ result.food.name }}</div>
+                                <div v-if="productMeta(product, true)" class="psp-meta">{{ productMeta(product, true) }}</div>
+                                <div v-if="barcodeText" class="psp-code">{{ barcodeText }}</div>
+                                <div class="psp-meta">{{ $t('HomeCurrentlyOnHandColon', 'Currently on hand:') }} {{ stock.totals.length ? onHandText : $t('HomeNone', 'none') }}</div>
                             </div>
                         </div>
-                    </template>
+
+                        <label class="psp-label mt-4">{{ $t('HomeHowManyAdding', 'How many are you adding?') }}</label>
+                        <pantry-stepper v-model="addAmount" :min="1" :unit="unitWord(addAmount, addUnitId)" :label="$t('Amount')" @enter="doAdd"></pantry-stepper>
+
+                        <label class="psp-label mt-4">{{ $t('HomeWhereStoring', 'Where are you storing it?') }}</label>
+                        <v-select v-model="addLocationId" :items="locations" item-title="name" item-value="id" hide-details></v-select>
+                        <div class="psp-hint">{{ addHere > 0 ? $t('HomeNInPlace', {q: qty(addHere, unitById(addUnitId)), place: locName(addLocationId)}, '{q} currently in {place}') : $t('HomeNoneInPlace', {place: locName(addLocationId)}, 'None in {place} yet') }}</div>
+
+                        <label class="psp-label mt-4">{{ $t('HomeBestBeforeExpiry', 'Best before / expiry date') }} <span class="text-medium-emphasis font-weight-regular">({{ $t('HomeOptional', 'optional') }})</span></label>
+                        <div class="psp-date-wrap">
+                            <v-icon icon="fa-regular fa-calendar" size="small" class="opacity-60"></v-icon>
+                            <input v-model="addExpires" type="date" class="psp-date" :aria-label="$t('HomeBestBefore', 'Best before')">
+                            <v-btn v-if="addExpires" size="x-small" variant="text" icon="$close" :aria-label="$t('HomeClear', 'Clear')" @click="addExpires = ''"></v-btn>
+                        </div>
+
+                        <details class="psp-more mt-3">
+                            <summary><v-icon icon="fa-solid fa-sliders" size="x-small" class="me-2"></v-icon>{{ $t('HomeMoreDetails', 'More details') }}</summary>
+                            <div class="psp-fields mt-2">
+                                <v-select v-model="addUnitId" :items="unitItems" item-title="title" item-value="value" :label="$t('HomeCountedIn', 'Counted in')" hide-details></v-select>
+                                <v-text-field v-model="addShelf" :label="$t('HomeShelf', 'Shelf or bin')" hide-details></v-text-field>
+                                <v-text-field v-model="addCode" :label="$t('HomeLabelCode', 'Label code (optional)')" persistent-hint
+                                              :hint="$t('HomeLabelCodeHelp', 'For one item you’ll put a label on. Leave empty and Kitchen makes one.')"></v-text-field>
+                                <v-checkbox v-model="addNewBatch" hide-details density="compact" :label="$t('HomeSeparateBatch', 'Keep as a separate batch')"></v-checkbox>
+                                <div class="text-body-2 text-medium-emphasis">{{ addTargetText }}</div>
+                            </div>
+                        </details>
+
+                        <div class="psp-summary">
+                            <div><span>{{ $t('HomeCurrentTotal', 'Current total stock') }}</span><b>{{ stock.totals.length ? onHandText : qty(0, unitById(addUnitId)) }}</b></div>
+                            <div><span>{{ $t('HomeAdding', 'Adding') }}</span><b class="text-success">+{{ qty(addAmount || 0, unitById(addUnitId)) }}</b></div>
+                            <div class="total"><span>{{ $t('HomeNewTotal', 'New total') }}</span><b>{{ newTotalText }}</b></div>
+                        </div>
+
+                        <v-checkbox v-model="returnToScanner" hide-details density="compact" :label="$t('HomeReturnToScanner', 'Return to scanner after saving')"></v-checkbox>
+                        <v-btn block size="large" variant="flat" class="psp-cta mt-2" prepend-icon="fa-solid fa-plus" :loading="busy" :disabled="!(addAmount > 0) || !addLocationId" @click="doAdd">
+                            {{ $t('HomeAddN', {q: qty(addAmount || 0, unitById(addUnitId))}, 'Add {q}') }}
+                        </v-btn>
+                    </div>
+
+                    <!-- ===== Set quantity ===== -->
+                    <div v-else-if="tab == 'set'">
+                        <div class="psp-sub-head">
+                            <v-btn icon="fa-solid fa-arrow-left" variant="text" size="small" :aria-label="$t('Back')" @click="back"></v-btn>
+                            <span class="psp-sub-title">{{ $t('HomeSetQuantity', 'Set quantity') }}</span>
+                            <span class="psp-badge">{{ result.food.name }}</span>
+                        </div>
+                        <label class="psp-label mt-2">{{ $t('HomeWhere', 'Where') }}</label>
+                        <v-select v-model="setLocationId" :items="locations" item-title="name" item-value="id" hide-details></v-select>
+                        <label class="psp-label mt-4">{{ $t('HomeHowManyHave', 'How many do you physically have?') }}</label>
+                        <pantry-stepper v-model="setValue" :unit="unitWord(setValue, setUnitId)" :label="$t('HomeCountedAmount', 'Counted amount')" @enter="doSet"></pantry-stepper>
+                        <div v-if="setBatches.length > 1 && setValue != setRecorded" class="mt-4">
+                            <label class="psp-label">{{ $t('HomeWhichBatchChanged', 'Which batch changed?') }}</label>
+                            <v-select v-model="setEntry" :items="setBatchItems" item-title="title" item-value="value" hide-details></v-select>
+                        </div>
+                        <details class="psp-more mt-3">
+                            <summary><v-icon icon="fa-solid fa-sliders" size="x-small" class="me-2"></v-icon>{{ $t('HomeMoreDetails', 'More details') }}</summary>
+                            <v-select v-model="setUnitId" :items="unitItems" item-title="title" item-value="value" :label="$t('HomeCountedIn', 'Counted in')" hide-details class="mt-2"></v-select>
+                        </details>
+                        <div class="psp-summary">
+                            <div><span>{{ $t('HomeRecordedIn', {place: locName(setLocationId)}, 'Recorded in {place}') }}</span><b>{{ qty(setRecorded, unitById(setUnitId)) }}</b></div>
+                            <div><span>{{ $t('HomeChange', 'Change') }}</span><b :class="setValue == setRecorded ? '' : (setValue > setRecorded ? 'text-success' : 'text-error')">{{ setValue == setRecorded ? $t('HomeNoChange', 'no change') : deltaText((setValue || 0) - setRecorded) }}</b></div>
+                            <div class="total"><span>{{ $t('HomeNewAmount', 'New amount') }}</span><b>{{ qty(setValue || 0, unitById(setUnitId)) }}</b></div>
+                        </div>
+                        <v-checkbox v-model="returnToScanner" hide-details density="compact" :label="$t('HomeReturnToScanner', 'Return to scanner after saving')"></v-checkbox>
+                        <v-btn block size="large" variant="flat" class="psp-cta mt-2" :loading="busy" :disabled="setValue < 0 || setValue === '' || (setBatches.length > 1 && setValue != setRecorded && !setEntry)" @click="doSet">
+                            {{ setValue == setRecorded ? $t('HomeConfirmCount', 'Confirm count') : $t('HomeSetTo', {q: qty(setValue || 0, unitById(setUnitId))}, 'Set to {q}') }}
+                        </v-btn>
+                    </div>
+
+                    <!-- ===== Use / remove ===== -->
+                    <div v-else-if="tab == 'use'">
+                        <div class="psp-sub-head">
+                            <v-btn icon="fa-solid fa-arrow-left" variant="text" size="small" :aria-label="$t('Back')" @click="back"></v-btn>
+                            <span class="psp-sub-title">{{ $t('HomeUseRemove', 'Use / remove') }}</span>
+                            <span class="psp-badge">{{ result.food.name }}</span>
+                        </div>
+                        <label class="psp-label mt-2">{{ $t('HomeFromBatch', 'From') }}</label>
+                        <v-select v-model="useEntryId" :items="batchItems" item-title="title" item-value="value" hide-details></v-select>
+                        <div class="d-flex align-end justify-space-between mt-4">
+                            <label class="psp-label">{{ $t('HomeHowManyRemoving', 'How many are you using or removing?') }}</label>
+                            <v-btn size="small" variant="text" :disabled="!useBatch" @click="useAmount = useBatch!.amount">{{ $t('HomeAll', 'All') }}</v-btn>
+                        </div>
+                        <pantry-stepper v-model="useAmount" :min="1" :max="useBatch?.amount ?? null" :unit="useBatch?.unit ? (useAmount == 1 ? useBatch.unit.name : useBatch.unit.plural_name) : ''" :label="$t('Amount')" @enter="doUse"></pantry-stepper>
+                        <label class="psp-label mt-4">{{ $t('HomeReason', 'Reason') }}</label>
+                        <div class="psp-reasons" role="radiogroup" :aria-label="$t('HomeReason', 'Reason')">
+                            <button v-for="r in reasons" :key="r.value" type="button" role="radio" :aria-checked="useReason == r.value" :class="{active: useReason == r.value}" @click="useReason = r.value">{{ r.title }}</button>
+                        </div>
+                        <div v-if="useBatch" class="psp-summary">
+                            <div><span>#{{ useBatch.code }} · {{ useBatch.location.name }}</span><b>{{ qty(useBatch.amount, useBatch.unit) }}</b></div>
+                            <div><span>{{ $t('HomeRemoving', 'Removing') }}</span><b class="text-error">−{{ qty(useAmount || 0, useBatch.unit) }}</b></div>
+                            <div class="total"><span>{{ $t('HomeLeft', 'Left') }}</span><b>{{ qty(Math.max(0, useBatch.amount - (useAmount || 0)), useBatch.unit) }}</b></div>
+                            <div v-if="(useAmount || 0) > useBatch.amount" class="text-error text-body-2">{{ $t('HomeOnlyN', {q: qty(useBatch.amount, useBatch.unit)}, 'only {q} there') }}</div>
+                        </div>
+                        <v-checkbox v-model="returnToScanner" hide-details density="compact" :label="$t('HomeReturnToScanner', 'Return to scanner after saving')"></v-checkbox>
+                        <v-btn block size="large" variant="flat" class="psp-cta mt-2" prepend-icon="fa-solid fa-minus" :loading="busy" :disabled="!useBatch || !(useAmount > 0) || useAmount > useBatch.amount" @click="doUse">
+                            {{ $t('HomeRemoveN', {q: useBatch ? qty(useAmount || 0, useBatch.unit) : ''}, 'Remove {q}') }}
+                        </v-btn>
+                    </div>
+
+                    <!-- ===== Move ===== -->
+                    <div v-else-if="tab == 'move'">
+                        <div class="psp-sub-head">
+                            <v-btn icon="fa-solid fa-arrow-left" variant="text" size="small" :aria-label="$t('Back')" @click="back"></v-btn>
+                            <span class="psp-sub-title">{{ $t('HomeMoveWhere', 'Move to another place') }}</span>
+                        </div>
+                        <label class="psp-label mt-2">{{ $t('HomeFromBatch', 'From') }}</label>
+                        <v-select v-model="moveEntryId" :items="batchItems" item-title="title" item-value="value" hide-details></v-select>
+                        <label class="psp-label mt-4">{{ $t('HomeHowManyMoving', 'How many are you moving?') }}</label>
+                        <pantry-stepper v-model="moveAmount" :min="1" :max="moveBatch?.amount ?? null" :unit="moveBatch?.unit ? (moveAmount == 1 ? moveBatch.unit.name : moveBatch.unit.plural_name) : ''" :label="$t('Amount')"></pantry-stepper>
+                        <label class="psp-label mt-4">{{ $t('HomeMoveTo', 'To') }}</label>
+                        <v-select v-model="moveToId" :items="locations.filter(l => l.id != moveBatch?.location.id)" item-title="name" item-value="id" hide-details></v-select>
+                        <v-text-field v-model="moveShelf" :label="$t('HomeShelf', 'Shelf or bin')" hide-details class="mt-3"></v-text-field>
+                        <p v-if="moveBatch && moveToId" class="psp-preview">{{ moveBatch.location.name }} −{{ fmtAmount(moveAmount || 0) }} · {{ locName(moveToId) }} +{{ fmtAmount(moveAmount || 0) }} · {{ $t('HomeTotalUnchanged', 'total unchanged') }}</p>
+                        <v-checkbox v-model="returnToScanner" hide-details density="compact" :label="$t('HomeReturnToScanner', 'Return to scanner after saving')"></v-checkbox>
+                        <v-btn block size="large" variant="flat" class="psp-cta mt-2" :loading="busy" :disabled="!moveBatch || !moveToId || !(moveAmount > 0) || moveAmount > moveBatch.amount" @click="doMove">
+                            {{ $t('HomeMoveN', {q: moveBatch ? qty(moveAmount || 0, moveBatch.unit) : ''}, 'Move {q}') }}
+                        </v-btn>
+                    </div>
+
+                    <!-- ===== Batches and activity ===== -->
+                    <div v-else-if="tab == 'batches'">
+                        <div class="psp-sub-head">
+                            <v-btn icon="fa-solid fa-arrow-left" variant="text" size="small" :aria-label="$t('Back')" @click="back"></v-btn>
+                            <span class="psp-sub-title">{{ $t('HomeBatches', 'Batches') }} ({{ stock.batches.length }})</span>
+                            <span class="psp-badge">{{ result.food.name }}</span>
+                        </div>
+                        <p v-if="!stock.batches.length" class="text-body-2 text-medium-emphasis">{{ $t('HomeNoBatches', 'No stock on hand.') }}</p>
+                        <div v-for="b in stock.batches" :key="b.id" class="psp-batch">
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="font-weight-medium">{{ qty(b.amount, b.unit) }} <span class="psp-meta">· #{{ b.code }}</span></div>
+                                <div class="psp-meta">{{ where(b) }}<template v-if="b.counted_at"> · {{ $t('HomeCounted', 'counted') }} {{ fmtDate(b.counted_at) }}</template></div>
+                            </div>
+                            <span v-if="b.expires" class="psp-expiry" :class="expiryClass(b.expires)">{{ expiryText(b.expires) }}</span>
+                            <v-menu location="bottom end">
+                                <template #activator="{props}">
+                                    <v-btn v-bind="props" size="small" variant="text" icon="fa-solid fa-ellipsis" :aria-label="$t('HomeBatchActions', 'Batch actions')"></v-btn>
+                                </template>
+                                <v-list density="compact">
+                                    <v-list-item prepend-icon="fa-solid fa-pen" :title="$t('HomeEditDetails', 'Edit details')" @click="openBatch(b, 'batches')"></v-list-item>
+                                    <v-list-item prepend-icon="fa-solid fa-minus" :title="$t('HomeUseRemove', 'Use / remove')" @click="useEntryId = b.id; useAmount = 1; go('use', 'batches')"></v-list-item>
+                                    <v-list-item prepend-icon="fa-solid fa-arrow-right" :title="$t('Move')" @click="openMove(b, 'batches')"></v-list-item>
+                                    <v-list-item prepend-icon="fa-regular fa-copy" :title="$t('HomeDuplicate', 'Duplicate')" @click="openBatch(b, 'batches'); duplicateOpen = true"></v-list-item>
+                                    <v-list-item prepend-icon="fa-solid fa-print" :title="$t('HomePrintLabel', 'Print label')" @click="printLabel(b)"></v-list-item>
+                                    <v-list-item prepend-icon="fa-regular fa-clipboard" :title="$t('HomeCopyCode', 'Copy code')" @click="copyCode(b.code)"></v-list-item>
+                                </v-list>
+                            </v-menu>
+                        </div>
+
+                        <div class="psp-section-title">{{ $t('HomeRecentActivity', 'Recent activity') }}</div>
+                        <div v-if="!history.length" class="text-body-2 text-medium-emphasis">{{ $t('HomeNoActivity', 'Nothing yet.') }}</div>
+                        <div v-for="h in history" :key="h.id" class="psp-history">
+                            <span class="psp-history-kind" :class="'k-' + h.type">{{ kindLabel(h.type, h.note) }}</span>
+                            <span class="flex-grow-1">{{ historyText(h) }}</span>
+                            <span class="psp-meta text-no-wrap">{{ fmtDate(h.created_at) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- ===== One batch: expiry, shelf, label; duplicate, print ===== -->
+                    <div v-else-if="tab == 'batch' && detailBatch">
+                        <div class="psp-sub-head">
+                            <v-btn icon="fa-solid fa-arrow-left" variant="text" size="small" :aria-label="$t('Back')" @click="back"></v-btn>
+                            <span class="psp-sub-title">{{ $t('HomeItem', 'Item') }} #{{ detailBatch.code }}</span>
+                            <span class="psp-badge">{{ qty(detailBatch.amount, detailBatch.unit) }} · {{ where(detailBatch) }}</span>
+                        </div>
+                        <label class="psp-label mt-2">{{ $t('HomeBestBeforeExpiry', 'Best before / expiry date') }}</label>
+                        <div class="psp-date-wrap">
+                            <v-icon icon="fa-regular fa-calendar" size="small" class="opacity-60"></v-icon>
+                            <input v-model="editExpires" type="date" class="psp-date" :aria-label="$t('HomeBestBefore', 'Best before')">
+                            <v-btn v-if="editExpires" size="x-small" variant="text" icon="$close" :aria-label="$t('HomeClear', 'Clear')" @click="editExpires = ''"></v-btn>
+                        </div>
+                        <div class="psp-fields mt-4">
+                            <v-text-field v-model="editShelf" :label="$t('HomeShelf', 'Shelf or bin')" hide-details></v-text-field>
+                            <v-text-field v-model="editCode" :label="$t('HomeLabelCodeShort', 'Label code')" hide-details></v-text-field>
+                        </div>
+                        <v-btn block size="large" variant="flat" class="psp-cta mt-4" :loading="busy" @click="doEdit">{{ $t('HomeSaveDetails', 'Save details') }}</v-btn>
+                        <div class="d-flex flex-wrap ga-2 mt-3">
+                            <v-btn size="small" variant="outlined" prepend-icon="fa-regular fa-copy" @click="duplicateOpen = !duplicateOpen">{{ $t('HomeDuplicate', 'Duplicate') }}</v-btn>
+                            <v-btn size="small" variant="outlined" prepend-icon="fa-solid fa-print" @click="printLabel(detailBatch)">{{ $t('HomePrintLabel', 'Print label') }}</v-btn>
+                            <v-btn size="small" variant="outlined" prepend-icon="fa-regular fa-clipboard" @click="copyCode(detailBatch.code)">{{ $t('HomeCopyCode', 'Copy code') }}</v-btn>
+                        </div>
+                        <div v-if="duplicateOpen" class="psp-duplicate">
+                            <div class="psp-label">{{ $t('HomeCopyFields', 'Start a new batch with the same:') }}</div>
+                            <div class="d-flex flex-wrap ga-1">
+                                <v-chip v-for="f in copyFieldOptions" :key="f.value" :variant="copyFields.includes(f.value) ? 'flat' : 'outlined'" size="small" filter
+                                        :color="copyFields.includes(f.value) ? 'primary' : undefined" @click="toggleCopy(f.value)">{{ f.title }}</v-chip>
+                            </div>
+                            <p class="text-body-2 text-medium-emphasis mt-2 mb-2">{{ $t('HomeDuplicateHelp2', 'The new batch gets its own label code. Nothing is added until you confirm it on Add stock.') }}</p>
+                            <v-btn size="small" variant="flat" color="primary" @click="duplicateBatch">{{ $t('HomeContinueToAddStock', 'Continue to Add stock') }}</v-btn>
+                        </div>
+                    </div>
                 </template>
             </v-card-text>
 
-            <!-- non-blocking result of the last action, with Undo -->
+            <!-- brief result of the last action, with Undo -->
             <div v-if="toast" class="psp-toast" :class="toast.kind" role="status" aria-live="polite">
                 <v-icon :icon="toast.kind == 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'" size="small"></v-icon>
                 <span class="flex-grow-1">{{ toast.text }}</span>
@@ -382,15 +480,16 @@
 </template>
 
 <script setup lang="ts">
-import {computed, nextTick, onMounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, ref, watch, watchEffect} from "vue";
 import {useDisplay} from "vuetify";
 import {useI18n} from "vue-i18n";
 import JsBarcode from "jsbarcode";
 import VModelSelect from "@/components/inputs/VModelSelect.vue";
+import PantryStepper from "@/components/inputs/PantryStepper.vue";
 import {ApiApi, Food} from "@/openapi";
 import {
     cameraOpen, daysUntil, fmtAmount, fmtDate, newRequestId, noteText, pantryApi, PantryError, pantryVersion, PUnit, qty, rememberMode,
-    scanPanel, scanRequest, ScanMode, store,
+    scanPanel, scanRequest, ScanMode, ScanSource, scanStatus, store,
 } from "@/composables/useScan";
 
 const {t} = useI18n()
@@ -401,20 +500,24 @@ type Stock = { totals: { unit: PUnit, amount: number }[], locations: { location:
 
 const LAST_LOCATION_KEY = 'kitchen:lastInventoryLocation'
 const QUICK_ADD_KEY = 'kitchen:quickAdd'
+const RETURN_KEY = 'kitchen:returnToScanner'
 
 const modes = computed(() => [
     {value: 'lookup' as ScanMode, title: t('HomeLookup', 'Look up'), icon: 'fa-solid fa-magnifying-glass'},
     {value: 'restock' as ScanMode, title: t('HomeRestock', 'Restock'), icon: 'fa-solid fa-basket-shopping'},
     {value: 'count' as ScanMode, title: t('HomeStockCount', 'Stock count'), icon: 'fa-solid fa-list-check'},
+    {value: 'label' as ScanMode, title: t('HomeItemLabelMode', 'Item label'), icon: 'fa-solid fa-tag'},
 ])
 const modeHelp = computed(() => ({
-    lookup: t('HomeLookupHelp', 'Scanning shows what you have. Nothing changes until you choose an action.'),
-    restock: t('HomeRestockHelp', 'For unpacking groceries: each scan opens Add with the product filled in.'),
+    lookup: t('HomeLookupHelp2', 'Scanning only looks a product up. Nothing changes until you choose and confirm an action.'),
+    restock: t('HomeRestockHelp2', 'For unpacking groceries: each scan opens Add stock with the product filled in.'),
+    label: t('HomeLabelModeHelp', 'Scan the Kitchen label on one item to manage just that item.'),
     count: t('HomeCountHelp', 'Count what’s really there. Counts are saved as a draft and applied after review.'),
 }[scanPanel.mode]))
-const idleHelp = computed(() => scanPanel.mode == 'restock'
-    ? t('HomeIdleRestock', 'Scan a product to add it. A handheld scanner works anywhere in Kitchen.')
-    : t('HomeIdleLookup', 'Scan a product or a pantry label to see what you have. A handheld scanner works anywhere in Kitchen.'))
+const idleHelp = computed(() => ({
+    restock: t('HomeIdleRestock', 'Scan a product to add it. A handheld scanner works anywhere in Kitchen.'),
+    label: t('HomeIdleLabel', 'Scan an item label such as #14 to open that one item.'),
+} as Record<string, string>)[scanPanel.mode] ?? t('HomeIdleLookup', 'Scan a product or a pantry label to see what you have. A handheld scanner works anywhere in Kitchen.'))
 
 const reasons = computed(() => [
     {value: 'consumed', title: t('HomeConsumed', 'Used')},
@@ -476,25 +579,60 @@ const toast = ref<null | { text: string, kind: 'ok' | 'error', logId?: number | 
 const undoing = ref(false)
 const history = ref<any[]>([])
 const pickFood = ref<Food | null>(null)
+/** a scan that arrived while an edit was open: asked about (pending) or held until the edit is done (queued) */
+type ScanReq = { code: string, source: ScanSource, at: number }
+const pendingScan = ref<ScanReq | null>(null)
+const queuedScan = ref<ScanReq | null>(null)
+/** in Item label mode, a product barcode that was scanned instead (offered as a product lookup) */
+const errorLookupCode = ref<string | null>(null)
+/** where Back goes from the current action */
+const backTo = ref<string | null>(null)
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 let lookupSeq = 0
 
 const product = computed(() => result.value?.food?.product ?? result.value?.product ?? null)
 const labelEntry = computed<Batch | null>(() => result.value?.label_entry ?? null)
 
-const actions = computed(() => [
-    {value: 'add', title: t('HomeAddStock', 'Add'), icon: 'fa-solid fa-plus'},
-    {value: 'count', title: t('HomeCountCorrect', 'Count'), icon: 'fa-solid fa-list-check'},
-    {value: 'use', title: t('HomeUseRemove', 'Use'), icon: 'fa-solid fa-minus', disabled: !stock.value.batches.length},
-    {value: 'move', title: t('Move'), icon: 'fa-solid fa-arrow-right', disabled: !stock.value.batches.length},
-    {value: 'details', title: t('HomeDetails', 'Details'), icon: 'fa-solid fa-ellipsis'},
-])
+const statusText = computed(() => ({
+    ready: t('HomeScannerReady', 'Scanner ready'), looking: t('HomeLookingUp', 'Looking up…'), found: state.value == 'label' ? t('HomeItemFound', 'Item found') : t('HomeProductFound', 'Product found'),
+    new: t('HomeNewBarcodeShort', 'New barcode'), paused: t('HomeScanningPaused', 'Scanning paused'),
+}[scanStatus.value]))
+
+
+/** "Kraft · 200 g per package" */
+function productMeta(p: any, perPackage = false): string {
+    if (!p) return ''
+    const size = p.quantity ? (perPackage ? t('HomePerPackageQ', {q: p.quantity}, '{q} per package') : p.quantity) : ''
+    return [p.brand, size].filter(Boolean).join(' · ')
+}
+
+const barcodeText = computed(() => result.value?.code && /^[0-9]+$/.test(result.value.code) && state.value == 'product'
+    ? result.value.code : (result.value?.food?.barcodes ?? []).join(', '))
+const onHandText = computed(() => stock.value.totals.map(x => qty(x.amount, x.unit)).join(' + '))
+const newTotalText = computed(() => {
+    const add = Number(addAmount.value) || 0
+    const totals = stock.value.totals.map(x => ({...x}))
+    const same = totals.find(x => (x.unit?.id ?? 0) == addUnitId.value)
+    if (same) same.amount += add
+    else totals.push({unit: unitById(addUnitId.value), amount: add})
+    return totals.map(x => qty(x.amount, x.unit)).join(' + ')
+})
+
+/** "package" / "packages" under the big amount */
+function unitWord(n: any, unitId: number): string {
+    const u = unitById(unitId)
+    if (!u) return Number(n) == 1 ? t('HomeItemWord', 'item') : t('HomeItemsWord', 'items')
+    return Number(n) == 1 ? u.name : (u.plural_name || u.name)
+}
 
 function setMode(m: ScanMode) {
     scanPanel.mode = m
     rememberMode(m, scanPanel.keepMode)
     if (m == 'count') loadOpenCounts()
-    if (state.value == 'product' || state.value == 'label') applyModeDefaults()
+    if (state.value == 'product' || state.value == 'label') {
+        tab.value = null
+        applyModeDefaults()
+    }
     focusCode()
 }
 
@@ -505,7 +643,7 @@ function focusCode() {
 function showToast(text: string, kind: 'ok' | 'error' = 'ok', logId?: number | null, retry?: () => void) {
     toast.value = {text, kind, logId, retry}
     clearTimeout(toastTimer)
-    if (kind == 'ok') toastTimer = setTimeout(() => { if (toast.value?.text == text) toast.value = null }, 9000)
+    if (kind == 'ok') toastTimer = setTimeout(() => { if (toast.value?.text == text) toast.value = null }, 7000)
 }
 
 // ---- scanning ----
@@ -520,9 +658,122 @@ function onCodeKey(e: KeyboardEvent) {
 
 watch(scanRequest, req => {
     if (!req) return
+    // a scan never silently throws away an amount or date being edited
+    if (dirty.value) {
+        if (queuedScan.value) queuedScan.value = req
+        else pendingScan.value = req
+        return
+    }
+    // quick restock: let the previous scan finish adding before the next one
+    if (busy.value || (state.value == 'loading' && scanPanel.mode == 'restock' && quickAdd.value)) {
+        queuedScan.value = req
+        return
+    }
+    take(req)
+})
+
+function take(req: ScanReq) {
+    pendingScan.value = null
+    queuedScan.value = null
     codeText.value = req.code
     lookup(req.code, req.source)
+}
+
+function discardAndTake() {
+    const req = pendingScan.value
+    if (req) take(req)
+}
+
+function finishFirst() {
+    queuedScan.value = pendingScan.value
+    pendingScan.value = null
+}
+
+/** after a save (or Back): the held scan if there is one, otherwise back to the scanner or the overview */
+function afterAction(save: boolean) {
+    markClean()
+    if (queuedScan.value) return take(queuedScan.value)
+    if (save && returnToScanner.value) {
+        state.value = 'idle'
+        result.value = null
+        tab.value = null
+        codeText.value = ''
+        return
+    }
+    if (!save || scanPanel.mode != 'restock') tab.value = null
+}
+
+// ---- unsaved edits ----
+const snapshot = ref('')
+
+/** the editable values of whatever is open, to tell whether something was changed */
+function formState(): string {
+    if (state.value == 'unknown') return JSON.stringify([newName.value, linkFood.value?.id ?? null])
+    if (state.value != 'product' && state.value != 'label') return ''
+    if (scanPanel.mode == 'count' && count.value && !tab.value) return JSON.stringify([countValue.value, countUnitId.value])
+    switch (tab.value) {
+        case 'add': return JSON.stringify([addAmount.value, addUnitId.value, addLocationId.value, addExpires.value, addShelf.value, addCode.value, addNewBatch.value])
+        case 'set': return JSON.stringify([setLocationId.value, setUnitId.value, setValue.value, setEntry.value])
+        case 'use': return JSON.stringify([useEntryId.value, useAmount.value, useReason.value])
+        case 'move': return JSON.stringify([moveEntryId.value, moveAmount.value, moveToId.value, moveShelf.value])
+        case 'batch': return JSON.stringify([editExpires.value, editShelf.value, editCode.value])
+    }
+    return ''
+}
+
+function markClean() {
+    nextTick(() => { snapshot.value = formState() })
+}
+
+const dirty = computed(() => {
+    const now = formState()
+    return now !== '' && now !== snapshot.value
 })
+
+watch([tab, state, () => result.value?.food?.id], markClean)
+
+// ---- navigation inside the panel ----
+function go(v: string, from: string | null = null) {
+    backTo.value = from
+    if (v == 'set') resetSetValue()
+    if (v == 'batches') loadHistory()
+    if (v == 'add' && scanPanel.mode != 'restock') applyAddDefaults()
+    tab.value = v
+}
+
+function back() {
+    const to = backTo.value
+    backTo.value = null
+    tab.value = to
+    if (queuedScan.value) take(queuedScan.value)
+    focusCode()
+}
+
+function openSetFor(b: Batch) {
+    setLocationId.value = b.location.id
+    setUnitId.value = b.unit?.id ?? 0
+    nextTick(() => {
+        go('set')
+        setEntry.value = b.id
+    })
+}
+
+function openMove(b: Batch, from: string | null = null) {
+    moveEntryId.value = b.id
+    nextTick(() => {
+        moveAmount.value = b.amount || 1
+        moveToId.value = null
+        moveShelf.value = ''
+        go('move', from)
+    })
+}
+
+function lookUpAsProduct() {
+    const code = errorLookupCode.value
+    errorLookupCode.value = null
+    setMode('lookup')
+    if (code) lookup(code, 'typed')
+}
 
 async function lookup(code: string, source: string) {
     const seq = ++lookupSeq
@@ -534,11 +785,18 @@ async function lookup(code: string, source: string) {
     }
     state.value = 'loading'
     tab.value = null
+    backTo.value = null
     try {
         const [r] = await Promise.all([pantryApi(`lookup/?code=${encodeURIComponent(code)}`), ensureReference()])
         if (seq != lookupSeq) return
         result.value = r
-        if (r.kind == 'invalid') {
+        errorLookupCode.value = null
+        if (scanPanel.mode == 'label' && r.kind == 'ambiguous') r.kind = 'label'
+        if (scanPanel.mode == 'label' && r.kind != 'label' && r.kind != 'invalid') {
+            error.value = t('HomeNotALabel', {code}, '{code} is a product barcode, not a Kitchen item label.')
+            errorLookupCode.value = code
+            state.value = 'error'
+        } else if (r.kind == 'invalid') {
             error.value = r.error
             state.value = 'error'
         } else if (r.kind == 'unknown') {
@@ -569,7 +827,6 @@ async function afterFound(isLabel: boolean) {
         detailBatch.value = stock.value.batches.find(b => b.id == labelEntry.value!.id) ?? null
         useEntryId.value = labelEntry.value.id
         moveEntryId.value = labelEntry.value.id
-        if (scanPanel.mode == 'lookup') tab.value = labelEntry.value.amount > 0 ? 'use' : null
     }
     loadHistory()
     // restock "quick add": one package per scan, when everything needed is known
@@ -605,12 +862,16 @@ async function showFood(foodId: number, opts: { entryId?: number, tab?: string }
                 setEditFields(b)
             }
         }
-        if (opts.tab === 'duplicate' && targetBatch) {
-            duplicateOpen.value = true
-            tab.value = 'details'
-        } else if (opts.tab) {
+        // older names for the actions (Pantry page, recipe menu)
+        const want = ({count: 'set', details: 'batch', duplicate: 'batch'} as Record<string, string>)[opts.tab ?? ''] ?? opts.tab
+        if (want == 'batch' && !targetBatch) {
+            tab.value = 'batches'
+        } else if (want === 'batch' && targetBatch) {
+            duplicateOpen.value = opts.tab == 'duplicate'
+            tab.value = 'batch'
+        } else if (want) {
             // Direct batch actions retain that batch's location/unit and expiry context.
-            tab.value = opts.tab
+            tab.value = want
             if (targetBatch && opts.tab === 'add') {
                 addPreferredEntryId.value = targetBatch.id
                 addLocationId.value = targetBatch.location.id
@@ -618,7 +879,7 @@ async function showFood(foodId: number, opts: { entryId?: number, tab?: string }
                 addExpires.value = targetBatch.expires ?? ''
                 addShelf.value = targetBatch.sub_location ?? ''
             }
-            if (targetBatch && opts.tab === 'count') {
+            if (targetBatch && want === 'set') {
                 setLocationId.value = targetBatch.location.id
                 setUnitId.value = targetBatch.unit?.id ?? 0
                 await nextTick()
@@ -626,6 +887,7 @@ async function showFood(foodId: number, opts: { entryId?: number, tab?: string }
                 setEntry.value = targetBatch.id
             }
         }
+        markClean()
     } catch (err: any) {
         error.value = err.message
         state.value = 'error'
@@ -645,6 +907,11 @@ function suggestName(p: any): string {
     return n.trim()
 }
 
+function createProduct() {
+    linkFood.value = null
+    linkBarcode()
+}
+
 async function linkBarcode() {
     if (busy.value || (!linkFood.value && !newName.value.trim())) return
     busy.value = true
@@ -654,7 +921,7 @@ async function linkBarcode() {
         result.value = {kind: 'product', code, food: r.food, stock: r.stock}
         stock.value = r.stock
         state.value = 'product'
-        showToast(t('HomeBarcodeRemembered', {code, food: r.food.name}, '{code} now means {food}'))
+        showToast(linkFood.value ? t('HomeBarcodeRemembered', {code, food: r.food.name}, '{code} now means {food}') : t('HomeProductCreated', {food: r.food.name}, 'Created {food}. Nothing is in stock yet.'))
         await afterFound(false)
     } catch (err: any) {
         showToast(err.message, 'error')
@@ -674,6 +941,7 @@ function changeProduct() {
 // ---- forms ----
 const restockLocationId = ref<number | null>(null)
 const quickAdd = ref(false)
+const returnToScanner = ref(true)
 
 const addAmount = ref<any>(1)
 const addUnitId = ref<number>(0)
@@ -715,16 +983,20 @@ function unitOfFood(): number {
 
 const addPreferredEntryId = ref<number | null>(null)
 
-function applyModeDefaults() {
+function applyAddDefaults() {
     addPreferredEntryId.value = null
-    const unit = unitOfFood()
     addAmount.value = 1
-    addUnitId.value = unit
+    addUnitId.value = unitOfFood()
     addLocationId.value = scanPanel.mode == 'restock' ? (restockLocationId.value ?? lastLocationId()) : lastLocationId()
     addExpires.value = ''
     addShelf.value = ''
     addCode.value = ''
     addNewBatch.value = false
+}
+
+function applyModeDefaults() {
+    const unit = unitOfFood()
+    applyAddDefaults()
     // count: where it is if it's in one place, otherwise the usual place
     setLocationId.value = stock.value.locations.length == 1 ? stock.value.locations[0]!.location.id : lastLocationId()
     setUnitId.value = unit
@@ -785,19 +1057,13 @@ function batchTitle(b: Batch) {
     return `${qty(b.amount, b.unit)} · ${b.location.name}${b.sub_location ? ' · ' + b.sub_location : ''}${b.expires ? ' · ' + expiryText(b.expires) : ''} · #${b.code}`
 }
 
-function selectTab(v: string) {
-    tab.value = tab.value == v ? null : v
-    if (v == 'count') resetSetValue()
-    if (v == 'details') loadHistory()
-}
-
-function openBatch(b: Batch) {
+function openBatch(b: Batch, from: string | null = null) {
     detailBatch.value = b
     setEditFields(b)
     useEntryId.value = b.id
     moveEntryId.value = b.id
-    tab.value = 'details'
     duplicateOpen.value = false
+    go('batch', from)
 }
 
 function setEditFields(b: Batch) {
@@ -820,6 +1086,7 @@ function duplicateBatch() {
     addNewBatch.value = true
     addCode.value = ''
     duplicateOpen.value = false
+    backTo.value = 'batch'
     tab.value = 'add'
 }
 
@@ -886,7 +1153,7 @@ async function doAdd() {
         addAmount.value = 1
         addCode.value = ''
         addNewBatch.value = false
-        if (scanPanel.mode != 'restock') tab.value = null
+        afterAction(true)
     })
 }
 
@@ -894,7 +1161,7 @@ async function doSet() {
     await write({
         action: 'set', food_id: result.value.food.id, unit_id: setUnitId.value || null, location_id: setLocationId.value,
         counted: setValue.value, expected: setExpected, entry_id: setBatches.value.length > 1 && setValue.value != setRecorded.value ? setEntry.value : null,
-    }, () => { tab.value = null })
+    }, () => afterAction(true))
 }
 
 async function doUse() {
@@ -902,20 +1169,25 @@ async function doUse() {
     await write({action: 'remove', entry_id: useBatch.value.id, amount: useAmount.value, reason: useReason.value}, () => {
         useAmount.value = 1
         if (!stock.value.batches.find(b => b.id == useEntryId.value)) useEntryId.value = stock.value.batches[0]?.id ?? null
-        tab.value = null
+        afterAction(true)
     })
 }
 
 async function doMove() {
     if (!moveBatch.value) return
     await write({action: 'move', entry_id: moveBatch.value.id, amount: moveAmount.value, to_location_id: moveToId.value, to_sub_location: moveShelf.value.trim()},
-        () => { tab.value = null })
+        () => afterAction(true))
 }
 
 async function doEdit() {
     if (!detailBatch.value) return
     await write({action: 'edit', entry_id: detailBatch.value.id, expires: editExpires.value || null, sub_location: editShelf.value.trim(), code: editCode.value.trim()},
-        () => { detailBatch.value = stock.value.batches.find(b => b.id == detailBatch.value!.id) ?? null })
+        () => {
+            detailBatch.value = stock.value.batches.find(b => b.id == detailBatch.value!.id) ?? detailBatch.value
+            if (detailBatch.value) setEditFields(detailBatch.value)
+            markClean()
+            if (queuedScan.value) take(queuedScan.value)
+        })
 }
 
 async function undo(logId: number) {
@@ -1032,6 +1304,8 @@ async function saveCountLine(quiet = false) {
         count.value = r.count
         countRecorded.value = r.recorded
         showToast(r.message)
+        markClean()
+        if (queuedScan.value) take(queuedScan.value)
     } catch (err: any) {
         showToast(err.message, 'error')
     } finally {
@@ -1126,7 +1400,10 @@ watch(() => scanPanel.at, async () => {
     if (!scanPanel.open) return
     await ensureReference()
     restockLocationId.value = restockLocationId.value ?? lastLocationId()
-    try { quickAdd.value = localStorage.getItem(QUICK_ADD_KEY) == '1' } catch (e) { /* private mode */ }
+    try {
+        quickAdd.value = localStorage.getItem(QUICK_ADD_KEY) == '1'
+        returnToScanner.value = localStorage.getItem(RETURN_KEY) != '0'
+    } catch (e) { /* private mode */ }
     if (scanPanel.mode == 'count') await loadOpenCounts()
     const target = scanPanel.target
     if (target?.foodId) {
@@ -1143,11 +1420,27 @@ watch(() => scanPanel.open, open => {
     if (!open) {
         lookupSeq++
         toast.value = null
+        pendingScan.value = null
+        queuedScan.value = null
     }
 })
 
 watch(quickAdd, v => store(QUICK_ADD_KEY, v ? '1' : null))
+watch(returnToScanner, v => store(RETURN_KEY, v ? null : '0'))
 watch(restockLocationId, v => { if (scanPanel.mode == 'restock' && v && tab.value == 'add') addLocationId.value = v })
+
+// status for the pill here and in the Pantry header (after everything it reads is declared)
+
+// status for the pill here and in the Pantry header (after everything it reads is declared)
+watchEffect(() => {
+    if (!scanPanel.open) return
+    scanStatus.value = pendingScan.value || queuedScan.value ? 'paused'
+        : scanPanel.mode == 'count' && !count.value ? 'ready'
+            : state.value == 'loading' ? 'looking'
+            : state.value == 'unknown' ? 'new'
+                : ['product', 'label', 'ambiguous'].includes(state.value) ? 'found' : 'ready'
+})
+watch(() => scanPanel.open, open => { if (!open) scanStatus.value = 'ready' })
 
 onMounted(() => { /* reference data loads the first time the panel opens */ })
 </script>
@@ -1532,5 +1825,315 @@ onMounted(() => { /* reference data loads the first time the panel opens */ })
 
 .psp-toast :deep(.v-btn) {
     color: inherit;
+}
+/* ---- status pill ---- */
+.psp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(var(--v-theme-on-surface), 0.05);
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+
+.psp-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgb(var(--v-theme-success));
+}
+
+.s-looking .psp-dot { background: rgb(var(--v-theme-info)); animation: psp-pulse 1s ease-in-out infinite; }
+.s-found .psp-dot { background: rgb(var(--v-theme-success)); }
+.s-new .psp-dot { background: rgb(var(--v-theme-warning)); }
+.s-paused .psp-dot { background: rgb(var(--v-theme-warning)); }
+
+@keyframes psp-pulse { 50% { opacity: .3; } }
+
+/* ---- ready / pending ---- */
+.psp-ready {
+    text-align: center;
+    padding: 18px 8px 22px;
+}
+
+.psp-ready-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 10px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--v-theme-on-surface), 0.05);
+}
+
+.psp-ready-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.psp-pending, .psp-queued {
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(var(--v-theme-warning), 0.10);
+    box-shadow: inset 0 0 0 1px rgba(var(--v-theme-warning), 0.35);
+}
+
+.psp-queued {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+    font-size: 0.8125rem;
+}
+
+/* ---- overview ---- */
+.psp-found {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 1.0625rem;
+    font-weight: 600;
+}
+
+.psp-hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.psp-thumb.lg {
+    width: 88px;
+    height: 88px;
+    border-radius: 12px;
+}
+
+.psp-name.lg {
+    font-size: 1.125rem;
+    line-height: 1.3;
+    margin-bottom: 2px;
+}
+
+.psp-onhand {
+    margin: 18px 0 4px;
+    padding-bottom: 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+
+.psp-onhand-label {
+    font-size: 0.875rem;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.psp-onhand-total {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+}
+
+.psp-onhand-total.none {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.75);
+    margin: 4px 0;
+}
+
+.psp-onhand-sub {
+    font-size: 0.8125rem;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.psp-locrows {
+    padding: 6px 0;
+}
+
+.psp-locrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px;
+    font-size: 0.9375rem;
+}
+
+.psp-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.875rem;
+}
+
+.psp-fact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.psp-fact b.soon { color: rgb(var(--v-theme-warning)); }
+.psp-fact b.expired { color: rgb(var(--v-theme-error)); }
+
+.psp-ask {
+    margin: 4px 0 10px;
+    font-weight: 600;
+}
+
+.psp-hero + .psp-ask {
+    margin-top: 20px;
+}
+
+.psp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.psp-grid :deep(.v-btn) {
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.psp-cta {
+    background: rgb(var(--v-theme-on-surface)) !important;
+    color: rgb(var(--v-theme-surface)) !important;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.psp-cta.v-btn--disabled {
+    opacity: 0.4;
+}
+
+.psp-link {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+}
+
+.psp-link:hover { text-decoration: underline; }
+
+/* ---- action screens ---- */
+.psp-sub-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -6px 0 12px -8px;
+}
+
+.psp-sub-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    flex-grow: 1;
+}
+
+.psp-badge {
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.psp-hint {
+    margin-top: 6px;
+    font-size: 0.8125rem;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+.psp-date-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 8px 0 14px;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px rgba(var(--v-theme-on-surface), 0.2);
+}
+
+.psp-date-wrap:focus-within {
+    box-shadow: inset 0 0 0 1px rgb(var(--v-theme-on-surface));
+}
+
+.psp-date-wrap .psp-date {
+    flex: 1;
+    height: 100%;
+    padding: 0;
+    box-shadow: none;
+    outline: none;
+    font-size: 1rem;
+}
+
+.psp-summary {
+    margin: 16px 0 8px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(var(--v-theme-on-surface), 0.03);
+    font-variant-numeric: tabular-nums;
+}
+
+.psp-summary > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 0.875rem;
+}
+
+.psp-summary > div > span {
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+
+.psp-summary > div.total {
+    margin-top: 6px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+    font-size: 1rem;
+}
+
+.psp-summary > div.total > span {
+    color: inherit;
+    font-weight: 600;
+}
+
+.psp-summary > div.total b {
+    font-size: 1.25rem;
+}
+</style>
+
+<style>
+/* home fork: on a computer the scan panel is a drawer on the right, so the Pantry stays in view */
+.v-dialog.psp-dialog-side {
+    justify-content: flex-end;
+    align-items: stretch;
+}
+
+.v-dialog.psp-dialog-side > .v-overlay__content {
+    margin: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+.v-dialog.psp-dialog-side > .v-overlay__content > .v-card {
+    border-radius: 16px 0 0 16px !important;
+    height: 100%;
+}
+
+.v-dialog.psp-dialog-side > .v-overlay__scrim {
+    opacity: 0.12;
 }
 </style>

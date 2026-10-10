@@ -5,7 +5,8 @@
                 <v-avatar rounded color="primary" variant="tonal" size="48"><v-icon icon="$pantry" /></v-avatar>
                 <div><h1 class="text-h4 font-weight-bold">{{ $t('Pantry') }}</h1><p class="text-body-2 text-medium-emphasis mt-1">Your food, across every shelf and storage space.</p></div>
             </div>
-            <div class="header-actions d-flex flex-wrap ga-2">
+            <div class="header-actions d-flex flex-wrap align-center ga-2">
+                <span class="scanner-status" :class="'s-' + scannerState.kind" role="status" :title="scannerState.help"><span class="dot"></span>{{ scannerState.text }}</span>
                 <v-btn variant="text" prepend-icon="fa-solid fa-clock-rotate-left" :to="{name: 'PantryActivityPage'}">Activity</v-btn>
                 <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" @click="openScanPanel({mode: 'lookup'})">Scan item</v-btn>
                 <v-btn variant="outlined" prepend-icon="fa-solid fa-list-check" @click="openScanPanel({mode: 'count'})">Stock count</v-btn>
@@ -99,7 +100,7 @@ import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import {ApiApi, type Food, type InventoryEntry, type InventoryLocation} from '@/openapi'
 import PantryProductImage from '@/components/display/PantryProductImage.vue'
 import VModelSelect from '@/components/inputs/VModelSelect.vue'
-import {daysUntil, fmtDate, openScanPanel, pantryApi, pantryVersion, scanPanel} from '@/composables/useScan'
+import {daysUntil, fmtDate, inputPaused, openScanPanel, pantryApi, pantryVersion, scanPanel, scanStatus} from '@/composables/useScan'
 import {EXPIRY_WINDOW_DAYS, expiryDay, groupProducts, loadInventory, quantity, totalText} from '@/utils/pantry'
 
 const items = ref<InventoryEntry[]>([])
@@ -126,6 +127,13 @@ const visibleProducts = computed(() => products.value.slice((productPage.value -
 watch([search, food, location, sort, pageSize], () => { productPage.value = 1 })
 watch(pageCount, pages => { productPage.value = Math.min(productPage.value, pages) })
 const selectedProduct = computed(() => allProducts.value.find(p => p.key === selectedKey.value))
+// handheld scanner state: a text box with focus takes the scanner's typing, so scans pause
+const scannerState = computed(() => {
+    if (inputPaused.value || scanStatus.value == 'paused') return {kind: 'paused', text: 'Scanning paused', help: inputPaused.value ? 'A text box has focus. Click elsewhere on the page to scan again.' : 'Finish or discard the open edit to scan the next item.'}
+    if (scanPanel.open && (scanStatus.value == 'found' || scanStatus.value == 'new')) return {kind: 'found', text: scanStatus.value == 'new' ? 'New barcode' : 'Product found', help: ''}
+    if (scanStatus.value == 'looking') return {kind: 'looking', text: 'Looking up…', help: ''}
+    return {kind: 'ready', text: 'Scanner ready', help: 'Scan a barcode or item label any time.'}
+})
 const hasFilters = computed(() => !!(search.value || food.value || location.value))
 function resetFilters() { search.value = ''; food.value = null; location.value = null }
 function expiryColor(day: string) { const days = daysUntil(day)!; return days < 0 ? 'error' : days <= EXPIRY_WINDOW_DAYS ? 'warning' : undefined }
@@ -164,6 +172,10 @@ onUnmounted(() => { sequence++; countSequence++; window.removeEventListener('foc
 
 <style scoped>
 .pantry-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; margin: 16px 0 32px; }
+.scanner-status { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; margin-right: 4px; border-radius: 999px; font-size: .8125rem; font-weight: 500; background: rgba(var(--v-theme-on-surface), .05); color: rgba(var(--v-theme-on-surface), .75); }
+.scanner-status .dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--v-theme-success)); }
+.scanner-status.s-paused .dot { background: rgb(var(--v-theme-warning)); }
+.scanner-status.s-looking .dot { background: rgb(var(--v-theme-info)); }
 .pantry-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pantry-tools > :first-child { flex: 1 1 260px; }
 .pantry-sort { flex: 0 1 220px; min-width: 180px; }
