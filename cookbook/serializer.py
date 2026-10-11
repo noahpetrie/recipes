@@ -25,6 +25,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.fields import IntegerField
 
 from cookbook.helper.CustomStorageClass import CachedS3Boto3Storage
+from cookbook.helper import home_nutrition
 from cookbook.helper.HelperFunctions import str2bool
 from cookbook.helper.ai_helper import get_monthly_token_usage
 from cookbook.helper.image_processing import is_file_type_allowed
@@ -962,6 +963,9 @@ class FoodSerializer(UniqueFieldsMixin, WritableNestedModelSerializer, ExtendedR
                 obj.properties.add(Property.objects.create(property_type_id=p['property_type']['id'],
                                                            property_amount=p['property_amount'], space=space))
 
+        elif created:
+            home_nutrition.fill_new_food(obj)  # home fork: USDA nutrition for new foods
+
         return obj
 
     def update(self, instance, validated_data):
@@ -1538,6 +1542,8 @@ class FoodShoppingSerializer(serializers.ModelSerializer):
         obj, created = Food.objects.get_or_create(name=name, plural_name=plural_name, space=space,
                                                   properties_food_unit=properties_food_unit,
                                                   defaults=validated_data)
+        if created:
+            home_nutrition.fill_new_food(obj)  # home fork: USDA nutrition for new foods
 
         return obj
 

@@ -60,10 +60,20 @@ def c_to_f(c):
 
 
 def temps(text):
-    """ChefSteps writes temperatures as [f 129] / [c 54]"""
-    text = re.sub(r'\[f\s+(-?\d+(?:\.\d+)?)\]', lambda m: f'{m.group(1)} °F ({f_to_c(m.group(1))} °C)', text, flags=re.I)
-    text = re.sub(r'\[c\s+(-?\d+(?:\.\d+)?)\]', lambda m: f'{m.group(1)} °C ({c_to_f(m.group(1))} °F)', text, flags=re.I)
+    """ChefSteps writes temperatures as [f 129] / [c 54] and amounts as [g 500] / [ea 2]"""
+    num = r'\s+(-?\d+(?:\.\d+)?)\s*\]'
+    text = re.sub(r'\[f' + num, lambda m: f'{m.group(1)} °F ({f_to_c(m.group(1))} °C)', text, flags=re.I)
+    text = re.sub(r'\[c' + num, lambda m: f'{m.group(1)} °C ({c_to_f(m.group(1))} °F)', text, flags=re.I)
+    text = re.sub(r'\[(?:ea|each|whole)' + num, r'\1', text, flags=re.I)
+    text = re.sub(r'\[(g|kg|mg|ml|l|oz|lb|in|cm|mm)' + num, r'\2 \1', text, flags=re.I)
     return text
+
+
+def unwanted(text):
+    """{activity:…} links to other ChefSteps recipes, which can't be followed outside ChefSteps"""
+    text = re.sub(r'\{activity:[^}]*\}', '', text)
+    text = re.sub(r'\*\*\s*\*\*', '', text)  # empty bold
+    return re.sub(r'\n{3,}', '\n\n', text).strip()
 
 
 def html_to_md(s):
@@ -77,8 +87,8 @@ def html_to_md(s):
     s = re.sub(r'<a [^>]*href="([^"]+)"[^>]*>(.*?)</a>', r'[\2](\1)', s, flags=re.I | re.S)
     s = re.sub(r'<[^>]+>', '', s)
     s = htmllib.unescape(s)
-    s = temps(s)
-    s = re.sub(r'[ \t]+\n', '\n', s)
+    s = unwanted(temps(s))
+    s = re.sub(r'[ \t\u00a0\u202f]+\n', '\n', s)
     return re.sub(r'\n{3,}', '\n\n', s).strip()
 
 
@@ -108,6 +118,12 @@ def cs_ingredient(i):
                 'note': ', '.join(x for x in [note, 'as needed' if unit.lower() in AS_NEEDED else ''] if x)[:256]}
     return {'food': {'name': i['name'][:128]}, 'unit': None if unit.lower() in NO_UNIT else {'name': unit[:128]},
             'amount': amount, 'no_amount': False, 'note': note[:256]}
+
+
+def ingredient_line(i):
+    amount = f"{i['amount']:g}" if i['amount'] else ''
+    unit = (i['unit'] or {}).get('name', '')
+    return ' '.join(x for x in [amount, unit, i['food']['name'], f"({i['note']})" if i['note'] else ''] if x)
 
 
 def from_chefsteps(page, url, signed_in=None):
@@ -141,16 +157,24 @@ def from_chefsteps(page, url, signed_in=None):
         ings = [cs_ingredient(i) for i in (s.get('ingredients') or []) if i.get('name')]
         used.update(i.get('id') for i in (s.get('ingredients') or []))
         name = temps(htmllib.unescape(s.get('title') or '')).strip()
-        if s.get('isTip'):
-            name = f'Tip: {name}' if name else 'Tip'
         text = html_to_md(s.get('description') or '')
         if s.get('tip'):
             text += f"\n\n*Tip:* {html_to_md(s['tip'])}"
-        steps.append({'name': name[:128], 'instruction': text, 'ingredients': ings})
+        if s.get('isTip'):
+            name = f'Tip: {name}' if name else 'Tip'
+            # a tip's ingredients (a variation, whipped butter for serving) aren't part of the
+            # recipe, so list them in the text where they don't count toward shopping or nutrition
+            if ings:
+                text = '\n'.join(f'- {ingredient_line(i)}' for i in ings) + ('\n\n' + text if text else '')
+                ings = []
         img = s.get('ImageUrl') or s.get('imageUrl') or s.get('image')
         if isinstance(img, dict):
             img = img.get('url') or img.get('imageUrl')
-        images.append(img if isinstance(img, str) and img.startswith('http') else None)
+        img = img if isinstance(img, str) and img.startswith('http') else None
+        if not text and not ings and not img:
+            continue  # held only {activity:…} links
+        steps.append({'name': name[:128], 'instruction': text, 'ingredients': ings})
+        images.append(img)
 
     # anything in the ingredient list that no step uses goes up front
     left = [cs_ingredient(i) for i in (d.get('ingredients') or []) if i.get('name') and i.get('id') not in used]

@@ -95,3 +95,6 @@ vue3/src/plugins
 docs/reference/
 .idea/vcs.xml
 .idea/db-forest-config.xml
+
+# home fork: bundled USDA nutrition table (cookbook/helper/home_nutrition.py)
+!cookbook/data/

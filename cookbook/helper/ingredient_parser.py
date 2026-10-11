@@ -6,6 +6,7 @@ from django.db.models import Q
 
 from cookbook.helper.automation_helper import AutomationEngine
 from cookbook.models import Food, Ingredient, Unit
+from cookbook.helper import home_nutrition
 
 _VULGAR_FRACTIONS = '¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞'
 _AMOUNT_EXPRESSION = rf'(?:[0-9]+\s+[0-9]+/[0-9]+|[0-9]+/[0-9]+|[0-9]+(?:[.,][0-9]+)?[{_VULGAR_FRACTIONS}]?|[{_VULGAR_FRACTIONS}])'
@@ -47,6 +48,10 @@ class IngredientParser:
 
             if unit_obj := Unit.objects.filter(space=self.request.space).filter(Q(name=unit_name) | Q(plural_name=unit_name)).first():
                 return unit_obj
+            # home fork: "grams", "tablespoons" etc. are the space's existing g / tbsp unit, not a new
+            # unit that nothing can convert (which left nutrition incomplete)
+            if unit_obj := home_nutrition.known_unit(self.request.space, unit_name):
+                return unit_obj
             else:
                 return Unit.objects.create(space=self.request.space, name=unit_name)
         return None
@@ -66,7 +71,9 @@ class IngredientParser:
             if food_obj := Food.objects.filter(space=self.request.space).filter(Q(name=food_name) | Q(plural_name=food_name)).first():
                 return food_obj
             else:
-                return Food.objects.create(space=self.request.space, name=food_name)
+                food_obj = Food.objects.create(space=self.request.space, name=food_name)
+                home_nutrition.fill_new_food(food_obj)  # home fork: USDA nutrition for new foods
+                return food_obj
         return None
 
     def parse_fraction(self, x):

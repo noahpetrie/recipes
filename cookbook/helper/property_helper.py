@@ -1,5 +1,8 @@
+import copy
+
 from django.core.cache import caches
 
+from cookbook.helper import home_nutrition
 from cookbook.helper.cache_helper import CacheHelper
 from cookbook.helper.unit_conversion_helper import UnitConversionHelper
 from cookbook.models import PropertyType
@@ -40,8 +43,13 @@ class FoodPropertyHelper:
 
         uch = UnitConversionHelper(self.space)
 
+        pcs = home_nutrition.piece_unit(self.space)
         for i in ingredients:
             if i.food is not None:
+                if i.unit is None and pcs is not None and i.amount and i.food.unitconversion_set.filter(base_unit=pcs).exists():
+                    # home fork: "4 eggs" has no unit; count it in pieces when the food knows a piece's weight
+                    i = copy.copy(i)
+                    i.unit = pcs
                 conversions = uch.get_conversions(i)
                 for pt in property_types:
                     # if a property could be calculated with an actual value
