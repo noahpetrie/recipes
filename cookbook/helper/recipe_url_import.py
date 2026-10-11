@@ -10,6 +10,7 @@ from pytubefix import YouTube
 from recipe_scrapers._utils import get_host_name, get_minutes
 
 from cookbook.helper.automation_helper import AutomationEngine
+from cookbook.helper import home_import
 from cookbook.helper.ingredient_parser import IngredientParser
 from cookbook.models import Automation, Keyword, PropertyType
 
@@ -162,15 +163,18 @@ def get_from_scraper(scrape, request):
             'ingredients': [],
         })
 
-    recipe_json['description'] = recipe_json['description'][:512]
-    if len(recipe_json['description']) > 256:  # split at 256 as long descriptions don't look good on recipe cards
-        recipe_json['steps'][0]['instruction'] = f"*{recipe_json['description']}*  \n\n" + recipe_json['steps'][0]['instruction']
+    # home fork: a long description is cut at a sentence end instead of being copied into the first step
+    if len(recipe_json['description']) > 512:
+        cut = recipe_json['description'][:511]
+        end = max(cut.rfind('. '), cut.rfind('! '), cut.rfind('? '))
+        recipe_json['description'] = cut[:end + 1] if end > 100 else cut.rsplit(' ', 1)[0] + '…'
 
     try:
         for x in scrape.ingredients():
             if x.strip() != '':
                 try:
-                    amount, unit, food, note = ingredient_parser.parse(x)
+                    text, span = home_import.split_range(x)
+                    amount, unit, food, note = ingredient_parser.parse(text)
                     ingredient = {
                         'amount': amount,
                         'food': {
@@ -178,13 +182,14 @@ def get_from_scraper(scrape, request):
                         },
                         'unit': None,
                         'note': note,
-                        'original_text': x
+                        'original_text': x,
+                        'range': span,
                     }
                     if unit:
                         ingredient['unit'] = {
                             'name': unit,
                         }
-                    recipe_json['steps'][0]['ingredients'].append(ingredient)
+                    recipe_json['steps'][0]['ingredients'].append(home_import.tidy(ingredient, request.space))
                 except Exception:
                     recipe_json['steps'][0]['ingredients'].append({
                         'amount': 0,
@@ -197,6 +202,7 @@ def get_from_scraper(scrape, request):
                     })
     except Exception:
         pass
+    home_import.spread(recipe_json['steps'])
 
     recipe_json['properties'] = []
     try:

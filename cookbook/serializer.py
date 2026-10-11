@@ -749,6 +749,8 @@ class UnitSerializer(UniqueFieldsMixin, ExtendedRecipeMixin, OpenDataModelMixin)
                 Q(name__iexact=validated_data['name']) | Q(plural_name__iexact=validated_data['name']),
                 space=space).first():
             return unit
+        if unit := home_nutrition.known_unit(space, validated_data['name']):  # home fork: "tablespoons" -> tbsp
+            return unit
 
         obj, created = Unit.objects.get_or_create(name__iexact=validated_data['name'], space=space,
                                                   defaults=validated_data)

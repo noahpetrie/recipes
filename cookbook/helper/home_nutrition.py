@@ -13,6 +13,7 @@ import logging
 import json
 import os
 import re
+import unicodedata
 from decimal import Decimal
 from functools import lru_cache
 
@@ -44,6 +45,10 @@ SKIP_CATEGORIES = {'Baby Foods', 'Fast Foods', 'Restaurant Foods', 'Meals, Entre
 # USDA description. Some are stand-ins with near-identical nutrition (potato starch -> potato flour,
 # glucose syrup -> light corn syrup, Shaoxing wine -> sake); MSG counts as nothing.
 ALIASES = {
+    'beef stock': 'Soup, stock, beef, home-prepared', 'beef broth': 'Soup, beef broth or bouillon canned, ready-to-serve',
+    'chicken broth': 'Soup, stock, chicken, home-prepared', 'sherry': 'Alcoholic beverage, wine, dessert, dry',
+    'dry sherry': 'Alcoholic beverage, wine, dessert, dry', 'onion': 'Onions, raw', 'yellow onion': 'Onions, raw',
+    'red onion': 'Onions, raw', 'red or yellow onion': 'Onions, raw', 'white onion': 'Onions, raw',
     'butter': 'Butter, without salt', 'unsalted butter': 'Butter, without salt', 'salted butter': 'Butter, salted',
     'egg': 'Egg, whole, raw, fresh', 'large egg': 'Egg, whole, raw, fresh',
     'egg white': 'Egg, white, raw, fresh', 'egg yolk': 'Egg, yolk, raw, fresh',
@@ -163,6 +168,7 @@ def singular(w):
 
 
 def words(text):
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode()  # Gruyère -> gruyere
     text = re.sub(r'\(s\)', '', text.lower())
     text = re.sub(r'\([^)]*\)', ' ', text)
     return [singular(w) for w in re.findall(r'[a-z]+', text)]
@@ -324,7 +330,10 @@ def complete_food(food, dry_run=False):
 
 def volume_unit(unit, modifier):
     """'us_cup' / 'tbsp' / 'tsp' for a USDA portion; SR Legacy mostly puts it in the text ("cup packed")"""
-    first = (unit or modifier or '').lower().split(' ')[0].strip(',')
+    text = (unit or modifier or '').lower()
+    if text.startswith('fl oz'):
+        return 'fluid_ounce'
+    first = text.split(' ')[0].strip(',')
     return {'cup': 'us_cup', 'cups': 'us_cup', 'tablespoon': 'tbsp', 'tbsp': 'tbsp', 'teaspoon': 'tsp', 'tsp': 'tsp'}.get(first)
 
 
@@ -382,8 +391,13 @@ UNIT_SYNONYMS = {
     'oz': 'ounce', 'ounce': 'ounce', 'ounces': 'ounce', 'lb': 'pound', 'lbs': 'pound', 'pound': 'pound', 'pounds': 'pound',
     'tbsp': 'tbsp', 'tbsps': 'tbsp', 'tbs': 'tbsp', 'tablespoon': 'tbsp', 'tablespoons': 'tbsp',
     'tsp': 'tsp', 'tsps': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
-    'cup': 'us_cup', 'cups': 'us_cup', 'fl oz': 'fluid_ounce', 'fluid ounce': 'fluid_ounce', 'fluid ounces': 'fluid_ounce',
+    'cup': 'us_cup', 'cups': 'us_cup', 'c': 'us_cup', 'fl oz': 'fluid_ounce', 'fluid ounce': 'fluid_ounce', 'fluid ounces': 'fluid_ounce',
+    'pint': 'pint', 'pints': 'pint', 'pt': 'pint', 'quart': 'quart', 'quarts': 'quart', 'qt': 'quart', 'qts': 'quart',
+    'gallon': 'gallon', 'gallons': 'gallon', 'gal': 'gallon',
 }
+# when the space has no unit yet for a base unit, one is made with this name
+UNIT_NAMES = {'g': 'g', 'kg': 'kg', 'ml': 'ml', 'l': 'l', 'ounce': 'oz', 'pound': 'lb', 'tbsp': 'tbsp', 'tsp': 'tsp',
+              'us_cup': 'cup', 'fluid_ounce': 'fl oz', 'pint': 'pt', 'quart': 'qt', 'gallon': 'gal'}
 
 
 def known_unit(space, name):
@@ -392,4 +406,12 @@ def known_unit(space, name):
     base = UNIT_SYNONYMS.get((name or '').strip().lower().rstrip('.'))
     if not base:
         return None
-    return Unit.objects.filter(space=space, base_unit=base).order_by('id').first()
+    unit = Unit.objects.filter(space=space, base_unit=base).order_by('id').first()
+    if unit is None:
+        unit = Unit.objects.filter(space=space, name__iexact=UNIT_NAMES[base]).order_by('id').first()
+        if unit is None:
+            unit = Unit.objects.create(space=space, name=UNIT_NAMES[base], plural_name=UNIT_NAMES[base], base_unit=base)
+        elif not unit.base_unit:
+            unit.base_unit = base
+            unit.save()
+    return unit

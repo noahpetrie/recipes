@@ -139,6 +139,24 @@ class UnitConversionHelper:
 
         conversions = self.base_conversions(conversions)
 
+        # home fork: a food's own conversion also covers units that convert to it, so a food with
+        # 1 cup = 200 g works for tbsp, tsp, qt… too (upstream only applies it to the exact unit)
+        if ingredient.food:
+            seen = {c.unit.id for c in conversions if c.unit}
+            extra = []
+            for c in list(conversions):
+                if not c.unit:
+                    continue
+                for uc in c.unit.unit_conversion_base_relation.all():
+                    if uc.food_id == ingredient.food.id and uc.space_id == getattr(self.space, 'id', None):
+                        r = self._uc_convert(uc, c.amount, c.unit, ingredient.food)
+                        if r and r.unit.id not in seen:
+                            seen.add(r.unit.id)
+                            extra.append(r)
+            if extra:
+                have = {c.unit.id for c in conversions if c.unit}
+                conversions += [c for c in self.base_conversions(extra) if c.unit and c.unit.id not in have]
+
         return conversions
 
     def _uc_convert(self, uc, amount, unit, food):
