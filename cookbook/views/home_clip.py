@@ -108,7 +108,7 @@ AS_NEEDED = {'a/n', 'as needed', 'to taste', 'n/a'}
 
 def cs_ingredient(i):
     unit = str(i.get('metricUnit') or i.get('unit') or '').strip()
-    note = str(i.get('tip') or i.get('preparation') or i.get('note') or '').strip()
+    note = temps(str(i.get('tip') or i.get('preparation') or i.get('note') or '')).strip()
     try:
         amount = float(i.get('metricAmount') or i.get('amount') or i.get('quantity') or 0)
     except ValueError:
