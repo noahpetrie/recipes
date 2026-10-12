@@ -380,6 +380,8 @@ def fill_new_food(food):
             log.info('nutrition for %s from %s (%s)', food.name, entry.get('description'), how)
     except Exception:
         log.exception('could not fill nutrition for %s', food.name)
+    from cookbook.helper.home_aisles import fill_aisle
+    fill_aisle(food)  # and its store aisle
 
 
 # unit names an importer may use for a unit the space already has (name -> Unit.base_unit)

@@ -8,18 +8,31 @@
                     <p class="text-body-2 text-medium-emphasis mt-1">Your recipes, matched against the pantry and the staples you always keep.</p>
                 </div>
             </div>
-            <v-btn variant="outlined" prepend-icon="fa-solid fa-jar" @click="openStaples">Staples<span v-if="data" class="text-medium-emphasis ms-1">· {{ data.staples }}</span></v-btn>
+            <div class="d-flex flex-wrap ga-2">
+                <v-btn variant="outlined" prepend-icon="fa-solid fa-jar" @click="openStaples">Staples<span v-if="data" class="text-medium-emphasis ms-1">· {{ data.staples }}</span></v-btn>
+                <v-btn color="primary" variant="flat" prepend-icon="fa-solid fa-basket-shopping" :to="{name: 'GroceriesPage'}">Add groceries</v-btn>
+            </div>
         </header>
 
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">Couldn’t load recipes. <v-btn variant="text" size="small" @click="load">Retry</v-btn></v-alert>
 
-        <v-sheet v-if="data && data.staples == 0" rounded="lg" border class="pa-4 mb-5 d-flex align-center flex-wrap ga-3">
-            <v-icon icon="fa-solid fa-circle-info" color="info" />
-            <div class="flex-grow-1" style="min-width: 220px">
-                <div class="font-weight-medium">Tell Kitchen what you always keep</div>
-                <div class="text-body-2 text-medium-emphasis">Salt, oil, spices and baking basics usually aren’t tracked in the pantry, so every recipe looks like it’s missing them.</div>
+        <v-sheet v-if="data && data.staples == 0" rounded="lg" border class="pa-5 mb-5 quick-staples">
+            <div class="d-flex align-start ga-3">
+                <v-icon icon="fa-solid fa-jar" color="primary" class="mt-1" />
+                <div class="flex-grow-1">
+                    <div class="font-weight-bold">First, the things you always keep</div>
+                    <div class="text-body-2 text-medium-emphasis">Salt, oil, spices and baking basics aren’t tracked in the pantry, so without staples every recipe looks like it’s missing them. These are the ones your recipes use. Untick anything you don’t keep.</div>
+                </div>
             </div>
-            <v-btn color="primary" @click="openStaples">Choose staples</v-btn>
+            <v-progress-linear v-if="!foods" indeterminate class="my-4" />
+            <div v-else class="d-flex flex-wrap ga-2 my-4">
+                <v-chip v-for="f in suggestedFoods" :key="f.id" filter :model-value="quick.has(f.id)" :variant="quick.has(f.id) ? 'tonal' : 'outlined'"
+                        :color="quick.has(f.id) ? 'primary' : undefined" @click="quick.has(f.id) ? quick.delete(f.id) : quick.add(f.id)">{{ f.name }}</v-chip>
+            </div>
+            <div class="d-flex flex-wrap ga-2">
+                <v-btn color="primary" variant="flat" :disabled="quick.size == 0" :loading="savingQuick" @click="saveQuick">Save {{ quick.size }} {{ quick.size == 1 ? 'staple' : 'staples' }}</v-btn>
+                <v-btn variant="text" @click="openStaples">Choose from everything</v-btn>
+            </div>
         </v-sheet>
 
         <div v-if="data" class="d-flex flex-wrap align-center ga-3 mb-5">
@@ -142,11 +155,38 @@ async function api(path: string, body?: any) {
     return r.json()
 }
 
+const quick = reactive(new Set<number>())
+const savingQuick = ref(false)
+const suggestedFoods = computed(() => (foods.value ?? []).filter(f => f.suggested && !f.in_stock))
+
+async function loadQuick() {
+    try {
+        foods.value = (await api('staples/')).foods
+        quick.clear()
+        suggestedFoods.value.forEach(f => quick.add(f.id))
+    } catch {
+        foods.value = []
+    }
+}
+
+async function saveQuick() {
+    savingQuick.value = true
+    try {
+        await api('staples/', {foods: [...quick], on_hand: true})
+        await load()
+    } catch {
+        error.value = true
+    } finally {
+        savingQuick.value = false
+    }
+}
+
 async function load() {
     loading.value = true
     error.value = false
     try {
         data.value = await api('cookable/')
+        if (data.value?.staples == 0 && !staplesOpen.value) loadQuick()
     } catch {
         error.value = true
     } finally {
@@ -212,7 +252,17 @@ async function setStaple(id: number, on: boolean) {
 }
 
 async function markAll(items: StapleFood[]) {
-    for (const f of [...items]) await setStaple(f.id, true)
+    const ids = items.map(f => f.id)
+    ids.forEach(id => busy.add(id))
+    try {
+        await api('staples/', {foods: ids, on_hand: true})
+        items.forEach(f => f.on_hand = true)
+        changed = true
+    } catch {
+        error.value = true
+    } finally {
+        ids.forEach(id => busy.delete(id))
+    }
 }
 
 watch(staplesOpen, open => {

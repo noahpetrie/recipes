@@ -45,6 +45,8 @@ let routes = [
     {path: '/pantry', component: () => import("@/pages/PantryPage.vue"), name: 'PantryPage', meta: {title: 'Pantry'}},
     {path: "/cook", component: () => import("@/pages/CookNowPage.vue"), name: "CookNowPage", meta: {title: "What can I make"}},
     {path: "/pantry/activity", component: () => import("@/pages/PantryActivityPage.vue"), name: "PantryActivityPage", meta: {title: "Inventory activity"}},
+    // home fork: put a whole shop away at once
+    {path: '/pantry/groceries', component: () => import("@/pages/GroceriesPage.vue"), name: 'GroceriesPage', meta: {title: 'Add groceries'}},
     // home fork: review and apply a stock count
     {path: '/pantry/count/:id', component: () => import("@/pages/StockCountPage.vue"), name: 'StockCountPage', props: true, meta: {title: 'Pantry'}},
 

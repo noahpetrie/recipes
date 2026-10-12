@@ -34,14 +34,13 @@
             </v-card-text>
         </v-card>
         <template v-if="totalRecipes > 0">
-            <horizontal-recipe-scroller :skeletons="4" mode="recent" v-if="totalRecipes > 10"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="new" v-if="totalRecipes > 10"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="keyword" v-if="totalRecipes > 10"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="random" v-if="totalRecipes > 0"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="created_by" v-if="totalRecipes > 10"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="2" mode="rating" v-if="totalRecipes > 10"></horizontal-recipe-scroller>
+            <!-- home fork: what you can cook comes first; the recipe rows only repeat themselves in a small library -->
+            <home-kitchen-rows />
+            <horizontal-recipe-scroller :skeletons="4" mode="recent" v-if="totalRecipes > 0"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="4" mode="new" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
             <horizontal-recipe-scroller :skeletons="4" mode="keyword" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="random" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="2" mode="rating" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="4" mode="random" v-if="totalRecipes > 40"></horizontal-recipe-scroller>
 
             <v-row>
                 <v-col class="text-center">
@@ -60,6 +59,7 @@ import {onMounted, ref} from "vue"
 import {ApiApi} from "@/openapi"
 import HorizontalRecipeScroller from "@/components/display/HorizontalRecipeWindow.vue"
 import HorizontalMealPlanWindow from "@/components/display/HorizontalMealPlanWindow.vue"
+import HomeKitchenRows from "@/components/display/HomeKitchenRows.vue"
 import SearchPage from "@/pages/SearchPage.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import {useRouter} from "vue-router";

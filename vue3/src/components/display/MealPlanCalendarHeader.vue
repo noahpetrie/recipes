@@ -6,6 +6,7 @@
             {{ DateTime.fromJSDate(props.headerProps?.displayLastDate).toLocaleString(DateTime.DATE_MED) }}
         </div>
         <div class="mpc-tools">
+            <shop-week-button />
             <v-btn variant="outlined" size="small" @click="date = new Date()">{{ $t('Today') }}</v-btn>
             <div class="mpc-group">
                 <v-btn variant="outlined" size="small" icon="fa-solid fa-chevron-left" :aria-label="$t('Previous', 'Previous')"
@@ -30,6 +31,7 @@ import {IHeaderProps} from "vue-simple-calendar/dist/src/IHeaderProps";
 import {ref, watch} from "vue";
 import {DateTime} from "luxon";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
+import ShopWeekButton from "@/components/buttons/ShopWeekButton.vue";
 
 const emit = defineEmits(['input'])
 
@@ -66,6 +68,8 @@ watch(() => date.value, (newValue, oldValue) => {
 .mpc-tools {
     margin-left: auto;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: center;
     gap: 8px;
 }

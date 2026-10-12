@@ -7,7 +7,7 @@ from django.utils.translation import gettext as _
 
 from cookbook.connectors.connector_manager import ActionType, ConnectorManager
 from cookbook.helper.permission_helper import get_household_user_ids, CustomRecipePermission
-from cookbook.models import Ingredient, MealPlan, Recipe, ShoppingListEntry, ShoppingListRecipe, SupermarketCategoryRelation
+from cookbook.models import Ingredient, InventoryEntry, MealPlan, Recipe, ShoppingListEntry, ShoppingListRecipe, SupermarketCategoryRelation
 
 
 def shopping_helper(qs, request):
@@ -93,6 +93,8 @@ class RecipeShoppingEditor():
             queryset = Ingredient.objects.filter(step__recipe__id=id, food__ignore_shopping=False, space=self.space)
             owner_user_space = self.created_by.userspace_set.filter(space=self.space).first()
             queryset = queryset.exclude(food__onhand_users__id__in=get_household_user_ids(owner_user_space))
+            # home fork: food already in the pantry counts as on hand too (see cookbook/views/home_cook.py)
+            queryset = queryset.exclude(food__in=InventoryEntry.objects.filter(space=self.space, amount__gt=0).values('food'))
             return queryset
         else:
             return Ingredient.objects.filter(step__recipe__id=id, food__ignore_shopping=False, space=self.space)

@@ -10,7 +10,8 @@
                 <v-btn variant="text" prepend-icon="fa-solid fa-clock-rotate-left" :to="{name: 'PantryActivityPage'}">Activity</v-btn>
                 <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" @click="openScanPanel({mode: 'lookup'})">Scan item</v-btn>
                 <v-btn variant="outlined" prepend-icon="fa-solid fa-list-check" @click="openScanPanel({mode: 'count'})">Stock count</v-btn>
-                <v-btn color="create" prepend-icon="$create" @click="openScanPanel({mode: 'restock'})">Restock</v-btn>
+                <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" @click="openScanPanel({mode: 'restock'})">Restock by scanning</v-btn>
+                <v-btn color="create" prepend-icon="fa-solid fa-basket-shopping" :to="{name: 'GroceriesPage'}">Add groceries</v-btn>
             </div>
         </header>
 

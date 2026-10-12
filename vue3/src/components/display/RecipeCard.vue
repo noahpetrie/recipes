@@ -30,8 +30,8 @@
                         {{ $t('External') }}
                     </v-chip>
                     <v-chip class="mb-1 me-1" size="x-small" prepend-icon="far fa-clock" label variant="outlined"
-                            v-if="props.recipe.workingTime != undefined && props.recipe.workingTime > 0">
-                        {{ recipe.workingTime! + recipe.waitingTime! }}
+                            v-if="(props.recipe.workingTime ?? 0) + (props.recipe.waitingTime ?? 0) > 0">
+                        {{ formatMinutes((recipe.workingTime ?? 0) + (recipe.waitingTime ?? 0)) }}
                     </v-chip>
                 </template>
             </keywords-component>
@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import {formatMinutes} from "@/utils/home_format";
 import {computed, PropType, ref} from 'vue'
 import KeywordsComponent from "@/components/display/KeywordsBar.vue";
 import {Recipe, RecipeOverview} from "@/openapi";

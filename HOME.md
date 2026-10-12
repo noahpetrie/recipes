@@ -72,6 +72,23 @@ public here, as the AGPL requires.
   normal scraper. Access key from `GET /api/home/extension-token/` (session login). Step photos
   shown at card size.
 
+- **Groceries in, shopping out** (home.13):
+  - *Add groceries* (`/pantry/groceries`, `cookbook/views/home_groceries.py`): tick what you
+    bought or paste a receipt / order email (`POST /api/home/groceries/match/`); each item gets a
+    place (Pantry/Fridge/Freezer) and expiry from `cookbook/helper/home_aisles.py`, and the whole
+    shop is booked through the pantry's own add (logged, undoable).
+  - Staples: one-tap setup on /cook (suggested staples preselected; `POST /api/home/staples/`
+    takes `foods: [ids]`).
+  - Shopping leaves out staples *and* foods in the pantry: `shopping_helper.get_recipe_ingredients`
+    (meal plan auto-add, Shop for the week) and the Add to shopping dialog (`GET /api/home/kitchen/`).
+    *Shop for the week* on the meal plan (`POST /api/home/shop-plan/`).
+  - Aisles: `manage.py home_shop_setup` removes open data's sample supermarkets, adds one
+    "Grocery store" in store-walk order and fills missing food aisles; new foods get one
+    automatically (`fill_new_food`). The shopping list picks the store when there is only one.
+  - Start page: Use it up / Ready to cook / Almost ready rows (`HomeKitchenRows.vue`); the
+    repeating recipe rows only appear in bigger libraries. Times read "7 h 30 min"
+    (`utils/home_format.ts`), nutrition is rounded.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

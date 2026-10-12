@@ -21,6 +21,7 @@
                                     </td>
                                     <td>
                                         <template v-if="e.food"> {{ ingredientToFoodString(e.ingredient, ingredientFactor) }}</template>
+                                        <span v-if="e.food && haveReason(e.food.id!)" class="have-badge">{{ haveReason(e.food.id!) }}</span>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -49,6 +50,7 @@ import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import {ingredientToUnitString, ingredientToFoodString} from "@/utils/model_utils.ts";
 import ModelSelect from "@/components/inputs/ModelSelect.vue";
 import VModelSelect from "@/components/inputs/VModelSelect.vue";
+import {useDjangoUrls} from "@/composables/useDjangoUrls";
 
 const emit = defineEmits(['created'])
 
@@ -68,6 +70,23 @@ const relatedRecipes = ref([] as Recipe[])
 
 const dialogRecipes = ref([] as ShoppingDialogRecipe[])
 
+// home fork: leave out what the pantry has and the household's staples (cookbook/views/home_cook.py)
+const kitchen = ref({inStock: new Set<number>(), staples: new Set<number>()})
+
+function haveReason(foodId: number) {
+    if (kitchen.value.inStock.has(foodId)) return 'In pantry'
+    if (kitchen.value.staples.has(foodId)) return 'Staple'
+    return ''
+}
+
+function loadKitchen() {
+    return fetch(useDjangoUrls().getDjangoUrl('api/home/kitchen/'), {credentials: 'same-origin'})
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+            if (d) kitchen.value = {inStock: new Set(d.in_stock), staples: new Set(d.staples)}
+        }).catch(() => {})
+}
+
 const ingredientFactor = computed(() => {
     return servings.value / ((recipe.value.servings != undefined) ? recipe.value.servings : 1)
 })
@@ -83,6 +102,8 @@ function loadRecipeData() {
     let api = new ApiApi()
     let promises: Promise<any>[] = []
     loading.value = true
+
+    promises.push(loadKitchen())
 
     let recipeRequest = api.apiRecipeRetrieve({id: props.recipe.id!}).then(r => {
         recipe.value = r
@@ -120,7 +141,7 @@ function loadRecipeData() {
                                 food: ingredient.food,
                                 unit: ingredient.unit,
                                 ingredient: ingredient,
-                                checked: (ingredient.food ? !(ingredient.food.ignoreShopping || ingredient.food.foodOnhand) : true),
+                                checked: (ingredient.food ? !(ingredient.food.ignoreShopping || ingredient.food.foodOnhand || haveReason(ingredient.food.id!)) : true),
                             })
                         }
                     })
@@ -184,5 +205,5 @@ function createShoppingListRecipe() {
 </script>
 
 <style scoped>
-
+.have-badge { margin-left: 8px; font-size: .72rem; padding: 1px 6px; border-radius: 6px; background: rgba(var(--v-theme-success), .12); color: rgb(var(--v-theme-success)); white-space: nowrap; }
 </style>

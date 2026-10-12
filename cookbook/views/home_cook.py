@@ -11,9 +11,10 @@ ignore shopping (water) don't count either way.
 
   GET  /api/home/cookable/            recipes with have/total, what's missing and what it uses up
   GET  /api/home/staples/             every food the recipes use, flagged on hand / in stock / suggested
-  POST /api/home/staples/             {food: id, on_hand: bool} mark one staple for the household
+  POST /api/home/staples/             {food: id | foods: [ids], on_hand: bool} mark staples for the household
 """
 import datetime
+import re
 from collections import defaultdict
 
 from django.db.models import Q
@@ -29,6 +30,7 @@ SOON_DAYS = 7  # same window as the home page's "Use it up"
 
 # foods most kitchens always have; offered as staples, never set without asking
 STAPLE_CATEGORIES = {'Spices and Herbs', 'Fats and Oils'}
+PERISHABLE = {'butter', 'milk', 'cream', 'egg', 'cheese', 'yogurt', 'meat', 'chicken', 'bell', 'fresh'}
 STAPLE_WORDS = {'salt', 'pepper', 'oil', 'sugar', 'flour', 'baking soda', 'baking powder', 'vanilla extract',
                 'soy sauce', 'vinegar', 'cream of tartar', 'honey', 'msg', 'cornstarch'}
 
@@ -114,8 +116,15 @@ def cookable(request):
 
 
 def suggested(food):
-    name = food.name.lower()
-    if any(w in name for w in STAPLE_WORDS):
+    ws = home_nutrition.words(food.name)
+    name = ' '.join(ws)
+    # whole words: "unsalted butter" isn't salt; but "cream of tartar" is a staple and "cream" isn't
+    found = [w for w in STAPLE_WORDS if re.search(rf'\b{re.escape(w)}\b', name)]
+    if any(' ' in w for w in found):
+        return True
+    if set(ws) & PERISHABLE:
+        return False
+    if found:
         return True
     if food.fdc_id:
         entry = home_nutrition.table()[1].get(food.fdc_id)
@@ -128,15 +137,20 @@ def suggested(food):
 def staples(request):
     users = get_household_user_ids(request.user_space)
     if request.method == 'POST':
+        # {food: id} or {foods: [ids]}, plus on_hand
         try:
-            food = Food.objects.get(space=request.space, id=int(request.data.get('food')))
-        except (Food.DoesNotExist, TypeError, ValueError):
+            ids = [int(x) for x in (request.data.get('foods') or [request.data.get('food')])]
+        except (TypeError, ValueError):
             return Response({'error': 'No such food.'}, status=404)
-        if request.data.get('on_hand'):
-            food.onhand_users.add(*users)
-        else:
-            food.onhand_users.remove(*users)
-        return Response({'id': food.id, 'on_hand': bool(request.data.get('on_hand'))})
+        foods = list(Food.objects.filter(space=request.space, id__in=ids))
+        if not foods:
+            return Response({'error': 'No such food.'}, status=404)
+        for food in foods:
+            if request.data.get('on_hand'):
+                food.onhand_users.add(*users)
+            else:
+                food.onhand_users.remove(*users)
+        return Response({'id': foods[0].id, 'ids': [f.id for f in foods], 'on_hand': bool(request.data.get('on_hand'))})
 
     stock, on_hand = kitchen(request)
     used = defaultdict(int)
@@ -146,3 +160,42 @@ def staples(request):
     foods = Food.objects.filter(space=request.space, id__in=used.keys()).order_by('name')
     return Response({'foods': [{'id': f.id, 'name': f.name, 'recipes': used[f.id], 'on_hand': f.id in on_hand,
                                 'in_stock': f.id in stock, 'suggested': suggested(f)} for f in foods]})
+
+
+@api_view(['GET'])
+@permission_classes(PERMS)
+def kitchen_state(request):
+    """food ids in the pantry and the household's staples, so shopping dialogs can leave them unticked"""
+    stock, staples = kitchen(request)
+    return Response({'in_stock': sorted(stock), 'staples': sorted(staples)})
+
+
+@api_view(['POST'])
+@permission_classes(PERMS)
+def shop_plan(request):
+    """
+    {from, to} (dates, inclusive): every planned recipe in that range that isn't on the shopping
+    list yet goes on it, leaving out staples and what the pantry has (shopping_helper)
+    """
+    from cookbook.helper.shopping_helper import RecipeShoppingEditor
+    from cookbook.models import MealPlan, ShoppingListEntry
+    try:
+        start = datetime.date.fromisoformat(str(request.data.get('from'))[:10])
+        end = datetime.date.fromisoformat(str(request.data.get('to'))[:10])
+    except ValueError:
+        return Response({'error': 'Choose the days to shop for.'}, status=400)
+    users = get_household_user_ids(request.user_space)
+    plans = (MealPlan.objects.filter(space=request.space, recipe__isnull=False, from_date__date__lte=end, to_date__date__gte=start)
+             .filter(Q(created_by__in=users) | Q(shared=request.user)).distinct().select_related('recipe').order_by('from_date'))
+    stock, staples = kitchen(request)
+    added, already = [], []
+    for plan in plans:
+        if plan.shoppinglistrecipe_set.exists():
+            already.append(plan.recipe.name)
+            continue
+        RecipeShoppingEditor(request, space=request.space).create(mealplan=plan, servings=plan.servings)
+        added.append(plan.recipe.name)
+    skipped = sorted({i.food.name for p in plans for i in Ingredient.objects.filter(step__recipe=p.recipe, food__isnull=False).select_related('food')
+                      if i.food_id in stock or i.food_id in staples})
+    items = ShoppingListEntry.objects.filter(space=request.space, checked=False, list_recipe__mealplan__in=plans).count()
+    return Response({'added': added, 'already': already, 'items': items, 'skipped': skipped})

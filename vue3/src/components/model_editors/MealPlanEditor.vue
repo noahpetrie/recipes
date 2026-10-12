@@ -47,7 +47,7 @@
                             <v-list-item-title class="font-weight-medium">{{ editingObj.recipe.name }}</v-list-item-title>
                             <v-list-item-subtitle v-if="editingObj.recipe.workingTime || editingObj.recipe.waitingTime">
                                 <v-icon icon="fa-regular fa-clock" size="x-small" class="me-1"></v-icon>
-                                {{ (editingObj.recipe.workingTime ?? 0) + (editingObj.recipe.waitingTime ?? 0) }} min
+                                {{ formatMinutes((editingObj.recipe.workingTime ?? 0) + (editingObj.recipe.waitingTime ?? 0)) }}
                             </v-list-item-subtitle>
                             <template #append>
                                 <v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small" class="text-medium-emphasis me-2"></v-icon>
@@ -148,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import {formatMinutes} from "@/utils/home_format";
 
 import {computed, nextTick, onMounted, onUnmounted, PropType, ref, toRaw, watch} from "vue";
 import {ApiApi, MealPlan, MealType, RecipeOverview, ShoppingListRecipe} from "@/openapi";

@@ -509,6 +509,11 @@ function loadSupermarkets() {
 
     api.apiSupermarketList().then(r => {
         supermarkets.value = r.results
+        // home fork: with a single store there's nothing to choose, so sort the list by its aisles
+        if (r.results.length == 1 && useUserPreferenceStore().deviceSettings.shopping_selected_supermarket == null) {
+            useUserPreferenceStore().deviceSettings.shopping_selected_supermarket = r.results[0]
+            useShoppingStore().updateEntriesStructure()
+        }
         // TODO either recursive or add a "favorite" attribute to supermarkets for them to display at all
     }).catch(err => {
         useMessageStore().addError(ErrorMessageType.FETCH_ERROR, err)
