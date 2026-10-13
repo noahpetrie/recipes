@@ -79,7 +79,7 @@
         </v-main>
 
         <!-- completely hide in print mode because setting d-print-node keeps layout -->
-        <v-navigation-drawer v-if="lgAndUp && useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode" :rail="railNav" :expand-on-hover="railNav">
+        <v-navigation-drawer v-if="lgAndUp && useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode" :rail="railNav">
             <v-list>
                 <!-- home: who you are lives in the account menu (top right), so the sidebar starts with navigation -->
                 <component :is="item.component" :="item" :key="item.title" v-for="item in useNavigation().getNavigationDrawer()"></component>
