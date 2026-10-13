@@ -131,6 +131,7 @@ urlpatterns = [
     path('api/pantry/stock/', home_pantry.stock, name='api_pantry_stock'),
     path('api/pantry/link-barcode/', home_pantry.link_barcode, name='api_pantry_link_barcode'),
     path('api/pantry/group/', home_pantry.group_product, name='api_pantry_group'),
+    path('api/pantry/catalog/', home_pantry.catalog, name='api_pantry_catalog'),
     path('api/pantry/adjust/', home_pantry.adjust, name='api_pantry_adjust'),
     path('api/pantry/activity/', home_pantry.activity, name='api_pantry_activity'),
     path('api/pantry/counts/', home_pantry.counts, name='api_pantry_counts'),

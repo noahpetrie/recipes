@@ -29,18 +29,40 @@
                 <div class="pantry-tools">
                     <v-text-field v-model="search" label="Search products or retail barcodes" prepend-inner-icon="$search" clearable hide-details />
                     <v-btn variant="outlined" prepend-icon="fa-solid fa-filter" :aria-expanded="showFilters" aria-controls="pantry-filters" @click="showFilters = !showFilters">Filters</v-btn>
-                    <v-select v-model="sort" label="Sort by" :items="[{title: 'Product name', value: 'name'}, {title: 'Earliest known expiry', value: 'expiry'}]" hide-details class="pantry-sort" />
+                    <v-select v-model="sort" label="Sort by" :items="sortItems" hide-details class="pantry-sort" />
                 </div>
                 <v-row v-show="showFilters" id="pantry-filters" class="mt-1">
                     <v-col cols="12" sm="6"><v-model-select model="Food" v-model="food" clearable hide-details /></v-col>
                     <v-col cols="12" sm="6"><v-model-select model="InventoryLocation" v-model="location" clearable hide-details /></v-col>
                 </v-row>
+                <!-- home fork: products on file with none in stock (home_pantry.catalog) -->
+                <v-btn-toggle v-model="view" mandatory density="comfortable" variant="outlined" divided class="mt-4 view-toggle">
+                    <v-btn value="stock">On hand<span class="count">{{ allProducts.length }}</span></v-btn>
+                    <v-btn value="missing">Not on hand<span class="count">{{ catalog.length }}</span></v-btn>
+                </v-btn-toggle>
                 <div v-if="hasFilters" class="d-flex flex-wrap align-center ga-2 mt-3">
                     <v-chip v-if="search" size="small">Search: {{ search }}</v-chip>
                     <v-chip v-if="food" size="small">{{ food.name }}</v-chip>
                     <v-chip v-if="location" size="small">{{ location.name }}</v-chip>
                     <v-btn size="small" variant="text" @click="resetFilters">Reset filters</v-btn>
                 </div>
+                <template v-if="view == 'missing'">
+                    <div class="mt-4 mb-1 text-body-2 text-medium-emphasis" role="status">{{ catalogLoading ? 'Loading…' : `${missing.length} ${missing.length === 1 ? 'product' : 'products'} you’ve had before and have none of now` }}</div>
+                    <v-alert v-if="catalogError" type="error" variant="tonal" class="my-4">{{ catalogError }} <v-btn variant="text" @click="loadCatalog">Retry</v-btn></v-alert>
+                    <v-progress-linear v-if="catalogLoading && !catalog.length" indeterminate color="primary" />
+                    <p v-else-if="!missing.length" class="py-8 text-center text-medium-emphasis">{{ search ? 'No products match.' : 'Everything you’ve bought before is in stock.' }}</p>
+                    <v-table v-else class="product-table">
+                        <thead><tr><th scope="col">Product</th><th scope="col">Last bought</th><th scope="col">Aisle</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+                        <tbody><tr v-for="line in visibleMissing" :key="line.food.id" class="product-row missing-row" @click="missingId = line.food.id">
+                            <td data-label="Product"><div class="d-flex align-center ga-3"><pantry-product-image small :src="line.food.image" /><div class="min-w-0"><button class="product-name" @click.stop="missingId = line.food.id">{{ line.food.name }}</button><span v-if="line.products.length > 1" class="text-caption text-medium-emphasis ms-2">{{ line.products.length }} products</span><div class="mobile-meta text-caption text-medium-emphasis">{{ boughtText(line) }}</div></div></div></td>
+                            <td data-label="Last bought"><span v-if="line.last_bought">{{ boughtText(line) }}</span><span v-else class="text-medium-emphasis">—</span></td>
+                            <td data-label="Aisle"><span :class="{'text-medium-emphasis': !line.food.aisle}">{{ line.food.aisle || '—' }}</span></td>
+                            <td class="text-end"><v-chip v-if="line.on_list" size="small" color="success" variant="tonal" prepend-icon="fa-solid fa-check">On list</v-chip><v-btn v-else size="small" variant="outlined" prepend-icon="fa-solid fa-cart-plus" :loading="listing == line.food.id" @click.stop="addToList(line)">Add to list</v-btn></td>
+                        </tr></tbody>
+                    </v-table>
+                    <div v-if="visibleMissing.length < missing.length" ref="moreSentinel" class="py-4 text-center text-body-2 text-medium-emphasis" role="status">Loading more…</div>
+                </template>
+                <template v-else>
                 <div class="d-flex justify-space-between flex-wrap ga-2 mt-4 mb-1 text-body-2 text-medium-emphasis" role="status">
                     <span>{{ loading ? 'Loading inventory…' : error ? 'Inventory unavailable' : `${products.length} ${products.length === 1 ? 'product' : 'products'}${location ? ' in ' + location.name : ''}` }}</span>
                 </div>
@@ -60,6 +82,7 @@
                     </v-table>
                     <!-- more rows load as the end of the list scrolls into view -->
                     <div v-if="visibleProducts.length < products.length" ref="moreSentinel" class="py-4 text-center text-body-2 text-medium-emphasis" role="status">Loading more…</div>
+                </template>
                 </template>
             </v-card-text>
         </v-card>
@@ -113,6 +136,25 @@
                 </v-card-text>
             </v-card>
         </v-dialog>
+        <v-dialog :model-value="missingLine != null" max-width="720" scrollable aria-labelledby="pantry-missing-title" @update:model-value="v => { if (!v) missingId = null }">
+            <v-card v-if="missingLine">
+                <v-card-title class="d-flex align-center justify-space-between ga-2"><h2 id="pantry-missing-title" class="text-h6 text-wrap">{{ missingLine.food.name }}</h2><v-btn icon="$close" variant="text" aria-label="Close" @click="missingId = null" /></v-card-title>
+                <v-card-text>
+                    <div class="d-flex align-center ga-4 flex-wrap">
+                        <pantry-product-image :src="missingLine.food.image" />
+                        <div class="flex-grow-1"><p class="text-h6 font-weight-bold">None on hand</p><p class="text-body-2 text-medium-emphasis">{{ missingLine.last_bought ? boughtText(missingLine) : 'Not bought through a store order on file' }}</p></div>
+                        <v-chip v-if="missingLine.on_list" color="success" variant="tonal" prepend-icon="fa-solid fa-check">On the shopping list</v-chip>
+                        <v-btn v-else color="primary" variant="flat" prepend-icon="fa-solid fa-cart-plus" :loading="listing == missingLine.food.id" @click="addToList(missingLine)">Add to shopping list</v-btn>
+                    </div>
+                    <h3 class="text-subtitle-2 mt-6 mb-2">{{ missingLine.products.length > 1 ? 'Products' : 'Product' }}</h3>
+                    <div v-for="p in missingLine.products" :key="p.id" class="missing-product d-flex align-center ga-3 pa-3">
+                        <pantry-product-image small :src="p.image || missingLine.food.image" />
+                        <div class="flex-grow-1 min-w-0"><div class="font-weight-medium">{{ p.name }}</div><div class="text-caption text-medium-emphasis">{{ p.last_bought ? `Last bought ${fmtDate(p.last_bought)}${p.times > 1 ? ` · ${p.times} times` : ''}` : 'No store orders on file' }}</div></div>
+                        <v-btn size="small" variant="outlined" prepend-icon="fa-solid fa-plus" @click="addStock(p.id)">Add stock</v-btn>
+                    </div>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
 
@@ -135,6 +177,7 @@ const showFilters = ref(false)
 const sort = ref('name')
 const selectedKey = ref<string | null>(null)
 const allProducts = computed(() => groupProducts(items.value))
+const view = ref<'stock' | 'missing'>('stock')
 // A location filter scopes displayed totals; the drill-down always includes all product batches.
 const products = computed(() => {
     const query = (search.value || '').trim().toLocaleLowerCase()
@@ -146,7 +189,45 @@ const products = computed(() => {
 const CHUNK = 40
 const shown = ref(CHUNK)
 const visibleProducts = computed(() => products.value.slice(0, shown.value))
-watch([search, food, location, sort], () => { shown.value = CHUNK })
+watch([search, food, location, sort, view], () => { shown.value = CHUNK })
+
+// products on file with none in stock
+type CatalogProduct = { id: number, name: string, image: string, last_bought: string, times: number }
+type CatalogLine = { food: { id: number, name: string, image: string, aisle: string | null }, products: CatalogProduct[], last_bought: string, times: number, on_list: boolean }
+const catalog = ref<CatalogLine[]>([])
+const catalogLoading = ref(false)
+const catalogError = ref('')
+const sortItems = computed(() => view.value == 'missing'
+    ? [{title: 'Product name', value: 'name'}, {title: 'Last bought', value: 'bought'}, {title: 'Most bought', value: 'times'}]
+    : [{title: 'Product name', value: 'name'}, {title: 'Earliest known expiry', value: 'expiry'}])
+watch(view, () => { if (!sortItems.value.some(i => i.value == sort.value)) sort.value = 'name' })
+const missing = computed(() => {
+    const query = (search.value || '').trim().toLocaleLowerCase()
+    const lines = catalog.value.filter(l => (!food.value || l.food.id === food.value.id || l.products.some(p => p.id === food.value!.id))
+        && (!query || [l.food.name, ...l.products.map(p => p.name)].some(n => n.toLocaleLowerCase().includes(query))))
+    if (sort.value == 'bought') return [...lines].sort((a, b) => (b.last_bought || '').localeCompare(a.last_bought || ''))
+    if (sort.value == 'times') return [...lines].sort((a, b) => b.times - a.times)
+    return lines
+})
+const visibleMissing = computed(() => missing.value.slice(0, shown.value))
+const missingId = ref<number | null>(null)
+const missingLine = computed(() => catalog.value.find(l => l.food.id === missingId.value) ?? null)
+function boughtText(l: CatalogLine) {
+    return l.last_bought ? `${fmtDate(l.last_bought)}${l.times > 1 ? ` · ${l.times}×` : ''}` : ''
+}
+async function loadCatalog() {
+    catalogLoading.value = true; catalogError.value = ''
+    try { catalog.value = (await pantryApi('catalog/')).lines } catch { catalogError.value = 'Couldn’t load the products you’ve had before.' } finally { catalogLoading.value = false }
+}
+const listing = ref<number | null>(null)
+async function addToList(l: CatalogLine) {
+    listing.value = l.food.id
+    try { await pantryApi('catalog/', {food_id: l.food.id}); l.on_list = true } catch { catalogError.value = `Couldn’t add ${l.food.name} to the shopping list.` } finally { listing.value = null }
+}
+function addStock(foodId: number) {
+    missingId.value = null
+    openScanPanel({mode: 'lookup', foodId, tab: 'add'})
+}
 const moreSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 watch(moreSentinel, el => {
@@ -250,7 +331,7 @@ async function loadCounts() {
     try { const r = await pantryApi('counts/?status=open'); if (current === countSequence) { openCounts.value = r.results; countError.value = false } }
     catch { if (current === countSequence) countError.value = true }
 }
-function refresh() { loadItems(); loadCounts() }
+function refresh() { loadItems(); loadCounts(); loadCatalog() }
 watch(pantryVersion, refresh)
 watch(() => scanPanel.open, open => { if (!open) loadCounts() })
 onMounted(() => { refresh(); window.addEventListener('focus', refresh) })
@@ -278,6 +359,10 @@ onUnmounted(() => { sequence++; countSequence++; observer?.disconnect(); window.
 .mobile-meta { display: none; }
 .batch-card { border: 1px solid rgba(var(--v-theme-on-surface), .12); border-radius: 12px; }
 .group-box { background: rgba(var(--v-theme-on-surface), .03); border-radius: 12px; }
+.view-toggle .count { margin-left: 8px; font-size: .75rem; opacity: .6; font-variant-numeric: tabular-nums; }
+.missing-row :deep(.product-photo) { opacity: .75; }
+.missing-product { border: 1px solid rgba(var(--v-theme-on-surface), .12); border-radius: 12px; }
+.missing-product + .missing-product { margin-top: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 700px) {
     .pantry-page { padding: 8px 12px; }
@@ -293,7 +378,8 @@ onUnmounted(() => { sequence++; countSequence++; observer?.disconnect(); window.
     .product-table :deep(td) { height: auto !important; border: 0 !important; padding: 0 !important; }
     .product-table td[data-label="Product"] { flex: 1 1 auto; min-width: 0; }
     .product-table td[data-label="On hand"] { flex: 0 0 auto; text-align: end; }
-    .product-table td[data-label="Locations"], .product-table td[data-label="Earliest known expiry"], .product-table td:last-child { display: none; }
+    .product-table td[data-label="Locations"], .product-table td[data-label="Earliest known expiry"], .product-table td[data-label="Last bought"], .product-table td[data-label="Aisle"] { display: none; }
+    .product-table:not(:has(.missing-row)) td:last-child { display: none; }
     .mobile-meta { display: block !important; }
 }
 </style>

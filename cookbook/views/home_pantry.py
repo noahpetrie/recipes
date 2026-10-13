@@ -716,3 +716,64 @@ def group_product(request):
     except (PathOverflow, InvalidMoveToDescendant, InvalidPosition):
         return Response({'error': f'Couldn’t put {food.name} under {parent.name}.'}, status=400)
     return Response({'ok': True})
+
+
+# ---- products you've had before but have none of now ------------------------------------------
+
+def _bought(food):
+    """(last bought date or '', times bought) from the store orders on file (product_info.orders)"""
+    orders = (food.product_info or {}).get('orders') or []
+    return max((o.get('last') or '' for o in orders), default=''), sum(o.get('times') or 0 for o in orders)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes(PERMS)
+def catalog(request):
+    """
+    GET   the products on file (scanned, or from past store orders) that aren't in stock, one line
+          per general food, so "Red Onions, 3 lb Bag" and "Red Onion" show as Red onion:
+          {lines: [{food: {id, name, image, aisle}, products: [{id, name, image, last_bought, times}],
+                    last_bought, times, on_list}]}
+          A line is left out as soon as the general food or any product under it is in stock.
+    POST  {food_id} puts that food on the shopping list (once).
+    """
+    from cookbook.models import ShoppingListEntry
+    space = request.space
+    if request.method == 'POST':
+        try:
+            food = get_obj(Food, space, request.data.get('food_id'), 'Food')
+        except ValueError as e:
+            return Response({'error': str(e)}, status=404)
+        if food is None:
+            return Response({'error': 'Food not found'}, status=404)
+        if not ShoppingListEntry.objects.filter(space=space, food=food, checked=False).exists():
+            ShoppingListEntry.objects.create(space=space, food=food, amount=1, created_by=request.user)
+        return Response({'ok': True, 'message': f'{food.name} is on the shopping list'})
+
+    stocked = {p[:Food.steplen] for p in InventoryEntry.objects.filter(space=space, amount__gt=0).values_list('food__path', flat=True) if p}
+    on_list = {p[:Food.steplen] for p in ShoppingListEntry.objects.filter(space=space, checked=False).values_list('food__path', flat=True) if p}
+    products = [f for f in Food.objects.filter(space=space, product_info__isnull=False).order_by('name')
+                if (f.product_info or {}).get('image') or (f.product_info or {}).get('orders')]
+    tops = {f.path[:Food.steplen] for f in products} - stocked
+    general = {f.path: f for f in Food.objects.filter(space=space, path__in=tops).select_related('supermarket_category')}
+    lines = OrderedDict()
+    for f in products:
+        top = general.get(f.path[:Food.steplen])
+        if top is None:
+            continue
+        last, times = _bought(f)
+        lines.setdefault(top.path, []).append({'id': f.id, 'name': f.name, 'image': (f.product_info or {}).get('image') or '',
+                                               'last_bought': last, 'times': times})
+    out = []
+    for path, items in lines.items():
+        top = general[path]
+        if len(items) > 1:  # a general food that only lends its products' picture isn't a product itself
+            items = [p for p in items if p['id'] != top.id or p['times'] or top.barcodes]
+        items.sort(key=lambda p: (p['id'] != top.id, -p['times'], p['name'].lower()))
+        image = (top.product_info or {}).get('image') or next((p['image'] for p in items if p['image']), '')
+        out.append({'food': {'id': top.id, 'name': top.name, 'image': image,
+                             'aisle': top.supermarket_category.name if top.supermarket_category_id else None},
+                    'products': items, 'last_bought': max((p['last_bought'] for p in items), default=''),
+                    'times': sum(p['times'] for p in items), 'on_list': path in on_list})
+    out.sort(key=lambda l: l['food']['name'].lower())
+    return Response({'lines': out})
