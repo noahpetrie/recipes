@@ -1,5 +1,5 @@
 <template>
-    <template v-if="loading || recipes.length > 0">
+    <template v-if="loading || shown.length > 0">
         <v-row justify="space-between">
             <v-col>
                 <h4 @click="openSearch()" class="cursor-pointer">
@@ -16,6 +16,8 @@
                             <v-col class="pr-0 pl-0" v-for="r in w" :key="r.id">
                                 <recipe-card :recipe="r" :show_description="true" :show-keywords="true"></recipe-card>
                             </v-col>
+                            <!-- home fork: empty slots keep a short row's cards the usual size -->
+                            <v-col class="pr-0 pl-0" v-for="n in numberOfCols - w.length" :key="'pad' + n"></v-col>
                         </v-row>
                     </v-window-item>
                 </v-window>
@@ -40,7 +42,7 @@
 
 
 <script lang="ts" setup>
-import {computed, onMounted, PropType, ref} from 'vue'
+import {computed, onMounted, PropType, ref, watchEffect} from 'vue'
 import RecipeCard from "@/components/display/RecipeCard.vue";
 import {useDisplay} from "vuetify";
 import {ApiApi, ApiRecipeListRequest, Keyword, Recipe, RecipeOverview, User} from "@/openapi";
@@ -49,12 +51,15 @@ import {useI18n} from "vue-i18n";
 import {DateTime} from "luxon";
 import {tr} from "vuetify/locale";
 import {useRouter} from "vue-router";
+import {useHomeShown} from "@/composables/useHomeShown";
 
 //TODO mode ideas "last year/month/cooked long ago"
 const props = defineProps(
     {
         mode: {type: String as PropType<'recent' | 'new' | 'keyword' | 'rating' | 'random' | 'created_by'>, required: true},
         skeletons: {type: Number, default: 0},
+        // home fork: position on the start page; rows skip recipes a row above already shows (-1 = don't)
+        order: {type: Number, default: -1},
     }
 )
 
@@ -121,6 +126,11 @@ const icon = computed(() => {
 const numberOfCols = computed(() => {
     return homePageCols(name.value)
 })
+
+const homeShown = useHomeShown(props.order)
+const shown = computed(() => recipes.value.filter(r => !homeShown.taken.value.has(r.id!)))
+// only the first screenful counts as shown; the rest are behind the arrows
+watchEffect(() => homeShown.claim(shown.value.slice(0, numberOfCols.value).map(r => r.id!)))
 
 onMounted(() => {
     loadRecipes()
@@ -209,7 +219,7 @@ function doRecipeRequest(params: ApiRecipeListRequest) {
 let recipeWindows = computed(() => {
     let windows = []
     let current_window = []
-    for (const [i, r] of recipes?.value.entries()) {
+    for (const [i, r] of shown.value.entries()) {
         current_window.push(r)
 
         if (i % numberOfCols.value == numberOfCols.value - 1) {

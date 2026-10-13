@@ -34,13 +34,13 @@
             </v-card-text>
         </v-card>
         <template v-if="totalRecipes > 0">
-            <!-- home fork: what you can cook comes first; the recipe rows only repeat themselves in a small library -->
+            <!-- home fork: what you can cook comes first; each row below skips recipes a row above already shows (useHomeShown) -->
             <home-kitchen-rows />
-            <horizontal-recipe-scroller :skeletons="4" mode="recent" v-if="totalRecipes > 0"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="new" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="keyword" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="2" mode="rating" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
-            <horizontal-recipe-scroller :skeletons="4" mode="random" v-if="totalRecipes > 40"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="4" mode="recent" :order="1" v-if="totalRecipes > 0"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="4" mode="new" :order="2" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="4" mode="keyword" :order="3" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="2" mode="rating" :order="4" v-if="totalRecipes > 25"></horizontal-recipe-scroller>
+            <horizontal-recipe-scroller :skeletons="4" mode="random" :order="5" v-if="totalRecipes > 40"></horizontal-recipe-scroller>
 
             <v-row>
                 <v-col class="text-center">
@@ -63,8 +63,10 @@ import HomeKitchenRows from "@/components/display/HomeKitchenRows.vue"
 import SearchPage from "@/pages/SearchPage.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import {useRouter} from "vue-router";
+import {provideHomeShown} from "@/composables/useHomeShown";
 
 const totalRecipes = ref(-1)
+provideHomeShown()
 
 onMounted(() => {
     const api = new ApiApi()

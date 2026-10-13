@@ -41,9 +41,10 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref, watch} from 'vue'
+import {computed, onMounted, ref, watch, watchEffect} from 'vue'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {pantryVersion} from '@/composables/useScan'
+import {useHomeShown} from '@/composables/useHomeShown'
 
 type Cookable = { id: number, name: string, image: string | null, total: number, have: number, missing: { id: number, name: string }[], expiring: { id: number, name: string, expires: string }[] }
 
@@ -71,6 +72,10 @@ const rows = computed(() => {
     }
     return out
 })
+
+// the recipe rows below skip these
+const homeShown = useHomeShown(0)
+watchEffect(() => homeShown.claim(rows.value.flatMap(row => row.recipes.map(r => r.id))))
 
 watch(pantryVersion, load)
 onMounted(load)
