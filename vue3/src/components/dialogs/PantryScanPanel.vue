@@ -790,6 +790,15 @@ function lookUpAsProduct() {
 
 async function lookup(code: string, source: string) {
     const seq = ++lookupSeq
+    // count mode before Start: the first scan starts counting the chosen place
+    if (scanPanel.mode == 'count' && !count.value) {
+        if (!countLocationId.value) {
+            showToast(t('HomeCountPickPlace', 'Choose where you’re counting first.'), 'error')
+            return
+        }
+        await startCount()
+        if (!count.value || seq != lookupSeq) return
+    }
     // count mode with "each scan adds 1": the same product scanned again just counts up
     if (scanPanel.mode == 'count' && count.value && countRepeat.value && (state.value == 'product') && result.value?.food?.barcodes?.includes(code)) {
         countValue.value = (countValue.value || 0) + 1
