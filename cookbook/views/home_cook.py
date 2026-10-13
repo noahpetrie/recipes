@@ -165,9 +165,14 @@ def staples(request):
 @api_view(['GET'])
 @permission_classes(PERMS)
 def kitchen_state(request):
-    """food ids in the pantry and the household's staples, so shopping dialogs can leave them unticked"""
+    """
+    food ids in the pantry and the household's staples, so shopping dialogs can leave them unticked;
+    a food counts as in stock when one of its substitutes is (cardamom seeds cover pods)
+    """
     stock, staples = kitchen(request)
-    return Response({'in_stock': sorted(stock), 'staples': sorted(staples)})
+    have = set(stock) | staples
+    covered = set(Food.objects.filter(space=request.space, substitute__in=have).values_list('id', flat=True)) - have
+    return Response({'in_stock': sorted(set(stock) | covered), 'staples': sorted(staples)})
 
 
 @api_view(['POST'])
