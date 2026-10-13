@@ -9,8 +9,13 @@
                    flat density="comfortable" v-if="useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode"
                    :absolute="!useUserPreferenceStore().userSettings.navSticky"
                    :scroll-behavior="useUserPreferenceStore().userSettings.navSticky ? 'elevate' : ''">
+            <!-- home fork: collapse the sidebar to icons (remembered per browser) -->
+            <v-btn v-if="lgAndUp" icon variant="text" size="small" class="ms-2 d-print-none" :aria-label="railNav ? 'Expand sidebar' : 'Collapse sidebar'"
+                   :title="railNav ? 'Expand sidebar' : 'Collapse sidebar'" @click="railNav = !railNav">
+                <v-icon icon="fa-solid fa-bars" size="small"></v-icon>
+            </v-btn>
             <!-- home: with an app name set for the space ("white label"), show its icon and name as text -->
-            <router-link :to="{ name: 'StartPage', params: {} }" class="home-brand ms-3"
+            <router-link :to="{ name: 'StartPage', params: {} }" class="home-brand" :class="lgAndUp ? 'ms-1' : 'ms-3'"
                          v-if="useUserPreferenceStore().userSettings.navShowLogo && useUserPreferenceStore().activeSpace.appName">
                 <img :src="spaceIcon" alt="" class="home-brand-icon">
                 <span class="home-brand-name">{{ useUserPreferenceStore().activeSpace.appName }}</span>
@@ -74,7 +79,7 @@
         </v-main>
 
         <!-- completely hide in print mode because setting d-print-node keeps layout -->
-        <v-navigation-drawer v-if="lgAndUp && useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode">
+        <v-navigation-drawer v-if="lgAndUp && useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode" :rail="railNav" :expand-on-hover="railNav">
             <v-list>
                 <!-- home: who you are lives in the account menu (top right), so the sidebar starts with navigation -->
                 <component :is="item.component" :="item" :key="item.title" v-for="item in useNavigation().getNavigationDrawer()"></component>
@@ -82,14 +87,6 @@
                 <navigation-drawer-context-menu></navigation-drawer-context-menu>
             </v-list>
 
-            <template #append>
-                <v-list nav>
-                    <v-list-item link class="drawer-version">
-                        <span class="text-caption text-medium-emphasis">Tandoor {{ useUserPreferenceStore().serverSettings.version }}</span>
-                        <help-dialog></help-dialog>
-                    </v-list-item>
-                </v-list>
-            </template>
 
         </v-navigation-drawer>
 
@@ -154,8 +151,7 @@ import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import NavigationDrawerContextMenu from "@/components/display/NavigationDrawerContextMenu.vue";
 import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {isSpaceAboveLimit} from "@/utils/logic_utils";
-import {useTitle} from "@vueuse/core";
-import HelpDialog from "@/components/dialogs/HelpDialog.vue";
+import {useLocalStorage, useTitle} from "@vueuse/core";
 import {useNavigation} from "@/composables/useNavigation.ts";
 import {useRouter} from "vue-router";
 import {useI18n} from "vue-i18n";
@@ -163,6 +159,7 @@ import {THousehold, TSpace} from "@/types/Models.ts";
 import MenuUserInfo from "@/components/display/MenuUserInfo.vue";
 
 const {lgAndUp} = useDisplay()
+const railNav = useLocalStorage('home-sidebar-rail', false)
 const theme = useTheme()
 
 // Home theme: the stock default nav colour (#ddbf86) becomes a plain surface bar; a colour a
