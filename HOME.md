@@ -57,6 +57,8 @@ public here, as the AGPL requires.
   review page, per-line apply with conflict checks; uncounted ≠ zero). Writes take a request id
   (idempotent) and absolute counts an expected value (409 on stale). Handheld scanners work
   anywhere (HardwareScanner.vue); camera via barcode-detector. Migrations 0244–0245.
+  Barcodes match with leading zeros ignored (`barcode_q`, home.15): a camera reads UPC-A
+  876131001243 as EAN-13 0876131001243.
   The panel is a side drawer (full screen on phones): product overview (on hand, per location,
   earliest expiry) → Add stock / Set quantity / Use / remove / View batches screens; zero stock
   offers Add to shopping; unknown barcodes offer Create product prefilled from the lookup; item
