@@ -16,7 +16,7 @@
             <template #append>
                 <div class="d-flex ga-2 flex-wrap">
                     <v-btn variant="text" size="small" :to="{name: 'PantryPage'}">See pantry</v-btn>
-                    <v-btn variant="text" size="small" :to="{name: 'CookNowPage'}">What can I make</v-btn>
+                    <v-btn variant="text" size="small" :to="{name: 'CookNowPage'}">Ready to Cook</v-btn>
                 </div>
             </template>
         </v-alert>

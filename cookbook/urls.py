@@ -118,7 +118,7 @@ urlpatterns = [
     # home fork: "Add to Kitchen" browser extension (cookbook/views/home_clip.py)
     path('api/home/extension-token/', home_clip.extension_token, name='api_home_extension_token'),
     path('api/home/clip/', home_clip.clip, name='api_home_clip'),
-    # home fork: "What can I make" (cookbook/views/home_cook.py)
+    # home fork: "Ready to Cook" (cookbook/views/home_cook.py)
     path('api/home/cookable/', home_cook.cookable, name='api_home_cookable'),
     path('api/home/staples/', home_cook.staples, name='api_home_staples'),
     path('api/home/kitchen/', home_cook.kitchen_state, name='api_home_kitchen'),

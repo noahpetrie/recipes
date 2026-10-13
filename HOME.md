@@ -93,6 +93,17 @@ public here, as the AGPL requires.
     repeating recipe rows only appear in bigger libraries. Times read "7 h 30 min"
     (`utils/home_format.ts`), nutrition is rounded.
 
+- **Simpler screens** (home.16–17):
+  - Pantry: one-line rows that load 40 more as you scroll (no pagination), full width.
+  - Sidebar: Home, Meal Plan, Ready to Cook (`/cook`, was "What can I make"), Shopping, Pantry,
+    Books. Search is the top bar's ⌘K, Import is in the + menu, Database and Settings are in the
+    account menu; no version footer. The ☰ button left of the logo collapses it to icons
+    (`localStorage` `home-sidebar-rail`). Phones get Pantry in the bottom bar.
+  - Meal plan: Auto-Planner, view options and the calendar feed in the calendar toolbar
+    (`MealPlanCalendarHeader.vue`) instead of the sidebar.
+  - Shopping: page title with items left, labelled Select/Undo, 44px rows with an amount column
+    and an empty circle to tick off, light aisle labels.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

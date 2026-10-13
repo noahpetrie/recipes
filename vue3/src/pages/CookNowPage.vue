@@ -4,7 +4,7 @@
             <div class="d-flex align-center ga-4">
                 <v-avatar rounded color="primary" variant="tonal" size="48"><v-icon icon="fa-solid fa-kitchen-set" /></v-avatar>
                 <div>
-                    <h1 class="text-h4 font-weight-bold">What can I make</h1>
+                    <h1 class="text-h4 font-weight-bold">Ready to Cook</h1>
                     <p class="text-body-2 text-medium-emphasis mt-1">Your recipes, matched against the pantry and the staples you always keep.</p>
                 </div>
             </div>
@@ -37,7 +37,7 @@
 
         <div v-if="data" class="d-flex flex-wrap align-center ga-3 mb-5">
             <v-btn-toggle v-model="filter" mandatory density="comfortable" variant="outlined" divided>
-                <v-btn value="ready">Ready to cook <span class="count">{{ counts.ready }}</span></v-btn>
+                <v-btn value="ready">Have everything <span class="count">{{ counts.ready }}</span></v-btn>
                 <v-btn value="close">Missing 1–2 <span class="count">{{ counts.close }}</span></v-btn>
                 <v-btn value="all">All <span class="count">{{ counts.all }}</span></v-btn>
             </v-btn-toggle>
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-// home fork: "What can I make" (cookbook/views/home_cook.py)
+// home fork: "Ready to Cook" (cookbook/views/home_cook.py)
 import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {getCookie} from '@/utils/cookie'

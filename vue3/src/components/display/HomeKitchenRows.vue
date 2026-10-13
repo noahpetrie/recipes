@@ -1,5 +1,5 @@
 <template>
-    <!-- home fork: the start page's kitchen rows, from "What can I make" (cookbook/views/home_cook.py) -->
+    <!-- home fork: the start page's kitchen rows, from "Ready to Cook" (cookbook/views/home_cook.py) -->
     <div v-if="data" class="kitchen-rows mt-4">
         <v-sheet v-if="data.staples == 0 || data.in_stock == 0" rounded="lg" border class="pa-4 mb-6 d-flex align-center flex-wrap ga-3">
             <v-icon icon="fa-solid fa-kitchen-set" color="primary" />

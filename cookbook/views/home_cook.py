@@ -1,5 +1,5 @@
 """
-home fork: "What can I make" — every recipe scored against what's in the kitchen.
+home fork: "Ready to Cook" — every recipe scored against what's in the kitchen.
 
 An ingredient counts as in the kitchen when
   - the pantry has stock of that food (an InventoryEntry with an amount), or
