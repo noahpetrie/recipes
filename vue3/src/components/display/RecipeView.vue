@@ -27,6 +27,7 @@
                     </span>
                         <recipe-context-menu :recipe="recipe" :servings="servings" v-if="useUserPreferenceStore().isAuthenticated"></recipe-context-menu>
                     </v-sheet>
+                    <made-it-badge class="ms-2 mb-1" long :recipe="recipe" :servings="servings" v-if="useUserPreferenceStore().isAuthenticated"></made-it-badge>
                     <keywords-component variant="flat" class="ms-1" :keywords="recipe.keywords"></keywords-component>
                     <private-recipe-badge :users="recipe.shared" v-if="recipe._private"></private-recipe-badge>
                     <v-rating v-model="recipe.rating" size="x-small" v-if="recipe.rating" half-increments readonly></v-rating>
@@ -88,6 +89,8 @@
                             <private-recipe-badge :users="recipe.shared" v-if="recipe._private"></private-recipe-badge>
 
                             <v-rating v-model="recipe.rating" size="x-small" v-if="recipe.rating" readonly></v-rating>
+
+                            <made-it-badge class="d-print-none" long :recipe="recipe" :servings="servings" v-if="useUserPreferenceStore().isAuthenticated"></made-it-badge>
 
                             <keywords-component variant="flat" class="mt-4" :keywords="recipe.keywords"></keywords-component>
 
@@ -192,6 +195,7 @@ import {useUserPreferenceStore} from "@/stores/UserPreferenceStore.ts";
 import {ErrorMessageType, useMessageStore} from "@/stores/MessageStore.ts";
 import {useFileApi} from "@/composables/useFileApi.ts";
 import PrivateRecipeBadge from "@/components/display/PrivateRecipeBadge.vue";
+import MadeItBadge from "@/components/display/MadeItBadge.vue";
 import ModelSelect from "@/components/inputs/ModelSelect.vue";
 import RecipeScalingDialog from "@/components/dialogs/RecipeScalingDialog.vue";
 import VModelSelect from "@/components/inputs/VModelSelect.vue";

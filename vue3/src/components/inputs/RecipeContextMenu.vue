@@ -9,6 +9,9 @@
                     {{ $t('Edit') }}
                 </v-list-item>
                 <v-divider></v-divider>
+                <v-list-item :prepend-icon="recipe.lastCooked ? 'fa-solid fa-rotate-right' : 'fa-solid fa-check'" @click="markMade(recipe, servings)">
+                    {{ recipe.lastCooked ? 'Made it again' : 'I’ve made this' }}
+                </v-list-item>
                 <v-list-item prepend-icon="fa-regular fa-calendar-plus" @click="mealPlanDialog = true">
                     {{ $t('HomeAddToPlan', 'Add to meal plan') }}
                 </v-list-item>
@@ -63,6 +66,7 @@ import {useFileApi} from "@/composables/useFileApi.ts";
 import {useI18n} from "vue-i18n";
 import {openScanPanel} from "@/composables/useScan";
 import AddToBookDialog from "@/components/dialogs/AddToBookDialog.vue";
+import {markMade} from "@/composables/useMade";
 
 const router = useRouter()
 const {t} = useI18n()

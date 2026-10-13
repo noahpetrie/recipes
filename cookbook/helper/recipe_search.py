@@ -238,8 +238,8 @@ class RecipeSearch:
         # Sort-only annotations (idempotent — filter methods below won't duplicate)
         if _sort_includes(orderby, 'rating'):
             qs = qs.with_rating(user)
-        if _sort_includes(orderby, 'lastcooked'):
-            qs = qs.with_last_cooked(user, space)
+        # home: always, so every recipe card can say whether you've made it
+        qs = qs.with_last_cooked(user, space)
         if _sort_includes(orderby, 'lastviewed'):
             qs = qs.with_last_viewed(user, space)
         if _sort_includes(orderby, 'favorite'):

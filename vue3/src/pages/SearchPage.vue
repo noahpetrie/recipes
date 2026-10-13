@@ -73,6 +73,17 @@
             </v-col>
         </v-row>
 
+        <!-- home: made before vs. still to try (cook log) -->
+        <v-row dense>
+            <v-col class="d-flex justify-center">
+                <v-chip-group v-model="madeFilter" mandatory selected-class="text-primary" :disabled="loading">
+                    <v-chip value="all" variant="outlined" size="small">All</v-chip>
+                    <v-chip value="made" variant="outlined" size="small" prepend-icon="fa-solid fa-check">Made before</v-chip>
+                    <v-chip value="totry" variant="outlined" size="small" prepend-icon="fa-regular fa-bookmark">To try</v-chip>
+                </v-chip-group>
+            </v-col>
+        </v-row>
+
         <v-row v-if="recipes.length > 0 && useUserPreferenceStore().deviceSettings.search_viewMode == 'table'">
             <v-col>
                 <v-card>
@@ -247,6 +258,16 @@ const newFilterName = ref('')
 const selectedItems = ref([] as EditorSupportedTypes[])
 const batchDeleteDialog = ref(false)
 const batchEditDialog = ref(false)
+
+// home: the made / to try chips drive the times-cooked filters
+const madeFilter = computed({
+    get: () => filters.value.timescooked.modelValue === 0 ? 'totry' : (filters.value.timescookedGte.modelValue ?? 0) >= 1 ? 'made' : 'all',
+    set: (v: string) => {
+        filters.value.timescooked.modelValue = v == 'totry' ? 0 : undefined
+        filters.value.timescookedGte.modelValue = v == 'made' ? 1 : undefined
+        searchRecipes({page: 1})
+    },
+})
 
 /**
  * handle query updates when using the GlobalSearchDialog on the search page directly

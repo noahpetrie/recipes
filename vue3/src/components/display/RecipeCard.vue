@@ -21,7 +21,7 @@
             <!--            <p class="text-disabled">{{ props.recipe.createdBy.displayName}}</p>-->
             <keywords-component variant="outlined" :keywords="props.recipe.keywords" :max-keywords="3" v-if="props.showKeywords">
                 <template #prepend>
-
+                    <made-it-badge class="mb-1 me-1" :recipe="props.recipe"></made-it-badge>
                     <v-chip class="mb-1 me-1" size="x-small" label variant="outlined" v-if="recipe._private">
                         <private-recipe-badge  :show-text="false"></private-recipe-badge>
                     </v-chip>
@@ -109,6 +109,7 @@ import RecipeContextMenu from "@/components/inputs/RecipeContextMenu.vue";
 import RecipeImage from "@/components/display/RecipeImage.vue";
 import {useRouter} from "vue-router";
 import PrivateRecipeBadge from "@/components/display/PrivateRecipeBadge.vue";
+import MadeItBadge from "@/components/display/MadeItBadge.vue";
 
 const props = defineProps({
     recipe: {type: {} as PropType<Recipe | RecipeOverview>, required: true,},
