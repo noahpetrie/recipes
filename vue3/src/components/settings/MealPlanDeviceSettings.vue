@@ -1,15 +1,15 @@
 <template>
 
     <v-select v-model="useUserPreferenceStore().deviceSettings.mealplan_displayPeriod" :label="$t('Period')" :hint="$t('Plan_Period_To_Show')" :items="MEALPLAN_PERIODS"
-              persistent-hint></v-select>
+              persistent-hint :hide-details="compact" :class="{'mb-3': compact}"></v-select>
     <v-select v-model="useUserPreferenceStore().deviceSettings.mealplan_displayPeriodCount" :label="$t('Periods')" :hint="$t('Plan_Show_How_Many_Periods')"
-              :items="MEALPLAN_PERIOD_COUNTS" persistent-hint></v-select>
+              :items="MEALPLAN_PERIOD_COUNTS" persistent-hint :hide-details="compact" :class="{'mb-3': compact}"></v-select>
 
     <v-select v-model="useUserPreferenceStore().deviceSettings.mealplan_startingDayOfWeek" :label="$t('Starting_Day')" :hint="$t('Starting_Day')"
-              :items="MEALPLAN_STARTING_DAYS" persistent-hint></v-select>
+              :items="MEALPLAN_STARTING_DAYS" persistent-hint :hide-details="compact" :class="{'mb-3': compact}"></v-select>
 
     <v-checkbox v-model="useUserPreferenceStore().deviceSettings.mealplan_displayWeekNumbers" :label="$t('Week_Numbers')" :hint="$t('Show_Week_Numbers')"
-                persistent-hint></v-checkbox>
+                persistent-hint :hide-details="compact" :class="{'mb-3': compact}"></v-checkbox>
 
 </template>
 
@@ -18,6 +18,9 @@
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import {useI18n} from "vue-i18n";
 import {ref} from "vue";
+
+// home fork: compact = no hints, for the meal plan toolbar's view options
+defineProps<{compact?: boolean}>()
 
 const {t} = useI18n()
 
