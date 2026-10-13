@@ -84,7 +84,6 @@
 
             <template #append>
                 <v-list nav>
-                    <v-list-item prepend-icon="fas fa-sliders" :title="$t('Settings')" :to="{ name: 'SettingsPage', params: {} }"></v-list-item>
                     <v-list-item link class="drawer-version">
                         <span class="text-caption text-medium-emphasis">Tandoor {{ useUserPreferenceStore().serverSettings.version }}</span>
                         <help-dialog></help-dialog>
@@ -105,6 +104,10 @@
 
             <v-btn value="nearby" to="/shopping">
                 <v-icon icon="fa-fw fas fa-shopping-cart"></v-icon>
+            </v-btn>
+
+            <v-btn value="pantry" :to="{ name: 'PantryPage', params: {} }">
+                <v-icon icon="$pantry"></v-icon>
             </v-btn>
 
             <v-btn value="nearby">

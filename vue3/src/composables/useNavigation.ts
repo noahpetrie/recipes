@@ -12,16 +12,15 @@ export function useNavigation() {
     const {t} = useI18n()
 
     function getNavigationDrawer() {
+        // home fork: only the places used every day; Search is the top bar's ⌘K, Import is in the + menu,
+        // Database and Settings are in the account menu
         let navigation = [
             {component: VListItem, prependIcon: '$recipes', title: 'Home', to: {name: 'StartPage', params: {}}},
-            {component: VListItem, prependIcon: '$search', title: t('Search'), to: {name: 'SearchPage', params: {}}},
             {component: VListItem, prependIcon: '$mealplan', title: t('Meal_Plan'), to: {name: 'MealPlanPage', params: {}}},
             {component: VListItem, prependIcon: 'fa-solid fa-kitchen-set', title: 'What can I make', to: {name: 'CookNowPage', params: {}}},
             {component: VListItem, prependIcon: '$shopping', title: t('Shopping'), to: {name: 'ShoppingListPage', params: {}}},
-            {component: VListItem, prependIcon: 'fas fa-globe', title: t('Import'), to: {name: 'RecipeImportPage', params: {}}},
             {component: VListItem, prependIcon: '$pantry', title: t('Pantry'), to: {name: 'PantryPage', params: {}}},
             {component: VListItem, prependIcon: '$books', title: t('Books'), to: {name: 'BooksPage', params: {}}},
-            {component: VListItem, prependIcon: 'fa-solid fa-folder-tree', title: t('Database'), to: {name: 'DatabasePage', params: {}}},
         ]
 
         TANDOOR_PLUGINS.forEach(plugin => {
@@ -38,13 +37,13 @@ export function useNavigation() {
     }
 
     function getBottomNavigation() {
+        // home fork: the phone's bottom bar has Home, Meal Plan, Shopping and Pantry; the rest is here
         let navigation = [
-            {component: VListItem, prependIcon: 'fa-solid fa-sliders', title: t('Settings'), to: {name: 'SettingsPage', params: {}}},
+            {component: VListItem, prependIcon: 'fa-solid fa-kitchen-set', title: 'What can I make', to: {name: 'CookNowPage', params: {}}},
+            {component: VListItem, prependIcon: '$books', title: t('Books'), to: {name: 'BooksPage', params: {}}},
             {component: VListItem, prependIcon: 'fas fa-globe', title: t('Import'), to: {name: 'RecipeImportPage', params: {}}},
             {component: VListItem, prependIcon: 'fa-solid fa-folder-tree', title: t('Database'), to: {name: 'DatabasePage', params: {}}},
-            {component: VListItem, prependIcon: '$search', title: t('Search'), to: {name: 'SearchPage', params: {}}},
-            {component: VListItem, prependIcon: '$pantry', title: t('Pantry'), to: {name: 'PantryPage', params: {}}},
-            {component: VListItem, prependIcon: '$books', title: t('Books'), to: {name: 'BooksPage', params: {}}},
+            {component: VListItem, prependIcon: 'fa-solid fa-sliders', title: t('Settings'), to: {name: 'SettingsPage', params: {}}},
         ]
 
         TANDOOR_PLUGINS.forEach(plugin => {
@@ -64,6 +63,8 @@ export function useNavigation() {
         let navigation = []
 
         navigation.push({component: VListItem, prependIcon: 'fa-solid fa-sliders', title: t('Settings'), to: {name: 'SettingsPage', params: {}}})
+        // home fork: Database moved here from the sidebar
+        navigation.push({component: VListItem, prependIcon: 'fa-solid fa-folder-tree', title: t('Database'), to: {name: 'DatabasePage', params: {}}})
         navigation.push({component: VListItem, prependIcon: 'fa-solid fa-question', title: t('Help'), to: {name: 'HelpPage', params: {}}})
 
         if (useUserPreferenceStore().userSettings.user.isSuperuser) {

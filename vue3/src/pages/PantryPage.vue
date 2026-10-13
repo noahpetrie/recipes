@@ -43,7 +43,6 @@
                 </div>
                 <div class="d-flex justify-space-between flex-wrap ga-2 mt-4 mb-1 text-body-2 text-medium-emphasis" role="status">
                     <span>{{ loading ? 'Loading inventory…' : error ? 'Inventory unavailable' : `${products.length} ${products.length === 1 ? 'product' : 'products'}${location ? ' in ' + location.name : ''}` }}</span>
-                    <span>Expiry warnings: within {{ EXPIRY_WINDOW_DAYS }} days</span>
                 </div>
                 <v-alert v-if="error" type="error" variant="tonal" class="my-4">{{ error }} <v-btn variant="text" @click="loadItems">Retry</v-btn></v-alert>
                 <v-progress-linear v-if="loading" indeterminate color="primary" aria-label="Loading inventory" />
