@@ -41,7 +41,7 @@
                     <v-chip v-if="location" size="small">{{ location.name }}</v-chip>
                     <v-btn size="small" variant="text" @click="resetFilters">Reset filters</v-btn>
                 </div>
-                <div class="d-flex justify-space-between flex-wrap ga-2 mt-5 mb-2 text-body-2 text-medium-emphasis" role="status">
+                <div class="d-flex justify-space-between flex-wrap ga-2 mt-4 mb-1 text-body-2 text-medium-emphasis" role="status">
                     <span>{{ loading ? 'Loading inventory…' : error ? 'Inventory unavailable' : `${products.length} ${products.length === 1 ? 'product' : 'products'}${location ? ' in ' + location.name : ''}` }}</span>
                     <span>Expiry warnings: within {{ EXPIRY_WINDOW_DAYS }} days</span>
                 </div>
@@ -50,20 +50,17 @@
                 <template v-else-if="!error">
                     <p v-if="!products.length" class="py-8 text-center text-medium-emphasis">{{ hasFilters ? 'No products match these filters.' : 'Your pantry is empty. Scan an item to look it up and add stock.' }}</p>
                     <v-table v-else class="product-table">
-                        <thead><tr><th scope="col">Product</th><th scope="col">On hand</th><th scope="col">Locations</th><th scope="col">Earliest known expiry</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
-                        <tbody><tr v-for="product in visibleProducts" :key="product.key">
-                            <td data-label="Product"><div class="d-flex align-center ga-3 py-3"><pantry-product-image :src="product.food?.productImage" /><div><button class="product-name" @click="selectedKey = product.key">{{ product.food?.name || 'Unassigned product' }}</button><div class="text-caption text-medium-emphasis">{{ product.batches.length }} inventory {{ product.batches.length === 1 ? 'entry' : 'entries' }}</div></div></div></td>
+                        <thead><tr><th scope="col">Product</th><th scope="col">On hand</th><th scope="col">Location</th><th scope="col">Expiry</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+                        <tbody><tr v-for="product in visibleProducts" :key="product.key" class="product-row" @click="selectedKey = product.key">
+                            <td data-label="Product"><div class="d-flex align-center ga-3"><pantry-product-image small :src="product.food?.productImage" /><div class="min-w-0"><button class="product-name" @click.stop="selectedKey = product.key">{{ product.food?.name || 'Unassigned product' }}</button><span v-if="product.batches.length > 1" class="text-caption text-medium-emphasis ms-2">{{ product.batches.length }} entries</span><div class="mobile-meta text-caption text-medium-emphasis">{{ product.locations.map(l => l.name).join(', ') }}<span v-if="product.earliestExpiry" :class="{'text-error': daysUntil(product.earliestExpiry)! < 0, 'text-warning': daysUntil(product.earliestExpiry)! >= 0 && daysUntil(product.earliestExpiry)! <= EXPIRY_WINDOW_DAYS}"> · {{ fmtDate(product.earliestExpiry) }}</span></div></div></div></td>
                             <td data-label="On hand"><strong>{{ totalText(product.totals) }}</strong></td>
-                            <td data-label="Locations"><div><div v-for="place in product.locations" :key="place.id ?? 'none'" class="py-1">{{ place.name }} <span class="text-medium-emphasis">{{ totalText(place.totals) }}</span></div></div></td>
-                            <td data-label="Earliest known expiry"><div><div v-if="product.earliestExpiry"><v-chip size="small" label :color="expiryColor(product.earliestExpiry)">{{ fmtDate(product.earliestExpiry) }}</v-chip><div v-if="daysUntil(product.earliestExpiry)! < 0" class="text-caption text-error">Past expiry</div><div v-else-if="daysUntil(product.earliestExpiry)! <= EXPIRY_WINDOW_DAYS" class="text-caption">Due within {{ EXPIRY_WINDOW_DAYS }} days</div></div><span v-else class="text-medium-emphasis">Not recorded</span><div v-if="product.earliestExpiry && product.unknownExpiry" class="text-caption text-medium-emphasis">{{ product.unknownExpiry }} entries without a date</div></div></td>
-                            <td><v-btn variant="text" size="small" :aria-label="`View ${product.food?.name || 'product'} batches`" @click="selectedKey = product.key">View batches</v-btn></td>
+                            <td data-label="Locations"><div>{{ product.locations.length === 1 ? product.locations[0].name : '' }}<template v-if="product.locations.length > 1"><span v-for="(place, i) in product.locations" :key="place.id ?? 'none'">{{ i ? ', ' : '' }}{{ place.name }} <span class="text-medium-emphasis">{{ totalText(place.totals) }}</span></span></template></div></td>
+                            <td data-label="Earliest known expiry"><div><template v-if="product.earliestExpiry"><v-chip size="small" label :color="expiryColor(product.earliestExpiry)">{{ fmtDate(product.earliestExpiry) }}</v-chip><span v-if="daysUntil(product.earliestExpiry)! < 0" class="text-caption text-error ms-2">Past expiry</span><span v-else-if="daysUntil(product.earliestExpiry)! <= EXPIRY_WINDOW_DAYS" class="text-caption ms-2">Due soon</span></template><span v-else class="text-medium-emphasis" aria-label="Not recorded">—</span></div></td>
+                            <td class="text-end"><v-btn icon="fa-solid fa-chevron-right" variant="text" size="x-small" :aria-label="`View ${product.food?.name || 'product'} batches`" @click.stop="selectedKey = product.key" /></td>
                         </tr></tbody>
                     </v-table>
-                    <div v-if="products.length" class="d-flex align-center justify-space-between flex-wrap ga-3 mt-4">
-                        <span class="text-body-2 text-medium-emphasis" role="status">{{ (productPage - 1) * pageSize + 1 }}–{{ Math.min(productPage * pageSize, products.length) }} of {{ products.length }} products</span>
-                        <v-select v-model="pageSize" label="Products per page" :items="[10, 25, 50]" hide-details style="max-width: 170px" />
-                        <v-pagination v-if="pageCount > 1" v-model="productPage" :length="pageCount" :total-visible="5" density="comfortable" aria-label="Product pages" />
-                    </div>
+                    <!-- more rows load as the end of the list scrolls into view -->
+                    <div v-if="visibleProducts.length < products.length" ref="moreSentinel" class="py-4 text-center text-body-2 text-medium-emphasis" role="status">Loading more…</div>
                 </template>
             </v-card-text>
         </v-card>
@@ -121,12 +118,19 @@ const products = computed(() => {
         .filter(p => !query || p.food?.name.toLocaleLowerCase().includes(query) || p.food?.barcodes?.includes(query))
     return sort.value === 'expiry' ? result.sort((a, b) => (a.earliestExpiry || '9999').localeCompare(b.earliestExpiry || '9999')) : result
 })
-const productPage = ref(1)
-const pageSize = ref(10)
-const pageCount = computed(() => Math.max(1, Math.ceil(products.value.length / pageSize.value)))
-const visibleProducts = computed(() => products.value.slice((productPage.value - 1) * pageSize.value, productPage.value * pageSize.value))
-watch([search, food, location, sort, pageSize], () => { productPage.value = 1 })
-watch(pageCount, pages => { productPage.value = Math.min(productPage.value, pages) })
+// the list grows as you scroll instead of paging
+const CHUNK = 40
+const shown = ref(CHUNK)
+const visibleProducts = computed(() => products.value.slice(0, shown.value))
+watch([search, food, location, sort], () => { shown.value = CHUNK })
+const moreSentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+watch(moreSentinel, el => {
+    observer?.disconnect()
+    if (!el) return
+    observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) shown.value += CHUNK }, {rootMargin: '600px'})
+    observer.observe(el)
+})
 const selectedProduct = computed(() => allProducts.value.find(p => p.key === selectedKey.value))
 // handheld scanner state: a text box with focus takes the scanner's typing, so scans pause
 const scannerState = computed(() => {
@@ -168,11 +172,11 @@ function refresh() { loadItems(); loadCounts() }
 watch(pantryVersion, refresh)
 watch(() => scanPanel.open, open => { if (!open) loadCounts() })
 onMounted(() => { refresh(); window.addEventListener('focus', refresh) })
-onUnmounted(() => { sequence++; countSequence++; window.removeEventListener('focus', refresh) })
+onUnmounted(() => { sequence++; countSequence++; observer?.disconnect(); window.removeEventListener('focus', refresh) })
 </script>
 
 <style scoped>
-.pantry-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; margin: 16px 0 32px; }
+.pantry-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px; margin: 8px 0 20px; }
 .scanner-status { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; margin-right: 4px; border-radius: 999px; font-size: .8125rem; font-weight: 500; background: rgba(var(--v-theme-on-surface), .05); color: rgba(var(--v-theme-on-surface), .75); }
 .scanner-status .dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--v-theme-success)); }
 .scanner-status.s-paused .dot { background: rgb(var(--v-theme-warning)); }
@@ -183,19 +187,28 @@ onUnmounted(() => { sequence++; countSequence++; window.removeEventListener('foc
 .product-name { text-align: start; font-weight: 600; color: inherit; overflow-wrap: anywhere; }
 .product-name:hover { text-decoration: underline; }
 .product-name:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 4px; border-radius: 2px; }
-.product-table td { padding-top: 12px !important; padding-bottom: 12px !important; }
+.product-table :deep(td) { height: auto !important; padding-top: 4px !important; padding-bottom: 4px !important; }
+.product-table :deep(th) { height: 36px !important; }
+.product-row { cursor: pointer; }
+.product-row:hover { background: rgba(var(--v-theme-on-surface), .03); }
+.min-w-0 { min-width: 0; }
+.mobile-meta { display: none; }
 .batch-card { border: 1px solid rgba(var(--v-theme-on-surface), .12); border-radius: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 700px) {
     .pantry-header { margin-top: 8px; gap: 20px; }
     .header-actions { width: 100%; }
     .pantry-header h1 { font-size: 1.75rem !important; }
+    .pantry-tools > :first-child { flex-basis: 100%; }
+    .pantry-sort { flex: 1 1 160px; }
+    /* phones: one line per product - photo, name with location and expiry under it, amount */
     .product-table :deep(thead) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-    .product-table :deep(table), .product-table :deep(tbody), .product-table :deep(tr) { display: block; width: 100%; }
-    .product-table :deep(tr) { border-top: 1px solid rgba(var(--v-theme-on-surface), .12); padding: 12px 0; }
-    .product-table :deep(td) { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; height: auto !important; border: 0 !important; padding: 6px 0 !important; }
-    .product-table td[data-label]:not(:first-child) { display: grid; grid-template-columns: 125px minmax(0, 1fr); }
-    .product-table td[data-label]:not(:first-child) > * { text-align: end; overflow-wrap: anywhere; }
-    .product-table td[data-label]:not(:first-child)::before { content: attr(data-label); font-size: .8125rem; color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity)); }
+    .product-table :deep(table), .product-table :deep(tbody) { display: block; width: 100%; }
+    .product-table :deep(tr) { display: flex; align-items: center; gap: 12px; border-top: 1px solid rgba(var(--v-theme-on-surface), .12); padding: 6px 0; }
+    .product-table :deep(td) { height: auto !important; border: 0 !important; padding: 0 !important; }
+    .product-table td[data-label="Product"] { flex: 1 1 auto; min-width: 0; }
+    .product-table td[data-label="On hand"] { flex: 0 0 auto; text-align: end; }
+    .product-table td[data-label="Locations"], .product-table td[data-label="Earliest known expiry"], .product-table td:last-child { display: none; }
+    .mobile-meta { display: block !important; }
 }
 </style>
