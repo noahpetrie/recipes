@@ -15,7 +15,7 @@
 
         <div class="flex-grow-1 p-2">
             <div class="d-flex">
-                <div class="d-flex flex-column pr-2 pl-4">
+                <div class="d-flex flex-column pr-2 pl-4 shop-amount">
                     <span v-for="a in amounts" v-bind:key="a.key">
                         <span>
                             <i class="fas fa-check text-success fa-fw" v-if="a.checked"></i>
@@ -45,8 +45,9 @@
 
         <template v-slot:[checkBtnSlot]>
             <div class="ps-3 pe-3" @click.native.stop="useShoppingStore().setEntriesCheckedState(entries, !isChecked, true);">
-                <v-btn color="success" size="large"
-                       :class="{'btn-success': !isChecked, 'btn-warning': isChecked}" :icon="actionButtonIcon" variant="plain">
+                <v-btn :color="isChecked ? 'success' : undefined" size="default" class="shop-check"
+                       :class="{'btn-success': !isChecked, 'btn-warning': isChecked}" :icon="actionButtonIcon" variant="plain"
+                       :aria-label="isChecked ? 'Put back on the list' : 'Got it'">
                 </v-btn>
             </div>
         </template>
@@ -120,7 +121,8 @@ const actionButtonIcon = computed(() => {
     if (isChecked.value) {
         return 'fa-solid fa-plus'
     }
-    return 'fa-solid fa-check'
+    // home fork: an empty circle to tick off, not a green tick on every row
+    return 'fa-regular fa-circle'
 })
 
 

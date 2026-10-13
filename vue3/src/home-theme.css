@@ -854,8 +854,40 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    background: rgba(var(--v-theme-on-surface), 0.025);
-    min-height: 34px;
+    min-height: 30px;
+    padding-top: 10px;
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+/* home fork: a page title above the shopping tabs */
+.shop-header {
+    padding: 8px 16px 12px;
+}
+
+.shop-header + .v-tabs {
+    margin-inline: 12px;
+}
+
+/* compact rows; names line up whether or not there's an amount */
+.v-list.shopping-list .shopping-border {
+    min-height: 44px !important;
+}
+
+.v-list.shopping-list .shop-amount {
+    min-width: 84px;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.v-list.shopping-list .shop-amount b {
+    font-weight: 500;
+}
+
+.v-list.shopping-list .shop-check {
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.v-list.shopping-list .shop-check:hover {
+    color: rgb(var(--v-theme-success));
 }
 
 .v-list.shopping-list > .v-list-subheader i {

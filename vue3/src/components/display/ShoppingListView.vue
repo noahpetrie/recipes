@@ -1,4 +1,11 @@
 <template>
+    <!-- home fork: a page title with what's left to get, like the Pantry -->
+    <header class="shop-header" v-if="props.mealPlanId == undefined">
+        <h1 class="text-h4 font-weight-bold">{{ $t('Shopping') }}</h1>
+        <p class="text-body-2 text-medium-emphasis mt-1">
+            {{ useShoppingStore().totalFoods == 0 ? 'Nothing to get right now.' : `${useShoppingStore().totalFoods} ${useShoppingStore().totalFoods == 1 ? 'item' : 'items'} to get` }}
+        </p>
+    </header>
     <v-tabs v-model="currentTab" v-if="!selectEnabled && props.mealPlanId == undefined">
         <v-tab value="shopping"><i class="fas fa-fw"
                                    :class="{'fa-circle-notch fa-spin':useShoppingStore().currentlyUpdating, 'fa-shopping-cart ': !useShoppingStore().currentlyUpdating}"></i> <span
@@ -116,8 +123,8 @@
                     <v-col class="pa-0">
                         <v-chip-group>
                             <!-- enable selection -->
-                            <v-btn label size="small" variant="outlined" @click="selectEnabled = true;  selectedLines= []" v-if="!selectEnabled">
-                                <v-icon icon="fa-solid fa-list-check"></v-icon>
+                            <v-btn label size="small" variant="outlined" prepend-icon="fa-solid fa-list-check" @click="selectEnabled = true;  selectedLines= []" v-if="!selectEnabled">
+                                {{ $t('Select') }}
                             </v-btn>
 
                             <!-- select all/none -->
@@ -129,8 +136,8 @@
                             </v-btn>
 
                             <!-- undo -->
-                            <v-btn label size="small" class="ms-1" variant="outlined" @click="useShoppingStore().undoChange()" :disabled="useShoppingStore().undoStack.length == 0">
-                                <v-icon icon="fa-solid fa-rotate-left"></v-icon>
+                            <v-btn label size="small" class="ms-1" variant="outlined" prepend-icon="fa-solid fa-rotate-left" @click="useShoppingStore().undoChange()" :disabled="useShoppingStore().undoStack.length == 0">
+                                {{ $t('Undo') }}
                             </v-btn>
 
                             <v-chip label size="small" variant="outlined" class="ms-1 me-0 mt-0 mb-0 h-100" style="max-width: 50%;" :prepend-icon="TSupermarket.icon"
