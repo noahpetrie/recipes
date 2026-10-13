@@ -105,6 +105,24 @@
     opacity: 1;
 }
 
+/* collapsed to icons: centre each icon in its box so the column lines up with the toggle above */
+.v-navigation-drawer--rail .v-list-item {
+    display: flex;
+    justify-content: center;
+    padding-inline: 0 !important;
+}
+
+.v-navigation-drawer--rail .v-list-item__prepend,
+.v-navigation-drawer--rail .v-list-item__prepend > .v-icon {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.v-navigation-drawer--rail .v-list-item__prepend > .v-list-item__spacer,
+.v-navigation-drawer--rail .v-list-item__content {
+    display: none;
+}
+
 /* ---- Bottom navigation (phones) ----------------------------------------------------- */
 .v-bottom-navigation {
     box-shadow: none !important;
