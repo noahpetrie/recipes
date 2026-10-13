@@ -4,6 +4,12 @@
             <v-closable-card-title :title="shoppingListFood.food.name" v-model="showDialog"></v-closable-card-title>
 
             <v-card-text class="pt-0 pr-4 pl-4">
+                <!-- home fork: "I have it" and the store product usually bought (cookbook/views/home_restock.py) -->
+                <div class="d-flex flex-wrap ga-2 mb-4">
+                    <v-btn color="success" variant="flat" prepend-icon="fa-solid fa-box-open" :loading="having" @click="haveIt">I have it</v-btn>
+                    <v-btn v-if="storeLink" variant="outlined" prepend-icon="fa-solid fa-store" :href="storeLink.url" target="_blank" rel="noopener">Open at {{ storeLink.store || 'the store' }}</v-btn>
+                </div>
+                <p v-if="storeLink" class="text-caption text-medium-emphasis mt-n2 mb-4">Usually: {{ storeLink.name }}</p>
 
                 <v-label>{{ $t('Choose_Category') }}</v-label>
                 <v-model-select model="SupermarketCategory" @update:modelValue="category => useShoppingStore().updateCategories([shoppingListFood], category)" create></v-model-select>
@@ -142,6 +148,8 @@ import {ErrorMessageType, PreparedMessage, useMessageStore} from "@/stores/Messa
 import ShoppingListsBar from "@/components/display/ShoppingListsBar.vue";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore.ts";
 import VModelSelect from "@/components/inputs/VModelSelect.vue";
+import {MessageType} from "@/stores/MessageStore";
+import {haveFood, loadStoreLinks, storeLinks} from "@/composables/useHomeShop";
 
 const {mobile} = useDisplay()
 
@@ -153,6 +161,23 @@ const shoppingListUpdateLoading = ref(false)
 /**
  * returns a flat list of entries for the given shopping list food
  */
+const storeLink = computed(() => storeLinks.value[shoppingListFood.value.food.id!])
+const having = ref(false)
+async function haveIt() {
+    having.value = true
+    try {
+        const msg = await haveFood(shoppingListFood.value.food.id!)
+        useMessageStore().addMessage(MessageType.SUCCESS, msg, 4000)
+        showDialog.value = false
+        await useShoppingStore().refreshFromAPI()
+        loadStoreLinks()
+    } catch (e: any) {
+        useMessageStore().addMessage(MessageType.ERROR, e?.message || 'Couldn’t add it to the pantry.', 5000)
+    } finally {
+        having.value = false
+    }
+}
+
 const entriesList = computed(() => {
     let list = [] as ShoppingListEntry[]
     shoppingListFood.value.entries.forEach(e => {

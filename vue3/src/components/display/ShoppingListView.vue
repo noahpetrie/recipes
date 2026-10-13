@@ -111,6 +111,7 @@
     <v-window v-model="currentTab">
         <v-window-item value="shopping">
             <v-container :class="{'pa-1': props.mealPlanId != undefined}">
+                <home-restock v-if="props.mealPlanId == undefined && !selectEnabled"></home-restock>
                 <!--                <v-row class="pa-0" dense>-->
                 <!--                    <v-col class="pa-0">-->
                 <!--                        <v-chip-group v-model="useUserPreferenceStore().deviceSettings.shopping_selected_supermarket" v-if="supermarkets.length > 0">-->
@@ -347,6 +348,8 @@
 </template>
 
 <script setup lang="ts">
+import HomeRestock from "@/components/display/HomeRestock.vue";
+import {loadStoreLinks} from "@/composables/useHomeShop";
 
 import {computed, onMounted, ref, shallowRef, toRef, watch} from "vue";
 import {useShoppingStore} from "@/stores/ShoppingStore";
@@ -425,6 +428,8 @@ watch(() => useUserPreferenceStore().deviceSettings, () => {
 watch(() => useShoppingStore().entriesByGroup, () => {
     selectedLines.value = []
 })
+// home fork: store links follow what's on the list
+watch(() => useShoppingStore().totalFoods, () => loadStoreLinks())
 
 onMounted(() => {
     addEventListener("visibilitychange", (event) => {
@@ -434,6 +439,7 @@ onMounted(() => {
     useShoppingStore().refreshFromAPI()
 
     autoSyncLoop()
+    loadStoreLinks()
 
     // refresh selected supermarket since category ordering might have changed
     if (useUserPreferenceStore().deviceSettings.shopping_selected_supermarket != null) {

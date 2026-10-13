@@ -32,6 +32,10 @@
                 <div class="d-flex  flex-column flex-grow-1 align-self-center">
                     {{ pluralString(shoppingListFood.food, (amounts.length > 1 ? 2 : amounts[0]?.amount ?? 1)) }} 
                     <span v-if="infoRow"><small class="text-disabled">{{ infoRow }}</small></span>
+                    <!-- home fork: the store product usually bought, one tap to it -->
+                    <a v-if="storeLink && !hideInfoRow" :href="storeLink.url" target="_blank" rel="noopener" class="store-link" @click.stop>
+                        <v-icon icon="fa-solid fa-store" size="x-small" class="me-1"></v-icon>{{ storeLink.name }}<v-icon icon="fa-solid fa-arrow-up-right-from-square" size="x-small" class="ms-1"></v-icon>
+                    </a>
                 </div>
             </div>
         </div>
@@ -75,6 +79,7 @@ import {isDelayed, isEntryVisible, isShoppingListFoodDelayed, isShoppingListFood
 import ShoppingLineItemDialog from "@/components/dialogs/ShoppingLineItemDialog.vue";
 import {pluralString, isSingularAmount} from "@/utils/model_utils.ts";
 import ShoppingListsBar from "@/components/display/ShoppingListsBar.vue";
+import {storeLinks} from "@/composables/useHomeShop";
 
 const emit = defineEmits(['clicked'])
 
@@ -87,6 +92,7 @@ const checkBtnSlot = ref(useUserPreferenceStore().userSettings.leftHanded ? 'pre
 const selectBtnSlot = ref(useUserPreferenceStore().userSettings.leftHanded ? 'append' : 'prepend')
 
 const dialog = ref(false)
+const storeLink = computed(() => storeLinks.value[props.shoppingListFood.food.id!])
 
 const entries = computed(() => {
     return Array.from(props.shoppingListFood.entries.values())
@@ -275,6 +281,8 @@ function handleSwipe() {
 </script>
 
 <style>
+.store-link { font-size: .75rem; color: rgba(var(--v-theme-on-surface), .6); text-decoration: none; width: fit-content; }
+.store-link:hover { color: rgb(var(--v-theme-primary)); text-decoration: underline; }
 /* TODO swipe system classes removed because not working (visually, touch detection was working), retrieve from old ShoppingLineItem VCS */
 
 

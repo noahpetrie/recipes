@@ -62,6 +62,9 @@ AISLE_STORAGE = {
 }
 # exceptions by name word: (place, days)
 WORD_STORAGE = [
+    # first match wins: frozen and canned things keep, whatever the food they're made of
+    ({'frozen', 'ice', 'nugget', 'popsicle'}, ('Freezer', 180)),
+    ({'canned', 'tinned', 'diced', 'crushed', 'paste', 'sauce', 'soup'}, ('Pantry', None)),
     ({'egg', 'eggs'}, ('Fridge', 28)), ({'butter'}, ('Fridge', 60)), ({'onion', 'potato', 'garlic', 'shallot'}, ('Pantry', 30)),
     ({'lemon', 'lime', 'apple', 'orange'}, ('Fridge', 21)), ({'banana', 'tomato'}, ('Pantry', 5)),
     ({'herb', 'cilantro', 'parsley', 'basil', 'mint', 'scallion'}, ('Fridge', 5)), ({'yeast'}, ('Fridge', 120)),

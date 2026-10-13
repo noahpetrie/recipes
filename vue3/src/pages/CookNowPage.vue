@@ -80,6 +80,7 @@
                                         <v-chip v-bind="props" size="small" variant="outlined" @click.prevent.stop>{{ m.name }}</v-chip>
                                     </template>
                                     <v-list density="compact">
+                                        <v-list-item prepend-icon="fa-solid fa-box-open" title="I have some now" subtitle="Add it to the pantry" @click="haveIt(m.id)" />
                                         <v-list-item prepend-icon="fa-solid fa-jar" title="I always have this" subtitle="Mark as a staple" @click="setStaple(m.id, true)" />
                                     </v-list>
                                 </v-menu>
@@ -235,6 +236,19 @@ const stapleGroups = computed(() => {
         {title: 'Everything else your recipes use', items: list.filter(f => !f.on_hand && !f.suggested), all: false},
     ]
 })
+
+// home fork: "I have it" books enough for any recipe into the pantry (home_restock.have)
+async function haveIt(id: number) {
+    busy.add(id)
+    try {
+        await api('have/', {food_id: id})
+        await load()
+    } catch {
+        // the chip stays; nothing changed
+    } finally {
+        busy.delete(id)
+    }
+}
 
 async function setStaple(id: number, on: boolean) {
     busy.add(id)

@@ -7,7 +7,7 @@ from rest_framework import routers
 
 from cookbook.version_info import TANDOOR_VERSION
 from recipes.settings import DEBUG, PLUGINS
-from .views import api, telegram, views, import_export, home_pantry, home_clip, home_cook, home_groceries
+from .views import api, telegram, views, import_export, home_pantry, home_clip, home_cook, home_groceries, home_restock
 from .views.api import CustomAuthToken
 
 
@@ -126,6 +126,10 @@ urlpatterns = [
     # home fork: "Add groceries" (cookbook/views/home_groceries.py)
     path('api/home/groceries/', home_groceries.groceries, name='api_home_groceries'),
     path('api/home/groceries/match/', home_groceries.match, name='api_home_groceries_match'),
+    # home fork: restock suggestions, store links, "I have it" (cookbook/views/home_restock.py)
+    path('api/home/restock/', home_restock.restock, name='api_home_restock'),
+    path('api/home/store-links/', home_restock.store_links, name='api_home_store_links'),
+    path('api/home/have/', home_restock.have, name='api_home_have'),
     # home fork: pantry stock layer (cookbook/views/home_pantry.py)
     path('api/pantry/lookup/', home_pantry.lookup, name='api_pantry_lookup'),
     path('api/pantry/stock/', home_pantry.stock, name='api_pantry_stock'),
