@@ -78,7 +78,9 @@ export function groupProducts(entries: InventoryEntry[]) {
         // a general food's line shows the general food; its own stock (if any) supplies the rest
         const g = batches.map(entryGroup).find(Boolean)
         const own = batches.find(b => !entryGroup(b))?.food
-        const food = g ? {...(own ?? batches[0]!.food), id: g.food.id, name: g.food.name, productImage: own?.productImage || g.food.product_image, barcodes: own?.barcodes ?? ''} : batches[0]!.food
+        // ...unless it's all one product (only the Half Baked tub under Ice cream): then that product's name
+        const only = !own && new Set(batches.map(b => b.food?.id)).size == 1 ? batches[0]!.food : undefined
+        const food = g ? {...(own ?? batches[0]!.food), id: g.food.id, name: only?.name || g.food.name, productImage: own?.productImage || only?.productImage || g.food.product_image, barcodes: own?.barcodes ?? only?.barcodes ?? ''} : batches[0]!.food
         return {
             key, food, grouped: !!g, batches, totals: totals(batches),
             locations: [...locations.entries()].map(([id, rows]) => ({id, name: rows[0]!.inventoryLocation?.name || 'Unassigned', totals: totals(rows)})),
