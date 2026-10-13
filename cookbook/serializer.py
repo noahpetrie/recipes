@@ -159,10 +159,13 @@ class CustomOnHandField(serializers.Field):
             if not self.context["request"].user.is_authenticated:
                 return []
             try:
-                shared_users = get_household_user_ids(self.context["request"].user_space)
+                shared_users = self.context.get('home_shared_users')
+                if shared_users is None:  # home fork: once per response, not once per food
+                    shared_users = self.context['home_shared_users'] = set(get_household_user_ids(self.context["request"].user_space))
             except AttributeError:  # Anonymous users (using share links) don't have shared users
                 shared_users = []
-            return obj.onhand_users.filter(id__in=shared_users).exists()
+            # home fork: uses onhand_users when it was prefetched instead of a query per food
+            return any(u.id in shared_users for u in obj.onhand_users.all())
         except AttributeError:
             return []
 
@@ -891,7 +894,8 @@ class FoodSerializer(UniqueFieldsMixin, WritableNestedModelSerializer, ExtendedR
     food_onhand = CustomOnHandField(required=False, allow_null=True)
     substitute_onhand = serializers.SerializerMethodField('get_substitute_onhand')
     substitute = FoodSimpleSerializer(many=True, allow_null=True, required=False)
-    parent = IntegerField(read_only=True)
+    parent = serializers.SerializerMethodField('get_parent_id')
+    full_name = serializers.SerializerMethodField('get_full_name')
     shopping_lists = ShoppingListSerializer(many=True, required=False)
     properties = PropertySerializer(many=True, allow_null=True, required=False)
     properties_food_unit = UnitSerializer(allow_null=True, required=False)
@@ -900,8 +904,31 @@ class FoodSerializer(UniqueFieldsMixin, WritableNestedModelSerializer, ExtendedR
     recipe_filter = 'steps__ingredients__food'
     images = ['recipe__image']
 
+    # home fork: parent and full name from one shared lookup of the ancestors, instead of two tree
+    # queries per food (a pantry page of 100 items did 200 of them)
+    def _ancestors(self, obj):
+        if obj.depth <= 1:
+            return []
+        cache = self.context.setdefault('home_food_ancestors', {})
+        paths = [obj.path[:Food.steplen * d] for d in range(1, obj.depth)]
+        if missing := [p for p in paths if p not in cache]:
+            cache.update({path: name_id for path, *name_id in Food.objects.filter(path__in=missing).values_list('path', 'name', 'id')})
+        return [cache[p] for p in paths if p in cache]
+
+    @extend_schema_field(int)
+    def get_parent_id(self, obj):
+        up = self._ancestors(obj)
+        return up[-1][1] if up else None
+
+    @extend_schema_field(str)
+    def get_full_name(self, obj):
+        return Food._full_name_separator.join([name for name, _ in self._ancestors(obj)] + [obj.name])
+
     @extend_schema_field(bool)
     def get_substitute_onhand(self, obj):
+        # home fork: nothing to look up for a food without substitutes (uses the prefetched list)
+        if not obj.substitute_siblings and not obj.substitute_children and not obj.substitute.all():
+            return False
         try:
             if not self.context["request"].user.is_authenticated:
                 return []

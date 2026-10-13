@@ -880,6 +880,14 @@ class InventoryEntryViewSet(LoggingMixin, viewsets.ModelViewSet, DeleteRelationM
     def get_queryset(self):
         queryset = self.queryset.filter(space=self.request.space)
 
+        if self.action in ('list', 'retrieve'):
+            # home fork: load what the nested food, unit and location serializers read in a few queries
+            # instead of ~15 per entry (the pantry's first page took 1500 queries)
+            foods = Food.objects.select_related('supermarket_category', 'recipe', 'properties_food_unit') \
+                .prefetch_related('onhand_users', 'inherit_fields', 'child_inherit_fields', 'substitute', 'shopping_lists',
+                                  'properties__property_type')
+            queryset = queryset.select_related('unit', 'inventory_location__household').prefetch_related(Prefetch('food', queryset=foods))
+
         if self.action == 'list':
             if 'empty' not in self.request.query_params:
                 queryset = queryset.filter(amount__gt=0)
