@@ -1,5 +1,5 @@
 <template>
-    <v-container class="pantry-page">
+    <v-container fluid max-width="none" class="pantry-page">
         <header class="pantry-header">
             <div class="d-flex align-center ga-4">
                 <v-avatar rounded color="primary" variant="tonal" size="48"><v-icon icon="$pantry" /></v-avatar>
@@ -176,6 +176,7 @@ onUnmounted(() => { sequence++; countSequence++; observer?.disconnect(); window.
 </script>
 
 <style scoped>
+.pantry-page { padding: 12px 24px; }
 .pantry-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px; margin: 8px 0 20px; }
 .scanner-status { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; margin-right: 4px; border-radius: 999px; font-size: .8125rem; font-weight: 500; background: rgba(var(--v-theme-on-surface), .05); color: rgba(var(--v-theme-on-surface), .75); }
 .scanner-status .dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--v-theme-success)); }
@@ -196,6 +197,7 @@ onUnmounted(() => { sequence++; countSequence++; observer?.disconnect(); window.
 .batch-card { border: 1px solid rgba(var(--v-theme-on-surface), .12); border-radius: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 700px) {
+    .pantry-page { padding: 8px 12px; }
     .pantry-header { margin-top: 8px; gap: 20px; }
     .header-actions { width: 100%; }
     .pantry-header h1 { font-size: 1.75rem !important; }
