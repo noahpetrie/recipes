@@ -3585,7 +3585,8 @@ def barcode_lookup(request):
     if label_entry:
         food = label_entry.food
     elif code.isdigit():
-        food = Food.objects.filter(space=request.space, barcodes__regex=rf'(^|\s){code}(\s|$)').first()
+        from cookbook.views.home_pantry import barcode_q
+        food = Food.objects.filter(barcode_q(code), space=request.space).first()
 
     entries = InventoryEntry.objects.filter(space=request.space, food=food).order_by('expires', 'id') if food else InventoryEntry.objects.none()
     product = _lookup_product(code) if (code.isdigit() and len(code) >= 8 and not label_entry) else None

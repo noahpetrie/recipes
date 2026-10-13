@@ -38,6 +38,18 @@ IDEMPOTENCY_SECONDS = 15 * 60
 REASONS = {'consumed', 'discarded', 'spoiled', 'donated', 'other'}
 
 
+def same_barcode(a, b):
+    """one product, however the code was read: a camera reads UPC-A 876131001243 as EAN-13 0876131001243"""
+    return a == b or (a.isdigit() and b.isdigit() and a.lstrip('0') == b.lstrip('0'))
+
+
+def barcode_q(code):
+    """filter for foods that have this barcode, with or without leading zeros"""
+    if code.isdigit() and code.lstrip('0'):
+        return Q(barcodes__regex=rf'(^|\s)0*{code.lstrip("0")}(\s|$)')
+    return Q(barcodes__regex=rf'(^|\s){re.escape(code)}(\s|$)')
+
+
 # ---- serialising ------------------------------------------------------------------------------
 
 def num(d):
@@ -185,7 +197,7 @@ def lookup(request):
 
     label = InventoryEntry.objects.filter(space=request.space, code__iexact=code).select_related('food', 'unit', 'inventory_location').first() \
         if len(code) <= 16 else None
-    food = Food.objects.filter(space=request.space, barcodes__regex=rf'(^|\s){code}(\s|$)').first() if code.isdigit() else None
+    food = Food.objects.filter(barcode_q(code), space=request.space).first() if code.isdigit() else None
 
     if label and food and label.food_id != food.id:
         # the same characters are both a label and a retail barcode: let the person choose
@@ -229,7 +241,7 @@ def link_barcode(request):
     if not code:
         return Response({'error': 'code required'}, status=400)
     with transaction.atomic():
-        other = Food.objects.filter(space=request.space, barcodes__regex=rf'(^|\s){code}(\s|$)').first()
+        other = Food.objects.filter(barcode_q(code), space=request.space).first()
         if request.data.get('food_id'):
             food = Food.objects.filter(space=request.space, pk=request.data['food_id']).first()
             if food is None:
@@ -241,10 +253,10 @@ def link_barcode(request):
             food = Food.objects.filter(space=request.space, name__iexact=name).first() or Food.objects.create(space=request.space, name=name)
         if other and other.id != food.id:
             # a barcode means one product: move it from the food it was on
-            other.barcodes = ' '.join(b for b in other.barcodes.split() if b != code)
+            other.barcodes = ' '.join(b for b in other.barcodes.split() if not same_barcode(b, code))
             other.save(update_fields=['barcodes'])
         codes = [b for b in (food.barcodes or '').split() if b]
-        if code not in codes:
+        if not any(same_barcode(b, code) for b in codes):
             codes.append(code)
         food.barcodes = ' '.join(codes)
         if product and not food.product_info:
