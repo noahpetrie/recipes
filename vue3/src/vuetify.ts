@@ -18,9 +18,10 @@ export default createVuetify({
         VCardActions: {
             class: 'float-right'
         },
-        // limiting max width of base container so UIs dont become too wide
+        // home fork: pages use the whole width (was capped at 1400px)
         VContainer: {
-            maxWidth: '1400px'
+            fluid: true,
+            maxWidth: 'none'
         },
         // always localize the date display of DateInputs
         // VDateInput: {
