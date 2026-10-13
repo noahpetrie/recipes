@@ -15,59 +15,18 @@
                     <v-card-text class="text-disabled">
                         {{ book.description }}
                     </v-card-text>
-                    <v-expansion-panels v-model="toc">
-                        <v-expansion-panel>
-                            <v-expansion-panel-title>{{ $t('Table_of_Contents') }}</v-expansion-panel-title>
-                            <v-expansion-panel-text>
-                                <v-list>
-                                    <v-list-item v-for="(entry, i) in recipes" :key="entry.id" @click="page = i; toc = false">
-                                        {{ entry.name }}
-                                    </v-list-item>
-                                </v-list>
-                            </v-expansion-panel-text>
-                        </v-expansion-panel>
-                    </v-expansion-panels>
                 </v-card>
             </v-col>
         </v-row>
 
+        <!-- home: a book opens as a grid of recipe cards; ingredients and steps stay on the recipe page -->
         <v-row>
-            <v-col class="text-center">
-                <v-pagination :model-value="currentPageNumber"
-                              @update:model-value="value => page = (value - 1) * recipesPerPage"
-                              :length="totalPages"
-                ></v-pagination>
+            <v-col cols="6" md="4" lg="3" v-for="r in recipes" :key="r.id" class="pa-0 mb-4">
+                <recipe-card :recipe="r" height="20vh"></recipe-card>
             </v-col>
         </v-row>
-
-        <v-row>
-            <v-col cols="12">
-                <v-window v-model="page" show-arrows>
-                    <template #next>
-                        <v-btn icon="fa-solid fa-chevron-right" variant="plain" @click="page = page + (mdAndUp ? 2 : 1)"></v-btn>
-                    </template>
-                    <template #prev>
-                        <v-btn icon="fa-solid fa-chevron-left" variant="plain" @click="page = page - (mdAndUp ? 2 : 1)"></v-btn>
-                    </template>
-
-                    <v-window-item v-for="(entry, i) in recipes" :key="entry.id">
-                        <v-row>
-                            <v-col cols="12" md="6">
-                                <book-entry-card :recipe-overview="recipes[i]"></book-entry-card>
-                                <div class="text-center mt-1">
-                                    <span class="text-disabled">{{ i + 1 }}</span>
-                                </div>
-                            </v-col>
-                            <v-col cols="6" v-if="mdAndUp && recipes.length > i + 1">
-                                <book-entry-card :recipe-overview="recipes[i + 1]"></book-entry-card>
-                                <div class="text-center mt-1">
-                                    <span class="text-disabled">{{ i + 2 }}</span>
-                                </div>
-                            </v-col>
-                        </v-row>
-                    </v-window-item>
-                </v-window>
-            </v-col>
+        <v-row v-if="!loading && !loadingEntries && recipes.length == 0">
+            <v-col class="text-center text-disabled">{{ $t('No_Results') }}</v-col>
         </v-row>
     </v-container>
 </template>
@@ -75,13 +34,12 @@
 <script setup lang="ts">
 
 
-import {computed, onMounted, ref} from "vue";
+import {onMounted, ref} from "vue";
 import {ApiApi, RecipeBook, RecipeBookEntry, RecipeOverview} from "@/openapi";
 import {ErrorMessageType, useMessageStore} from "@/stores/MessageStore";
 import {useRouter} from "vue-router";
-import RecipeImage from "@/components/display/RecipeImage.vue";
 import {useDisplay} from "vuetify";
-import BookEntryCard from "@/components/display/BookEntryCard.vue";
+import RecipeCard from "@/components/display/RecipeCard.vue";
 
 const props = defineProps({
     bookId: {type: String, required: true},
@@ -92,16 +50,9 @@ const router = useRouter()
 
 const loading = ref(false)
 const loadingEntries = ref(false)
-const toc = ref(false)
-const page = ref(0)
 
 const manualItems = ref(0)
 const filterItems = ref(0)
-
-const recipesPerPage = computed(() => mdAndUp.value ? 2 : 1)
-const totalRecipes = computed(() => manualItems.value + filterItems.value)
-const totalPages = computed(() => Math.ceil(totalRecipes.value / recipesPerPage.value))
-const currentPageNumber = computed(() => Math.floor(page.value / recipesPerPage.value) + 1)
 
 const book = ref({} as RecipeBook)
 const entries = ref([] as RecipeBookEntry[])

@@ -31,6 +31,8 @@ public here, as the AGPL requires.
   albums with a collage of their photos). Adds `kind`, `author` and `cover` to RecipeBook
   (migration `0243_home_recipebook_kind_author_cover`) and a `PUT /api/recipe-book/{id}/cover/`
   action. **On upstream updates:** if upstream adds its own 0243, add a merge migration.
+  Opening a book shows its recipes as a grid of recipe cards (BookViewPage.vue); upstream's
+  two-up pager with each recipe's ingredient table (BookEntryCard.vue) is no longer used.
 - **Right-click menus.** Recipe cards and planned meals on the home page open their menu at
   the pointer (Shift+right-click keeps the browser's). New "Add to book" dialog; planned meals
   get Open recipe / Edit / shopping / book / Remove from plan.
