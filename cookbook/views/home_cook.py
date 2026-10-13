@@ -54,12 +54,15 @@ def substitutes_of(food):
 
 
 def kitchen(request):
-    """(in stock {food id: soonest expiry or None}, staple food ids); general foods count when a product under them is in stock"""
+    """(in stock {food id: soonest expiry still to come or None}, staple food ids); general foods count when a product under them is in stock"""
     stock = {}
+    today = datetime.date.today()
     for e in InventoryEntry.objects.filter(space=request.space, food__isnull=False, amount__gt=0):
+        # already past its date: still on the shelf, but not something to "use up" (the pantry flags it as expired)
+        expires = e.expires if e.expires and e.expires >= today else None
         prev = stock.get(e.food_id, 'none')
-        if prev == 'none' or (e.expires and (prev is None or e.expires < prev)):
-            stock[e.food_id] = e.expires if prev == 'none' or e.expires else prev
+        if prev == 'none' or (expires and (prev is None or expires < prev)):
+            stock[e.food_id] = expires if prev == 'none' or expires else prev
     # a product in stock counts as the general food it sits under (Eggs Omega 3 -> Egg(s))
     for fid, ups in home_products.general_foods(request.space, list(stock)).items():
         for up in ups:
