@@ -6,6 +6,7 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext as _
 
 from cookbook.connectors.connector_manager import ActionType, ConnectorManager
+from cookbook.helper import home_products
 from cookbook.helper.permission_helper import get_household_user_ids, CustomRecipePermission
 from cookbook.models import Ingredient, InventoryEntry, MealPlan, Recipe, ShoppingListEntry, ShoppingListRecipe, SupermarketCategoryRelation
 
@@ -97,8 +98,10 @@ class RecipeShoppingEditor():
             # home fork: a substitute that's a staple covers it too (cardamom seeds for pods)
             queryset = queryset.exclude(food__substitute__onhand_users__id__in=household)
             # home fork: food already in the pantry counts as on hand too (see cookbook/views/home_cook.py)
-            queryset = queryset.exclude(food__in=InventoryEntry.objects.filter(space=self.space, amount__gt=0).values('food'))
-            queryset = queryset.exclude(food__substitute__in=InventoryEntry.objects.filter(space=self.space, amount__gt=0).values('food'))
+            # and a product in stock counts as the general food it sits under (cookbook/helper/home_products.py)
+            stocked = home_products.with_general(self.space, InventoryEntry.objects.filter(space=self.space, amount__gt=0).values_list('food', flat=True))
+            queryset = queryset.exclude(food__in=stocked)
+            queryset = queryset.exclude(food__substitute__in=stocked)
             return queryset
         else:
             return Ingredient.objects.filter(step__recipe__id=id, food__ignore_shopping=False, space=self.space)

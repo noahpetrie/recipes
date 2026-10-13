@@ -73,10 +73,10 @@
                     <template v-else-if="selectedProduct">
                         <div class="d-flex align-center ga-4"><pantry-product-image :src="selectedProduct.food?.productImage" /><p class="text-h5 font-weight-bold">{{ totalText(selectedProduct.totals) }} <span class="text-body-2 font-weight-regular">on hand</span></p></div>
                         <div class="d-flex flex-wrap ga-2 my-3"><v-chip v-for="place in selectedProduct.locations" :key="place.id ?? 'none'" size="small">{{ place.name }}: {{ totalText(place.totals) }}</v-chip></div>
-                        <p v-if="selectedProduct.food?.barcodes" class="text-body-2 mb-3">Retail barcodes: {{ selectedProduct.food.barcodes }}</p>
+                        <p v-if="lineBarcodes" class="text-body-2 mb-3">Retail barcodes: {{ lineBarcodes }}</p>
                         <p class="text-body-2 text-medium-emphasis">{{ selectedProduct.batches.length }} separate inventory entries · Quantities are shown by unit.</p>
                         <article v-for="batch in selectedProduct.batches" :key="batch.id" class="batch-card mt-4 pa-4">
-                            <div class="d-flex justify-space-between flex-wrap ga-2"><h3 class="text-subtitle-1 font-weight-bold">{{ quantity(batch.amount ?? 0, batch.unit) }}</h3><span class="text-body-2">Item label #{{ batch.code || 'Not assigned' }}</span></div>
+                            <div class="d-flex justify-space-between flex-wrap ga-2"><h3 class="text-subtitle-1 font-weight-bold">{{ quantity(batch.amount ?? 0, batch.unit) }}<span v-if="entryGroup(batch)?.amount != null && entryGroup(batch)?.unit?.id != batch.unit?.id" class="font-weight-regular text-medium-emphasis"> ({{ quantity(entryGroup(batch)!.amount!, {name: entryGroup(batch)!.unit!.name, pluralName: entryGroup(batch)!.unit!.plural_name} as any) }})</span><span v-if="batch.food && batch.food.id != selectedProduct.food?.id" class="font-weight-regular"> · {{ batch.food.name }}</span></h3><span class="text-body-2">Item label #{{ batch.code || 'Not assigned' }}</span></div>
                             <p>{{ batch.inventoryLocation?.name || 'Unassigned' }}<span v-if="batch.subLocation"> · {{ batch.subLocation }}</span></p>
                             <p class="text-body-2 text-medium-emphasis mt-1">Expiry: {{ fmtDate(expiryDay(batch)) || 'Not recorded' }}</p>
                             <p v-if="batch.note" class="text-body-2 mt-1">{{ batch.note }}</p>
@@ -84,6 +84,30 @@
                                 <v-btn v-for="action in batchActions" :key="action.tab" variant="outlined" size="small" @click="batchAction(batch, action.tab)">{{ action.label }}</v-btn>
                             </div>
                         </article>
+                        <!-- home fork: products under a general food (cookbook/helper/home_products.py) -->
+                        <div class="group-box mt-5 pa-4">
+                            <template v-if="!groupOpen">
+                                <p class="text-body-2 text-medium-emphasis mb-2">
+                                    <template v-if="lineProducts.length">Products counted as {{ selectedProduct.food?.name }}: {{ lineProducts.map(f => f.name).join(', ') }}.</template>
+                                    <template v-else>Is this one kind of a more general food, like a brand of eggs? Group it so the pantry counts them together.</template>
+                                </p>
+                                <div class="d-flex flex-wrap ga-2">
+                                    <v-btn v-if="!selectedProduct.grouped" size="small" variant="outlined" prepend-icon="fa-solid fa-layer-group" @click="startGroup">Group under a general food</v-btn>
+                                    <v-btn v-for="f in lineProducts" :key="f.id" size="small" variant="text" @click="ungroup(f)">Count {{ f.name }} separately</v-btn>
+                                </div>
+                            </template>
+                            <template v-else>
+                                <p class="text-subtitle-2 mb-3">Group {{ selectedProduct.food?.name }} under</p>
+                                <v-model-select model="Food" v-model="groupParent" hide-details density="compact" class="mb-3" />
+                                <v-text-field v-if="groupCheck?.needs_size" v-model="groupPer" type="number" min="0" density="compact" hide-details class="mb-3"
+                                              :label="`${groupCheck.to_unit.plural_name} in one ${groupCheck.from_unit.name}`" />
+                                <v-alert v-if="groupError" type="error" density="compact" class="mb-3">{{ groupError }}</v-alert>
+                                <div class="d-flex ga-2">
+                                    <v-btn color="primary" variant="flat" size="small" :disabled="!groupParent || (groupCheck?.needs_size && !groupPer)" :loading="groupSaving" @click="saveGroup">Group</v-btn>
+                                    <v-btn variant="text" size="small" @click="groupOpen = false">Cancel</v-btn>
+                                </div>
+                            </template>
+                        </div>
                     </template>
                     <p v-else>No remaining stock for this product.</p>
                 </v-card-text>
@@ -99,7 +123,7 @@ import {ApiApi, type Food, type InventoryEntry, type InventoryLocation} from '@/
 import PantryProductImage from '@/components/display/PantryProductImage.vue'
 import VModelSelect from '@/components/inputs/VModelSelect.vue'
 import {daysUntil, fmtDate, inputPaused, openScanPanel, pantryApi, pantryVersion, scanPanel, scanStatus} from '@/composables/useScan'
-import {EXPIRY_WINDOW_DAYS, expiryDay, groupProducts, loadInventory, quantity, totalText} from '@/utils/pantry'
+import {entryGroup, EXPIRY_WINDOW_DAYS, expiryDay, groupProducts, loadInventory, quantity, totalText} from '@/utils/pantry'
 
 const items = ref<InventoryEntry[]>([])
 const loading = ref(true)
@@ -114,8 +138,8 @@ const allProducts = computed(() => groupProducts(items.value))
 // A location filter scopes displayed totals; the drill-down always includes all product batches.
 const products = computed(() => {
     const query = (search.value || '').trim().toLocaleLowerCase()
-    const result = groupProducts(items.value.filter(e => (!food.value || e.food?.id === food.value.id) && (!location.value || e.inventoryLocation?.id === location.value.id)))
-        .filter(p => !query || p.food?.name.toLocaleLowerCase().includes(query) || p.food?.barcodes?.includes(query))
+    const result = groupProducts(items.value.filter(e => (!food.value || e.food?.id === food.value.id || entryGroup(e)?.food.id === food.value.id) && (!location.value || e.inventoryLocation?.id === location.value.id)))
+        .filter(p => !query || [p.food, ...p.batches.map(b => b.food)].some(f => f?.name.toLocaleLowerCase().includes(query) || f?.barcodes?.includes(query)))
     return sort.value === 'expiry' ? result.sort((a, b) => (a.earliestExpiry || '9999').localeCompare(b.earliestExpiry || '9999')) : result
 })
 // the list grows as you scroll instead of paging
@@ -136,8 +160,9 @@ const selectedProduct = computed(() => allProducts.value.find(p => p.key === sel
 const route = useRoute()
 const router = useRouter()
 watch([() => route.query.food, allProducts], ([id]) => {
-    if (id && allProducts.value.some(p => p.key === `food:${id}`)) {
-        selectedKey.value = `food:${id}`
+    const line = id ? allProducts.value.find(p => p.key === `food:${id}` || p.batches.some(b => String(b.food?.id) === String(id))) : null
+    if (line) {
+        selectedKey.value = line.key
         router.replace({query: {...route.query, food: undefined}})
     }
 }, {immediate: true})
@@ -156,6 +181,54 @@ function batchAction(batch: InventoryEntry, tab: string) {
     selectedKey.value = null
     openScanPanel({mode: 'lookup', foodId: batch.food.id, entryId: batch.id, tab})
 }
+// grouping a product under a general food
+const lineBarcodes = computed(() => [...new Set([selectedProduct.value?.food, ...(selectedProduct.value?.batches ?? []).map(b => b.food)]
+    .flatMap(f => (f?.barcodes || '').split(/\s+/)).filter(Boolean))].join(' '))
+const lineProducts = computed(() => {
+    const p = selectedProduct.value
+    if (!p?.grouped) return []
+    const seen = new Map<number, Food>()
+    p.batches.forEach(b => { if (b.food?.id && b.food.id != p.food?.id) seen.set(b.food.id, b.food) })
+    return [...seen.values()]
+})
+const groupOpen = ref(false)
+const groupParent = ref<Food | null>(null)
+const groupPer = ref<string | number>('')
+const groupCheck = ref<any>(null)
+const groupError = ref('')
+const groupSaving = ref(false)
+watch(selectedKey, () => { groupOpen.value = false })
+function startGroup() {
+    groupOpen.value = true; groupParent.value = null; groupPer.value = ''; groupCheck.value = null; groupError.value = ''
+}
+watch(groupParent, async parent => {
+    groupCheck.value = null; groupError.value = ''
+    const food = selectedProduct.value?.food
+    if (!parent || !food) return
+    try {
+        groupCheck.value = await pantryApi('group/', {food_id: food.id, parent_id: parent.id, check: true})
+        if (groupCheck.value.per != null) groupPer.value = groupCheck.value.per
+    } catch (e: any) { groupError.value = e?.message || 'Couldn’t check the units.' }
+})
+async function saveGroup() {
+    const food = selectedProduct.value?.food
+    if (!food || !groupParent.value) return
+    groupSaving.value = true; groupError.value = ''
+    try {
+        await pantryApi('group/', {food_id: food.id, parent_id: groupParent.value.id, per: groupPer.value || undefined})
+        const parentId = groupParent.value.id
+        groupOpen.value = false
+        await loadItems()
+        selectedKey.value = `food:${parentId}`
+    } catch (e: any) { groupError.value = e?.message || 'Couldn’t group it.' } finally { groupSaving.value = false }
+}
+async function ungroup(f: Food) {
+    try {
+        await pantryApi('group/', {food_id: f.id, parent_id: null})
+        await loadItems()
+    } catch (e: any) { groupError.value = e?.message || 'Couldn’t separate it.' }
+}
+
 let sequence = 0
 async function loadItems() {
     const current = ++sequence
@@ -204,6 +277,7 @@ onUnmounted(() => { sequence++; countSequence++; observer?.disconnect(); window.
 .min-w-0 { min-width: 0; }
 .mobile-meta { display: none; }
 .batch-card { border: 1px solid rgba(var(--v-theme-on-surface), .12); border-radius: 12px; }
+.group-box { background: rgba(var(--v-theme-on-surface), .03); border-radius: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 700px) {
     .pantry-page { padding: 8px 12px; }

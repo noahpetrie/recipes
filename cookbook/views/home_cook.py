@@ -21,7 +21,7 @@ from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from cookbook.helper import home_nutrition
+from cookbook.helper import home_nutrition, home_products
 from cookbook.helper.permission_helper import CustomIsUser, CustomTokenHasReadWriteScope, get_household_user_ids
 from cookbook.models import Food, Ingredient, InventoryEntry, Recipe
 
@@ -54,12 +54,17 @@ def substitutes_of(food):
 
 
 def kitchen(request):
-    """(in stock {food id: soonest expiry or None}, staple food ids)"""
+    """(in stock {food id: soonest expiry or None}, staple food ids); general foods count when a product under them is in stock"""
     stock = {}
     for e in InventoryEntry.objects.filter(space=request.space, food__isnull=False, amount__gt=0):
         prev = stock.get(e.food_id, 'none')
         if prev == 'none' or (e.expires and (prev is None or e.expires < prev)):
             stock[e.food_id] = e.expires if prev == 'none' or e.expires else prev
+    # a product in stock counts as the general food it sits under (Eggs Omega 3 -> Egg(s))
+    for fid, ups in home_products.general_foods(request.space, list(stock)).items():
+        for up in ups:
+            prev, mine = stock.get(up, 'none'), stock[fid]
+            stock[up] = mine if prev == 'none' or (mine and (prev is None or mine < prev)) else prev
     users = get_household_user_ids(request.user_space)
     staples = set(Food.objects.filter(space=request.space, onhand_users__id__in=users).values_list('id', flat=True))
     return stock, staples

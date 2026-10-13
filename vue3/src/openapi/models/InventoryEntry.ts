@@ -113,6 +113,12 @@ export interface InventoryEntry {
      * @memberof InventoryEntry
      */
     readonly createdBy: number;
+    /**
+     * home fork: the general food a product is counted as, with its amount in that food's unit
+     * @type {any}
+     * @memberof InventoryEntry
+     */
+    readonly group?: any | null;
 }
 
 /**
@@ -150,6 +156,7 @@ export function InventoryEntryFromJSONTyped(json: any, ignoreDiscriminator: bool
         'label': json['label'],
         'createdAt': (new Date(json['created_at'])),
         'createdBy': json['created_by'],
+        'group': json['group'] == null ? null : json['group'],
     };
 }
 
@@ -157,7 +164,7 @@ export function InventoryEntryToJSON(json: any): InventoryEntry {
     return InventoryEntryToJSONTyped(json, false);
 }
 
-export function InventoryEntryToJSONTyped(value?: Omit<InventoryEntry, 'label'|'created_at'|'created_by'> | null, ignoreDiscriminator: boolean = false): any {
+export function InventoryEntryToJSONTyped(value?: Omit<InventoryEntry, 'label'|'created_at'|'created_by'|'group'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

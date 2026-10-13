@@ -18,14 +18,29 @@ export function decimalSum(values: (number | string)[]): string {
     return sign + (scale ? `${digits.slice(0, -scale)}.${digits.slice(-scale)}`.replace(/\.?0+$/, '') : digits)
 }
 
+// home fork: a product under a general food (Eggs Omega 3 under Egg(s), cookbook/helper/home_products.py)
+// arrives with the general food and, when its size is known, its amount in the general food's unit
+export type Group = {food: {id: number, name: string, product_image: string}, amount: string | null, unit: {id: number, name: string, plural_name: string} | null}
+export function entryGroup(entry: InventoryEntry): Group | null {
+    return entry.group ?? null
+}
+
+/** amount and unit an entry adds to its line: the general food's unit when it converts */
+function counted(entry: InventoryEntry): {unit: Unit | null, amount: number | string} {
+    const g = entryGroup(entry)
+    if (g?.amount != null && g.unit) return {unit: {id: g.unit.id, name: g.unit.name, pluralName: g.unit.plural_name} as Unit, amount: g.amount}
+    return {unit: entry.unit ?? null, amount: entry.amount ?? 0}
+}
+
 export function totals(entries: InventoryEntry[]): Total[] {
-    const groups = new Map<number | null, InventoryEntry[]>()
+    const groups = new Map<number | null, {unit: Unit | null, amount: number | string}[]>()
     for (const entry of entries) {
-        const key = entry.unit?.id ?? null
+        const c = counted(entry)
+        const key = c.unit?.id ?? null
         if (!groups.has(key)) groups.set(key, [])
-        groups.get(key)!.push(entry)
+        groups.get(key)!.push(c)
     }
-    return [...groups.values()].map(rows => ({unit: rows[0]!.unit ?? null, amount: decimalSum(rows.map(e => e.amount ?? 0))}))
+    return [...groups.values()].map(rows => ({unit: rows[0]!.unit, amount: decimalSum(rows.map(c => c.amount))}))
 }
 
 export function quantity(amount: number | string, unit?: Unit | null): string {
@@ -47,7 +62,8 @@ export function groupProducts(entries: InventoryEntry[]) {
     for (const entry of entries) {
         // The list endpoint returns positive stock only. Keep that domain rule for fixtures too.
         if (!(Number(entry.amount) > 0)) continue
-        const key = entry.food?.id == null ? `entry:${entry.id}` : `food:${entry.food.id}`
+        const g = entryGroup(entry)
+        const key = g ? `food:${g.food.id}` : entry.food?.id == null ? `entry:${entry.id}` : `food:${entry.food.id}`
         if (!groups.has(key)) groups.set(key, [])
         groups.get(key)!.push(entry)
     }
@@ -59,8 +75,12 @@ export function groupProducts(entries: InventoryEntry[]) {
             locations.get(id)!.push(batch)
         }
         const dates = batches.map(expiryDay).filter((d): d is string => !!d).sort()
+        // a general food's line shows the general food; its own stock (if any) supplies the rest
+        const g = batches.map(entryGroup).find(Boolean)
+        const own = batches.find(b => !entryGroup(b))?.food
+        const food = g ? {...(own ?? batches[0]!.food), id: g.food.id, name: g.food.name, productImage: own?.productImage || g.food.product_image, barcodes: own?.barcodes ?? ''} : batches[0]!.food
         return {
-            key, food: batches[0]!.food, batches, totals: totals(batches),
+            key, food, grouped: !!g, batches, totals: totals(batches),
             locations: [...locations.entries()].map(([id, rows]) => ({id, name: rows[0]!.inventoryLocation?.name || 'Unassigned', totals: totals(rows)})),
             earliestExpiry: dates[0] ?? null, unknownExpiry: batches.length - dates.length,
         }

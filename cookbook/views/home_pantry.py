@@ -649,3 +649,70 @@ def count_finish(request, pk):
     c.finished_at = timezone.now()
     c.save()
     return Response(count_json(request.space, c))
+
+
+# ---- products under a general food (cookbook/helper/home_products.py) ------------------------
+
+def _stock_unit(food):
+    e = food.inventoryentry_set.filter(amount__gt=0, unit__isnull=False).select_related('unit').first()
+    return e.unit if e else food.preferred_unit
+
+
+@api_view(['POST'])
+@permission_classes(PERMS)
+def group_product(request):
+    """
+    {food_id, parent_id, per?, check?} puts a product under a general food ("Eggs Omega 3" under
+    "Egg(s)"); per = how many of the general food's unit one of the product's unit holds (12 pcs in
+    a package). check: true only reports the units and the size on file or on the label.
+    {food_id, parent_id: null} takes the product out again.
+    """
+    from django_scopes import scopes_disabled
+    from treebeard.exceptions import InvalidMoveToDescendant, InvalidPosition, PathOverflow
+    from cookbook.helper import home_products
+    from cookbook.models import UnitConversion
+    d = request.data
+    try:
+        food = get_obj(Food, request.space, d.get('food_id'), 'Food')
+        parent = get_obj(Food, request.space, d.get('parent_id'), 'General food')
+    except ValueError as e:
+        return Response({'error': str(e)}, status=404)
+    if food is None:
+        return Response({'error': 'Food not found'}, status=404)
+    if parent and (parent.id == food.id or parent.path.startswith(food.path)):
+        return Response({'error': f'{parent.name} can’t go under {food.name}.'}, status=400)
+
+    if parent is None:
+        with scopes_disabled():
+            food.move(Food.get_first_root_node(), f"{'sorted' if Food.node_order_by else 'last'}-sibling")
+        return Response({'ok': True})
+
+    top = Food.objects.filter(space=request.space, path=parent.path[:Food.steplen]).first()
+    to_unit, from_unit = home_products.general_unit(top), _stock_unit(food)
+    needs_size = bool(to_unit and from_unit and to_unit.id != from_unit.id)
+    if d.get('check'):
+        per = home_products.convert(Decimal(1), from_unit, to_unit, [food, top]) if needs_size else None
+        if per is None and needs_size:
+            m = re.search(r'\d+', str((food.product_info or {}).get('quantity') or ''))
+            per = Decimal(m.group()) if m else None
+        return Response({'needs_size': needs_size, 'from_unit': unit_json(from_unit), 'to_unit': unit_json(to_unit),
+                         'per': num(per) if per is not None else None})
+
+    per = None
+    if needs_size:
+        try:
+            per = dec(d.get('per'), 'per')
+        except ValueError:
+            return Response({'error': f'How many {to_unit.plural_name or to_unit.name} are in one {from_unit.name}?'}, status=400)
+    try:
+        with transaction.atomic():
+            with scopes_disabled():
+                food.move(parent, f"{'sorted' if Food.node_order_by else 'last'}-child")
+            if per is not None:
+                UnitConversion.objects.filter(space=request.space, food=food, base_unit=from_unit, converted_unit=to_unit).delete()
+                UnitConversion.objects.filter(space=request.space, food=food, base_unit=to_unit, converted_unit=from_unit).delete()
+                UnitConversion.objects.create(space=request.space, food=food, base_amount=1, base_unit=from_unit,
+                                              converted_amount=per, converted_unit=to_unit, created_by=request.user)
+    except (PathOverflow, InvalidMoveToDescendant, InvalidPosition):
+        return Response({'error': f'Couldn’t put {food.name} under {parent.name}.'}, status=400)
+    return Response({'ok': True})

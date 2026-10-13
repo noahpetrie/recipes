@@ -1769,6 +1769,12 @@ class InventoryEntrySerializer(SpacedModelSerializer, WritableNestedModelSeriali
     food = FoodSerializer()
     unit = UnitSerializer(allow_null=True, required=False)  # home fork: "1 jar of Nutella" needs no unit
     label = serializers.SerializerMethodField('get_label')
+    # home fork: a product under a general food is shown as that food (cookbook/helper/home_products.py)
+    group = serializers.SerializerMethodField('get_group')
+
+    def get_group(self, obj):
+        from cookbook.helper import home_products
+        return home_products.group(obj, self.context.setdefault('home_group_cache', {}))
 
     def get_label(self, obj):
         text = f'#{obj.code} - {round(obj.amount, 2)}'
@@ -1823,7 +1829,7 @@ class InventoryEntrySerializer(SpacedModelSerializer, WritableNestedModelSeriali
         model = InventoryEntry
         fields = (
             'id', 'inventory_location', 'sub_location', 'code',
-            'food', 'unit', 'amount', 'expires', 'note', 'label', 'created_at', 'created_by'
+            'food', 'unit', 'amount', 'expires', 'note', 'label', 'created_at', 'created_by', 'group'
         )
         read_only_fields = ('id', 'created_at', 'created_by')
 
