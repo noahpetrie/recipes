@@ -94,6 +94,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import {ApiApi, type Food, type InventoryEntry, type InventoryLocation} from '@/openapi'
 import PantryProductImage from '@/components/display/PantryProductImage.vue'
 import VModelSelect from '@/components/inputs/VModelSelect.vue'
@@ -131,6 +132,15 @@ watch(moreSentinel, el => {
     observer.observe(el)
 })
 const selectedProduct = computed(() => allProducts.value.find(p => p.key === selectedKey.value))
+// /pantry?food=12 (from the search menu) opens that food once the stock has loaded
+const route = useRoute()
+const router = useRouter()
+watch([() => route.query.food, allProducts], ([id]) => {
+    if (id && allProducts.value.some(p => p.key === `food:${id}`)) {
+        selectedKey.value = `food:${id}`
+        router.replace({query: {...route.query, food: undefined}})
+    }
+}, {immediate: true})
 // handheld scanner state: a text box with focus takes the scanner's typing, so scans pause
 const scannerState = computed(() => {
     if (inputPaused.value || scanStatus.value == 'paused') return {kind: 'paused', text: 'Scanning paused', help: inputPaused.value ? 'A text box has focus. Click elsewhere on the page to scan again.' : 'Finish or discard the open edit to scan the next item.'}

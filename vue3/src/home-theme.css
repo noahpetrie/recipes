@@ -243,42 +243,6 @@
     white-space: nowrap;
 }
 
-/* ---- Cmd+K search: command-palette style list --------------------------------------- */
-.global-search .v-field--variant-solo {
-    box-shadow: 0 0 0 1px var(--home-hairline) !important;
-    background: rgba(var(--v-theme-on-surface), 0.03);
-}
-
-.global-search .v-card-text > .v-card {
-    box-shadow: none !important;
-    border: 0 !important;
-    border-radius: 10px;
-    margin-top: 2px !important;
-    background: transparent;
-}
-
-.global-search .v-card-text > .v-card.v-card--variant-tonal {
-    background: rgba(var(--v-theme-primary), 0.10);
-    color: rgb(var(--v-theme-primary));
-}
-
-.global-search .v-card-text > .v-card > .v-card__overlay {
-    border-radius: inherit;
-}
-
-.global-search .v-card-text > .v-card .v-card-title {
-    font-size: 0.975rem;
-    font-weight: 500;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.global-search .v-card-text > .v-card .v-avatar {
-    --v-avatar-height: 32px;
-    border-radius: 8px;
-}
 
 /* ---- Phones: full-bleed pages (recipe view) get square edges and horizontal hairlines only */
 @media (max-width: 1279.98px) {
@@ -1120,26 +1084,6 @@
     width: fit-content;
     max-width: 100%;
     margin-top: 8px;
-}
-
-/* ---- Cmd+K: neutral highlight for the selected result, like the menus --------------------- */
-.global-search .v-card-text > .v-card.v-card--variant-tonal {
-    background: rgba(var(--v-theme-on-surface), 0.06);
-    color: rgb(var(--v-theme-on-surface));
-}
-
-.global-search .v-card-text > .v-card {
-    border-radius: 8px;
-}
-
-.global-search .v-card-text > .v-card.v-card--variant-tonal > .v-card__underlay,
-.global-search .v-card-text > .v-card.v-card--variant-tonal > .v-card__overlay {
-    opacity: 0 !important;
-}
-
-.global-search .v-card-text > .v-card,
-.global-search .v-card-text > .v-card.v-card--variant-tonal {
-    border-radius: 8px !important;
 }
 
 /* account header at the top of the account menu (taller than the 32px menu rows) */
