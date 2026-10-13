@@ -2,7 +2,7 @@
     <v-container class="cook-page">
         <header class="cook-header">
             <div class="d-flex align-center ga-4">
-                <v-avatar rounded color="primary" variant="tonal" size="48"><v-icon icon="fa-solid fa-kitchen-set" /></v-avatar>
+                <v-avatar rounded color="primary" variant="tonal" size="48"><v-icon icon="fa-solid fa-fire-burner" /></v-avatar>
                 <div>
                     <h1 class="text-h4 font-weight-bold">Ready to Cook</h1>
                     <p class="text-body-2 text-medium-emphasis mt-1">Your recipes, matched against the pantry and the staples you always keep.</p>

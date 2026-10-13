@@ -2,7 +2,7 @@
     <!-- home fork: the start page's kitchen rows, from "Ready to Cook" (cookbook/views/home_cook.py) -->
     <div v-if="data" class="kitchen-rows mt-4">
         <v-sheet v-if="data.staples == 0 || data.in_stock == 0" rounded="lg" border class="pa-4 mb-6 d-flex align-center flex-wrap ga-3">
-            <v-icon icon="fa-solid fa-kitchen-set" color="primary" />
+            <v-icon icon="fa-solid fa-fire-burner" color="primary" />
             <div class="flex-grow-1" style="min-width: 220px">
                 <div class="font-weight-medium">See what you can cook tonight</div>
                 <div class="text-body-2 text-medium-emphasis">
