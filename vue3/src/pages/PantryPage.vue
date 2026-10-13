@@ -117,6 +117,7 @@
                                 <div class="d-flex flex-wrap ga-2">
                                     <v-btn v-if="!selectedProduct.grouped" size="small" variant="outlined" prepend-icon="fa-solid fa-layer-group" @click="startGroup">Group under a general food</v-btn>
                                     <v-btn v-for="f in lineProducts" :key="f.id" size="small" variant="text" @click="ungroup(f)">Count {{ f.name }} separately</v-btn>
+                                    <v-btn v-if="selectedProduct.food" size="small" variant="text" prepend-icon="fa-solid fa-code-merge" @click="startMerge(selectedProduct.food)">Merge into another food</v-btn>
                                 </div>
                             </template>
                             <template v-else>
@@ -150,11 +151,29 @@
                     <div v-for="p in missingLine.products" :key="p.id" class="missing-product d-flex align-center ga-3 pa-3">
                         <pantry-product-image small :src="p.image || missingLine.food.image" />
                         <div class="flex-grow-1 min-w-0"><div class="font-weight-medium">{{ p.name }}</div><div class="text-caption text-medium-emphasis">{{ p.last_bought ? `Last bought ${fmtDate(p.last_bought)}${p.times > 1 ? ` · ${p.times} times` : ''}` : 'No store orders on file' }}</div></div>
+                        <v-btn size="small" variant="text" icon="fa-solid fa-code-merge" :aria-label="`Merge ${p.name} into another food`" title="Merge into another food" @click="startMerge(p)" />
                         <v-btn size="small" variant="outlined" prepend-icon="fa-solid fa-plus" @click="addStock(p.id)">Add stock</v-btn>
                     </div>
                 </v-card-text>
             </v-card>
         </v-dialog>
+        <!-- home fork: fold a duplicate into the food it really is (home_pantry.merge_food) -->
+        <v-dialog :model-value="mergeFrom != null" max-width="520" @update:model-value="v => { if (!v) mergeFrom = null }">
+            <v-card v-if="mergeFrom">
+                <v-card-title class="text-h6 text-wrap pt-4">Merge {{ mergeFrom.name }} into…</v-card-title>
+                <v-card-text>
+                    <p class="text-body-2 text-medium-emphasis mb-4">For a duplicate, like a scanned product that’s also on file from a store order. Its barcodes, store orders, stock and history, shopping list and recipe uses all move to the food you choose, and {{ mergeFrom.name }} is deleted.</p>
+                    <v-model-select model="Food" v-model="mergeInto" hide-details />
+                    <v-alert v-if="mergeError" type="error" density="compact" class="mt-3">{{ mergeError }}</v-alert>
+                </v-card-text>
+                <v-card-actions class="px-4 pb-4">
+                    <v-spacer />
+                    <v-btn variant="text" @click="mergeFrom = null">Cancel</v-btn>
+                    <v-btn color="primary" variant="flat" :disabled="!mergeInto || mergeInto.id == mergeFrom.id" :loading="merging" @click="saveMerge">Merge</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        <v-snackbar v-model="mergeDone" :timeout="4000" color="success">{{ mergeMessage }}</v-snackbar>
     </v-container>
 </template>
 
@@ -308,6 +327,27 @@ async function ungroup(f: Food) {
         await pantryApi('group/', {food_id: f.id, parent_id: null})
         await loadItems()
     } catch (e: any) { groupError.value = e?.message || 'Couldn’t separate it.' }
+}
+
+// merging a duplicate into another food
+const mergeFrom = ref<{ id: number, name: string } | null>(null)
+const mergeInto = ref<Food | null>(null)
+const mergeError = ref('')
+const merging = ref(false)
+const mergeDone = ref(false)
+const mergeMessage = ref('')
+function startMerge(f: { id?: number, name: string }) {
+    mergeFrom.value = {id: f.id!, name: f.name}; mergeInto.value = null; mergeError.value = ''
+}
+async function saveMerge() {
+    if (!mergeFrom.value || !mergeInto.value) return
+    merging.value = true; mergeError.value = ''
+    try {
+        const r = await pantryApi('merge/', {food_id: mergeFrom.value.id, into_id: mergeInto.value.id})
+        mergeMessage.value = r.message; mergeDone.value = true
+        mergeFrom.value = null; selectedKey.value = null; missingId.value = null
+        refresh()
+    } catch (e: any) { mergeError.value = e?.message || 'Couldn’t merge them.' } finally { merging.value = false }
 }
 
 let sequence = 0

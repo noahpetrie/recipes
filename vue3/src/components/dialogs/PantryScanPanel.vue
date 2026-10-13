@@ -133,7 +133,20 @@
                         </div>
                     </div>
 
-                    <div class="psp-ask">{{ $t('HomeCreateProduct', 'Create product') }}</div>
+                    <!-- home fork: products on file (e.g. from store orders) this barcode most likely is -->
+                    <template v-if="matches.length">
+                        <div class="psp-ask">{{ $t('HomeIsItOneOfThese', 'Is it one of these?') }}</div>
+                        <p class="text-body-2 text-medium-emphasis mb-3">{{ $t('HomeMatchHelp', 'Products you’ve had before. Pick one and Kitchen remembers this barcode for it.') }}</p>
+                        <button v-for="m in matches" :key="m.id" type="button" class="psp-match" :disabled="busy" @click="useMatch(m)">
+                            <span class="psp-thumb"><img v-if="m.image" :src="m.image" alt=""><v-icon v-else icon="fa-solid fa-jar" class="opacity-40"></v-icon></span>
+                            <span class="min-w-0 flex-grow-1 text-start">
+                                <span class="psp-name d-block">{{ m.name }}</span>
+                                <span class="psp-meta d-block">{{ [m.general, m.last_bought ? $t('HomeLastBought', {date: fmtDate(m.last_bought)}, 'last bought {date}') : '', m.barcodes.length ? $t('HomeHasBarcode', 'has a barcode') : ''].filter(Boolean).join(' · ') }}</span>
+                            </span>
+                            <v-icon icon="fa-solid fa-chevron-right" size="small" class="opacity-40"></v-icon>
+                        </button>
+                    </template>
+                    <div class="psp-ask" :class="{'mt-5': matches.length}">{{ matches.length ? $t('HomeOrCreateProduct', 'Or create a new product') : $t('HomeCreateProduct', 'Create product') }}</div>
                     <p class="text-body-2 text-medium-emphasis mb-3">{{ result.product ? $t('HomeCreateProductFound', 'Filled in from the product lookup. Kitchen remembers this barcode, so next time it goes straight to the product.') : $t('HomeCreateProductHelp', 'Give it a name. Kitchen remembers this barcode, so next time it goes straight to the product.') }}</p>
                     <label class="psp-label">{{ $t('Name') }}</label>
                     <v-text-field v-model="newName" hide-details :placeholder="$t('Name')" @keydown.enter="createProduct"></v-text-field>
@@ -899,6 +912,25 @@ async function showFood(foodId: number, opts: { entryId?: number, tab?: string }
 // ---- unknown barcode -> food ----
 const linkFood = ref<Food | null>(null)
 const newName = ref('')
+// products on file that this barcode most likely is (home_pantry.suggest), refreshed as the name is edited
+type Match = { id: number, name: string, image: string, general: string | null, last_bought: string, barcodes: string[] }
+const matches = ref<Match[]>([])
+let matchTimer: ReturnType<typeof setTimeout> | undefined
+let matchSeq = 0
+watch([state, newName], () => {
+    clearTimeout(matchTimer)
+    if (state.value != 'unknown') { matches.value = []; return }
+    const q = [result.value?.product?.brand, newName.value].filter(Boolean).join(' ').trim()
+    const seq = ++matchSeq
+    matchTimer = setTimeout(async () => {
+        if (!q) { matches.value = []; return }
+        try { const r = await pantryApi(`suggest/?q=${encodeURIComponent(q)}`); if (seq == matchSeq) matches.value = r.foods.slice(0, 4) } catch { if (seq == matchSeq) matches.value = [] }
+    }, 250)
+})
+function useMatch(m: Match) {
+    linkFood.value = {id: m.id, name: m.name} as Food
+    linkBarcode()
+}
 
 function suggestName(p: any): string {
     if (!p) return ''
@@ -1985,6 +2017,28 @@ onMounted(() => { /* reference data loads the first time the panel opens */ })
 .psp-ask {
     margin: 4px 0 10px;
     font-weight: 600;
+}
+
+.psp-match {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 12px 8px 8px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+    background: rgb(var(--v-theme-surface));
+    color: inherit;
+}
+
+.psp-match:hover {
+    background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.psp-match:focus-visible {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: 2px;
 }
 
 .psp-hero + .psp-ask {

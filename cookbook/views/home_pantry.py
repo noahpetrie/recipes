@@ -777,3 +777,112 @@ def catalog(request):
                     'times': sum(p['times'] for p in items), 'on_list': path in on_list})
     out.sort(key=lambda l: l['food']['name'].lower())
     return Response({'lines': out})
+
+
+# ---- a new barcode for a product already on file, and merging duplicates -----------------------
+
+SUGGEST_NOISE = {'the', 'and', 'with', 'of', 'a', 'en', 'de', 'et', 'la', 'le', 'du', 'des', 'original', 'originale', 'classic',
+                 'pack', 'size', 'club', 'family', 'premium', 'new', 'g', 'kg', 'ml', 'l', 'oz', 'lb', 'ct', 'x'}
+
+
+@api_view(['GET'])
+@permission_classes(PERMS)
+def suggest(request):
+    """
+    ?q=Heinz Sweet Relish  the foods a newly scanned product most likely is, best first:
+    {foods: [{id, name, image, general, last_bought, barcodes}]}. Foods from past store orders that
+    have no retail barcode yet come first: they're the ones still waiting for their barcode.
+    """
+    from cookbook.helper.home_nutrition import words
+    q = set(words(str(request.query_params.get('q') or '')[:200])) - SUGGEST_NOISE
+    if not q:
+        return Response({'foods': []})
+    scored = []
+    for f in Food.objects.filter(space=request.space).only('id', 'name', 'path', 'depth', 'barcodes', 'product_info'):
+        info = f.product_info or {}
+        names = [f.name] + [o.get('name') or '' for o in info.get('orders') or []]
+        best = 0
+        for n in names:
+            fw = set(words(n)) - SUGGEST_NOISE
+            if fw and (hit := len(fw & q)):
+                best = max(best, hit / len(fw) + hit * .1)
+        if best < .5:
+            continue
+        waiting = bool(info.get('orders')) and not (f.barcodes or '').strip()
+        scored.append((best + (.3 if waiting else 0) + (.1 if info.get('image') else 0), f))
+    scored.sort(key=lambda s: -s[0])
+    tops = {f.path[:Food.steplen] for _, f in scored[:6] if f.depth > 1}
+    general = dict(Food.objects.filter(space=request.space, path__in=tops).values_list('path', 'name'))
+    out = []
+    for _, f in scored[:6]:
+        info = f.product_info or {}
+        out.append({'id': f.id, 'name': f.name, 'image': info.get('image') or '',
+                    'general': general.get(f.path[:Food.steplen]) if f.depth > 1 else None,
+                    'last_bought': _bought(f)[0], 'barcodes': [b for b in (f.barcodes or '').split() if b]})
+    return Response({'foods': out})
+
+
+@api_view(['POST'])
+@permission_classes(PERMS)
+def merge_food(request):
+    """
+    {food_id, into_id} folds a duplicate into the food it really is: barcodes, picture and store
+    orders, stock and its history, shopping list, recipes, conversions and products under it all move
+    to into_id, then the duplicate is deleted.
+    """
+    from django.db.models import ForeignObjectRel
+    from django_scopes import scopes_disabled
+    from cookbook.models import UnitConversion
+    try:
+        food = get_obj(Food, request.space, request.data.get('food_id'), 'Food')
+        into = get_obj(Food, request.space, request.data.get('into_id'), 'Food')
+    except ValueError as e:
+        return Response({'error': str(e)}, status=404)
+    if food is None or into is None:
+        return Response({'error': 'Choose the food to merge into.'}, status=400)
+    if food.id == into.id:
+        return Response({'error': 'That’s the same food.'}, status=400)
+    if into.path.startswith(food.path):
+        return Response({'error': f'{into.name} is under {food.name}. Merge it the other way round, or take it out first.'}, status=400)
+    with transaction.atomic(), scopes_disabled():
+        codes = [b for b in (into.barcodes or '').split() if b]
+        for b in (food.barcodes or '').split():
+            if not any(same_barcode(b, c) for c in codes):
+                codes.append(b)
+        a, b = dict(food.product_info or {}), dict(into.product_info or {})
+        info = {**a, **{k: v for k, v in b.items() if v}}
+        known = {o.get('code') for o in b.get('orders') or []}
+        orders = (b.get('orders') or []) + [o for o in a.get('orders') or [] if o.get('code') not in known]
+        if orders:
+            info['orders'] = orders
+        into.barcodes, into.product_info = ' '.join(codes), info or None
+        for c in UnitConversion.objects.filter(food=food):
+            if UnitConversion.objects.filter(food=into, base_unit=c.base_unit, converted_unit=c.converted_unit).exists():
+                c.delete()
+            else:
+                c.food = into
+                c.save()
+        for f in ('preferred_unit', 'supermarket_category'):
+            if not getattr(into, f + '_id') and getattr(food, f + '_id'):
+                setattr(into, f + '_id', getattr(food, f + '_id'))
+        food.barcodes = ''
+        food.save(update_fields=['barcodes'])
+        into.save()
+        food.properties.all().delete()
+        into.onhand_users.add(*food.onhand_users.all())
+        into.substitute.add(*food.substitute.exclude(id=into.id))
+        for link in [f for f in food._meta.get_fields() if isinstance(f, ForeignObjectRel)]:
+            related = getattr(food, link.get_accessor_name()).all()
+            if link.one_to_many:
+                for r in related:
+                    setattr(r, link.field.name, into)
+                    r.save()
+            elif link.many_to_many:
+                for r in related:
+                    getattr(r, link.field.name).add(into)
+                    getattr(r, link.field.name).remove(food)
+        for c in food.get_children():
+            c.move(Food.objects.get(id=into.id), f"{'sorted' if Food.node_order_by else 'last'}-child")
+        name = food.name
+        Food.objects.get(id=food.id).delete()
+    return Response({'ok': True, 'food': food_json(Food.objects.get(id=into.id)), 'message': f'{name} is now part of {into.name}'})
