@@ -14,7 +14,7 @@
 
         <div class="restock-grid mt-3">
             <div v-for="i in shown" :key="i.food.id" class="restock-item">
-                <pantry-product-image small :src="i.food.image || i.product.image" />
+                <pantry-product-image small :src="i.product.image || i.food.image" />
                 <div class="min-w-0 flex-grow-1">
                     <div class="font-weight-medium text-truncate">{{ i.food.name }}</div>
                     <div class="text-caption text-medium-emphasis">Every {{ span(i.every_days) }} · last {{ ago(i.since_days) }}</div>
@@ -40,7 +40,7 @@
             <summary class="text-body-2">Held until you’re back ({{ held.length }}): {{ held.map(i => i.food.name).join(', ') }}</summary>
             <div class="restock-grid mt-2">
                 <div v-for="i in held" :key="i.food.id" class="restock-item">
-                    <pantry-product-image small :src="i.food.image || i.product.image" />
+                    <pantry-product-image small :src="i.product.image || i.food.image" />
                     <div class="min-w-0 flex-grow-1">
                         <div class="font-weight-medium text-truncate">{{ i.food.name }}</div>
                         <div class="text-caption text-medium-emphasis">Every {{ span(i.every_days) }} · last {{ ago(i.since_days) }}</div>

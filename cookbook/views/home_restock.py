@@ -50,11 +50,16 @@ def away_soon(space):
 
 
 def best_order(foods):
-    """(food, order) bought most recently among foods, preferring orders with a store link"""
+    """
+    (food, order) for the product usually bought among foods: the one bought most often in the past
+    year (most recent on a tie), preferring orders with a store link
+    """
+    year_ago = (timezone.localdate() - datetime.timedelta(days=365)).isoformat()
     best = None
     for f in foods:
         for o in _orders(f):
-            key = (bool(o.get('url')), o.get('last') or '')
+            dates = o.get('dates') or [o.get('last') or '']
+            key = (bool(o.get('url')), sum(1 for d in dates if d >= year_ago), o.get('last') or '')
             if best is None or key > best[0]:
                 best = (key, f, o)
     return (best[1], best[2]) if best else (None, None)
@@ -95,7 +100,7 @@ def restock(request):
         fresh = keeps is not None and keeps <= FRESH_DAYS
         product, order = best_order(foods)
         items.append({
-            'food': {'id': top.id, 'name': top.name, 'image': (top.product_info or {}).get('image') or (product.product_info or {}).get('image') or '',
+            'food': {'id': top.id, 'name': top.name, 'image': order.get('image') or (product.product_info or {}).get('image') or (top.product_info or {}).get('image') or '',
                      'aisle': top.supermarket_category.name if top.supermarket_category_id else None},
             'product': link_json(product, order),
             'every_days': round(every), 'since_days': since, 'last_bought': days[-1].isoformat(),
