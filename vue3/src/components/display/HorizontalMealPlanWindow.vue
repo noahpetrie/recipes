@@ -1,67 +1,42 @@
 <template>
-    <!--    <v-row justify="space-between">-->
-    <!--        <v-col>-->
-    <!--            <h2><i class="fas fa-calendar-week fa-fw"></i> Meal Plans</h2>-->
-    <!--        </v-col>-->
-    <!--    </v-row>-->
-
-    <v-row class="mt-0" v-if="mealPlanWindows.length > 0">
-        <v-col>
-            <v-window v-model="currentWindowIndex">
-                <v-window-item v-for="(w, i) in mealPlanWindows" :value="i" class="pt-1 pb-1">
-                    <v-row>
-                        <v-col v-for="mealPlanGridItem in w">
-
-                            <v-list density="compact" class="pt-0 pb-0 mp-day">
-                                <v-list-item class="text-center">
-                                    <div class="d-flex ">
-                                        <div class="flex-col align-self-start">
-                                            <v-btn @click="currentWindowIndex--" v-if="currentWindowIndex != 0" icon="fa-solid fa-chevron-left" size="small"></v-btn>
-                                        </div>
-                                        <div class="flex-col flex-grow-1 mt-auto mb-auto">
-                                            {{ mealPlanGridItem.date_label }}
-                                        </div>
-                                        <div class="flex-col align-self-end">
-                                            <v-btn @click="currentWindowIndex++" v-if="currentWindowIndex + 1 < mealPlanWindows.length" icon="fa-solid fa-chevron-right"
-                                                   size="small"></v-btn>
-                                        </div>
-                                    </div>
-                                </v-list-item>
-                                <v-progress-linear v-if="loading" height="1" indeterminate></v-progress-linear>
-                                <v-divider v-if="mealPlanGridItem.plan_entries.length > 0"></v-divider>
-                                <v-list-item v-for="p in mealPlanGridItem.plan_entries" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)">
-                                    <template #prepend>
-                                        <!-- home: square photo thumbnails, like the rest of the app -->
-                                        <recipe-thumb :src="p.recipe.image" v-if="p.recipe?.image" :size="44" class="mp-thumb me-4"></recipe-thumb>
-                                        <v-avatar v-else rounded="lg" size="44" class="mp-thumb"><v-icon icon="fa-solid fa-pizza-slice" size="small" class="opacity-60"></v-icon></v-avatar>
-                                    </template>
-                                    <v-list-item-title class="mp-title">
-                                        <span v-if="p.recipe">{{ p.recipe.name }}</span>
-                                        <span v-else>{{ p.title }}</span>
-                                    </v-list-item-title>
-                                    <v-list-item-subtitle>
-                                        {{ p.mealType.name }}
-                                    </v-list-item-subtitle>
-                                    <model-edit-dialog model="MealPlan" :item="p" v-if="!p.recipe"></model-edit-dialog>
-                                    <template #append>
-                                        <meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p"></meal-plan-context-menu>
-                                    </template>
-                                </v-list-item>
-                                <v-list-item class="text-center cursor-pointer mp-add" :class="{'mp-add-empty': mealPlanGridItem.plan_entries.length == 0}" variant="tonal">
-                                    <model-edit-dialog model="MealPlan" :item-defaults="{fromDate: mealPlanGridItem.date.toJSDate()}"></model-edit-dialog>
-                                    <!-- home: an empty day says so instead of showing a bare + -->
-                                    <span v-if="mealPlanGridItem.plan_entries.length == 0" class="text-body-2 text-medium-emphasis">{{ $t('HomeNothingPlanned', 'Nothing planned') }} · </span>
-                                    <v-icon icon="$create" size="x-small"></v-icon>
-                                    <span v-if="mealPlanGridItem.plan_entries.length == 0" class="text-body-2 text-primary ms-1">{{ $t('Add') }}</span>
-                                </v-list-item>
-                            </v-list>
-                        </v-col>
-                    </v-row>
-                </v-window-item>
-            </v-window>
-        </v-col>
-    </v-row>
-
+    <!-- home fork: the coming days as a row of equal cards, as many across as fit (a week on a wide screen) -->
+    <section class="mb-6">
+        <div class="d-flex align-center mb-2">
+            <router-link :to="{name: 'MealPlanPage'}" class="row-title">
+                <h4><i class="fa-solid fa-calendar-days fa-fw"></i> {{ $t('Meal_Plan') }} <span class="ms-2 text-body-2">{{ $t('More') }} <i class="fa-solid fa-chevron-right"></i></span></h4>
+            </router-link>
+            <v-spacer />
+            <v-progress-circular v-if="loading" indeterminate size="16" width="2" class="me-2" />
+            <v-btn icon="fa-solid fa-chevron-left" size="small" variant="text" :disabled="page == 0" aria-label="Earlier days" @click="page--" />
+            <v-btn icon="fa-solid fa-chevron-right" size="small" variant="text" :disabled="(page + 1) * numberOfCols >= DAYS" aria-label="Later days" @click="page++" />
+        </div>
+        <div class="mp-grid" :style="{gridTemplateColumns: `repeat(${numberOfCols}, minmax(0, 1fr))`}">
+            <v-sheet v-for="d in shownDays" :key="d.create_default_date" rounded="lg" border class="mp-day" :class="{today: d.today}">
+                <div class="mp-head">
+                    <span class="flex-grow-1 text-truncate">{{ d.date_label }}</span>
+                    <v-btn icon size="x-small" variant="text" :aria-label="`Plan a meal for ${d.date_label}`" :title="`Plan a meal for ${d.date_label}`">
+                        <v-icon icon="$create" size="x-small" />
+                        <model-edit-dialog model="MealPlan" :item-defaults="{fromDate: d.date.toJSDate()}"></model-edit-dialog>
+                    </v-btn>
+                </div>
+                <div v-if="d.plan_entries.length == 0" class="mp-empty text-body-2 text-medium-emphasis">{{ $t('HomeNothingPlanned', 'Nothing planned') }}</div>
+                <v-list v-else density="compact" class="py-1 bg-transparent">
+                    <v-list-item v-for="p in d.plan_entries" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)" class="px-2">
+                        <template #prepend>
+                            <recipe-thumb v-if="p.recipe" :src="p.recipe.image" :size="40" class="me-3" />
+                            <div v-else class="mp-icon me-3"><v-icon :icon="AWAY.test(p.title || '') ? 'fa-solid fa-suitcase-rolling' : 'fa-regular fa-note-sticky'" size="small" /></div>
+                        </template>
+                        <v-list-item-title class="mp-title">{{ p.recipe ? p.recipe.name : p.title }}</v-list-item-title>
+                        <v-list-item-subtitle>{{ p.mealType.name }}</v-list-item-subtitle>
+                        <model-edit-dialog model="MealPlan" :item="p" v-if="!p.recipe"></model-edit-dialog>
+                        <template #append>
+                            <meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p"></meal-plan-context-menu>
+                        </template>
+                    </v-list-item>
+                </v-list>
+            </v-sheet>
+        </div>
+    </section>
 </template>
 
 
@@ -71,39 +46,40 @@ import {useI18n} from "vue-i18n";
 const {t} = useI18n()
 
 import {computed, onMounted, ref} from 'vue'
-import {useDisplay} from "vuetify";
 import {MealPlan} from "@/openapi";
 import {useMealPlanStore} from "@/stores/MealPlanStore";
 import {DateTime} from "luxon";
-import {homePageCols} from "@/utils/breakpoint_utils";
+import {useHomeCols} from "@/composables/useHomeCols";
 import ModelEditDialog from "@/components/dialogs/ModelEditDialog.vue";
 import {useRouter} from "vue-router";
 import MealPlanContextMenu from "@/components/inputs/MealPlanContextMenu.vue";
 
 const router = useRouter()
-const {name} = useDisplay()
 
 const loading = ref(false)
-const currentWindowIndex = ref(0)
-
-let numberOfCols = computed(() => {
-    return homePageCols(name.value)
-})
+const page = ref(0)
+const numberOfCols = useHomeCols()
+// two weeks ahead; a week fits across a wide screen
+const DAYS = 14
+// same words the restock suggestions use for being away (cookbook/views/home_restock.py)
+const AWAY = /travel|away|trip|vacation|holiday|cottage|out of town/i
 
 type MealPlanGridItem = {
     date: DateTime,
     create_default_date: String,
     date_label: String,
     plan_entries: Array<MealPlan>,
+    today: boolean,
 }
 
 const meal_plan_grid = computed(() => {
     let grid = [] as MealPlanGridItem[]
 
-    for (const x of Array(4).keys()) {
+    for (const x of Array(DAYS).keys()) {
         let grid_day_date = DateTime.now().plus({days: x})
         grid.push({
             date: grid_day_date,
+            today: x == 0,
             create_default_date: grid_day_date.toISODate(), // improve meal plan edit modal to do formatting itself and accept dates
             // home: "Today" / "Tomorrow" / "Sat, Oct 10" instead of "Sat, 10/10/26"
             date_label: x == 0 ? t('Today') : (x == 1 ? t('Tomorrow', 'Tomorrow') : grid_day_date.toLocaleString({weekday: 'short', month: 'short', day: 'numeric'})),
@@ -114,28 +90,11 @@ const meal_plan_grid = computed(() => {
     return grid
 })
 
-let mealPlanWindows = computed(() => {
-    let windows = [] as Array<Array<MealPlanGridItem>>
-    let current_window = [] as Array<MealPlanGridItem>
-    for (const [i, mealPlanGridItem] of meal_plan_grid.value.entries()) {
-        current_window.push(mealPlanGridItem)
-
-        if (i % numberOfCols.value == numberOfCols.value - 1) {
-            if (current_window.length > 0) {
-                windows.push(current_window)
-            }
-            current_window = []
-        }
-    }
-    if (current_window.length > 0) {
-        windows.push(current_window)
-    }
-    return windows
-})
+const shownDays = computed(() => meal_plan_grid.value.slice(page.value * numberOfCols.value, (page.value + 1) * numberOfCols.value))
 
 onMounted(() => {
     loading.value = true
-    useMealPlanStore().refreshFromAPI(DateTime.now().toJSDate(), DateTime.now().plus({days: 7}).toJSDate()).finally(() => {
+    useMealPlanStore().refreshFromAPI(DateTime.now().toJSDate(), DateTime.now().plus({days: DAYS}).toJSDate()).finally(() => {
         loading.value = false
     })
 })
@@ -168,9 +127,17 @@ function clickMealPlan(plan: MealPlan) {
 
 
 <style scoped>
-.mp-thumb {
-    background: rgba(var(--v-theme-on-surface), 0.06);
-}
+.row-title { color: inherit; text-decoration: none; }
+.mp-grid { display: grid; gap: 12px; padding: 0 2px; }
+/* equal heights: every day stretches to the tallest in the row */
+.mp-day { display: flex; flex-direction: column; min-width: 0; container-type: inline-size; }
+/* phone-width days: the name gets the room instead of the picture */
+@container (max-width: 200px) { .mp-day :deep(.v-list-item__prepend) { display: none; } }
+.mp-day.today { border-color: rgba(var(--v-theme-primary), .5) !important; }
+.mp-head { display: flex; align-items: center; gap: 4px; padding: 6px 4px 6px 12px; font-weight: 600; font-size: .875rem; border-bottom: 1px solid rgba(var(--v-theme-on-surface), .08); }
+.mp-day.today .mp-head { color: rgb(var(--v-theme-primary)); }
+.mp-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 14px 8px; }
+.mp-icon { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(var(--v-theme-on-surface), .06); color: rgba(var(--v-theme-on-surface), .55); }
 
 /* two lines for long recipe names instead of "Butter Chicken (…" */
 .mp-title {
