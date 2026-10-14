@@ -21,8 +21,7 @@
             <v-row dense>
                 <v-col v-for="r in row.recipes" :key="r.id" cols="6" sm="4" md="3">
                     <v-card class="h-100 kitchen-card" variant="flat" :to="{name: 'RecipeViewPage', params: {id: r.id}}">
-                        <v-img v-if="r.image" :src="r.image" aspect-ratio="1.6" cover rounded="lg" />
-                        <div v-else class="no-image rounded-lg"><v-icon icon="$recipes" size="28" /></div>
+                        <recipe-thumb :src="r.image" />
                         <div class="pt-2">
                             <div class="font-weight-bold name">{{ r.name }}</div>
                             <div class="text-caption mt-1">
@@ -41,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import RecipeThumb from '@/components/display/RecipeThumb.vue'
 import {computed, onMounted, ref, watch, watchEffect} from 'vue'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {pantryVersion} from '@/composables/useScan'
@@ -85,5 +85,4 @@ onMounted(load)
 .kitchen-card { background: transparent; }
 .row-title { color: inherit; text-decoration: none; display: block; margin-bottom: 8px; }
 .kitchen-card .name { line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.no-image { aspect-ratio: 1.6; display: flex; align-items: center; justify-content: center; background: rgba(var(--v-theme-on-surface), .05); color: rgba(var(--v-theme-on-surface), .35); }
 </style>

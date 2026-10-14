@@ -1,5 +1,5 @@
 <template>
-    <v-img :cover="cover" :style="{'height': height, 'width': width,}" color="recipeImagePlaceholderBg" :src="image" :alt="$t('Recipe_Image')" :rounded="props.rounded">
+    <v-img :cover="cover" :style="{'height': height, 'width': width,}" color="recipeImagePlaceholderBg" :src="image" :alt="$t('Recipe_Image')" @error="failed = true" :rounded="props.rounded">
         <slot name="overlay">
 
         </slot>
@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 
-import {computed, PropType, watch} from "vue";
+import {computed, PropType, ref, watch} from "vue";
 import {Recipe, RecipeOverview} from "@/openapi";
 import recipeDefaultImage from '../../assets/recipe_no_image.svg'
 
@@ -20,9 +20,13 @@ const props = defineProps({
     rounded: {type: [Boolean, String], default: false},
 })
 
+// home fork: a missing file shows the placeholder instead of an empty box
+const failed = ref(false)
+watch(() => props.recipe?.image, () => failed.value = false)
+
 const image = computed(() => {
 
-    if (props.recipe != undefined && props.recipe.image != undefined) {
+    if (!failed.value && props.recipe != undefined && props.recipe.image != undefined) {
         return props.recipe.image
     } else {
         return recipeDefaultImage

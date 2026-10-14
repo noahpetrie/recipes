@@ -11,7 +11,7 @@
         <div class="ml-3">
             <div class="d-flex ">
                 <div class="flex-grow-1 cursor-pointer" @click="openRecipe()">
-                    <p class="font-weight-bold mt-2">{{ props.recipe.name }}</p>
+                    <p class="font-weight-bold mt-2 clamp-2" :title="props.recipe.name">{{ props.recipe.name }}</p>
                 </div>
                 <div class="mt-1">
                     <!--                    <v-btn icon="fas fa-ellipsis-v" size="small" variant="plain"></v-btn>-->

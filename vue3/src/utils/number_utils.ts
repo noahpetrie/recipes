@@ -81,3 +81,29 @@ export function frac(x, D, mixed) {
     let q = Math.floor(n1 / d1);
     return [q, n1 - q * d1, d1];
 }
+// home fork: how a cook reads an amount. Spoons, cups and counts as kitchen fractions (¾ tsp, 1½ cups, ½ onion);
+// metric weights and volumes as plain decimals (1360 g, 0.5 l). Amounts that aren't near a kitchen fraction stay decimal.
+const METRIC = new Set(['g', 'kg', 'mg', 'ml', 'l', 'cl', 'dl'])
+const GLYPHS: Record<string, string> = {'1/8': '⅛', '1/4': '¼', '1/3': '⅓', '3/8': '⅜', '1/2': '½', '5/8': '⅝', '2/3': '⅔', '3/4': '¾', '7/8': '⅞'}
+
+export function kitchenFraction(x: number): string | null {
+    if (x <= 0) return null
+    const whole = Math.floor(x + 1e-9), rest = x - whole
+    if (rest < 0.02) return String(whole)
+    if (rest > 0.98) return String(whole + 1)
+    for (const d of [2, 3, 4, 8]) {
+        const n = Math.round(rest * d)
+        if (n > 0 && n < d && Math.abs(rest - n / d) < 0.02) {
+            const g = n % 2 == 0 && d % 2 == 0 ? (n % 4 == 0 && d % 4 == 0 ? 4 : 2) : 1
+            const glyph = GLYPHS[`${n / g}/${d / g}`]
+            if (glyph) return `${whole || ''}${glyph}`
+        }
+    }
+    return null
+}
+
+export function formatAmount(amount: number, factor: number, unitName?: string | null): string {
+    const x = amount * factor
+    if (unitName && METRIC.has(unitName.trim().toLowerCase())) return String(roundDecimals(x))
+    return kitchenFraction(x) ?? String(roundDecimals(x))
+}

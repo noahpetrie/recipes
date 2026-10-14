@@ -20,58 +20,90 @@
             </div>
         </div>
 
-        <v-sheet rounded="lg" border class="map-wrap mb-5" ref="wrap">
-            <v-progress-linear v-if="!shapes.length" indeterminate />
-            <template v-else>
-            <svg :viewBox="viewBox" class="map" role="img" aria-label="World map of recipe origins">
-                <path v-for="s in shapes" :key="s.key" :d="s.d" class="land" :class="[stateOf(s.code), {selected: s.code && s.code == selected}]"
-                      @click="select(s.code)">
-                    <title>{{ tooltip(s.code, s.name) }}</title>
-                </path>
-            </svg>
-            <v-btn-toggle v-model="area" mandatory density="compact" variant="outlined" divided class="zoom">
-                <v-btn v-for="(_, name) in AREAS" :key="name" :value="name" size="small">{{ name }}</v-btn>
-            </v-btn-toggle>
-            </template>
-        </v-sheet>
-
-        <v-sheet v-if="!loading && !countries.length && !error" rounded="lg" border class="pa-8 text-center text-medium-emphasis">
-            No recipes have a country yet. Edit a recipe and choose its <b>Country of origin</b>, like France for French Onion Soup.
-        </v-sheet>
-
-        <div class="country-grid">
-            <v-card v-for="c in sorted" :key="c.code" :id="`country-${c.code}`" class="country" :class="{selected: c.code == selected}" variant="outlined" @click="select(c.code, false)">
-                <div class="d-flex align-center ga-3 pa-3 pb-1">
-                    <span class="country-flag">{{ flag(c.code) }}</span>
+        <!-- the country list and one country's recipes, shown in the side panel (desktop) or below the map and in a sheet (phone) -->
+        <define-list>
+            <v-list density="compact" class="py-0 bg-transparent">
+                <v-list-item v-for="c in sorted" :key="c.code" @click="select(c.code)" :active="c.code == selected" color="primary">
+                    <template #prepend><span class="country-flag me-3">{{ flag(c.code) }}</span></template>
+                    <v-list-item-title class="font-weight-medium">{{ countryName(c.code) }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ summary(c) }}</v-list-item-subtitle>
+                    <template #append>
+                        <i class="dot" :class="isMade(c) ? 'made' : 'try'" />
+                    </template>
+                </v-list-item>
+            </v-list>
+        </define-list>
+        <define-detail>
+            <div v-if="current">
+                <div class="d-flex align-center ga-3 pa-3">
+                    <v-btn v-if="mdAndUp" icon="fa-solid fa-arrow-left" size="small" variant="text" aria-label="All countries" @click="clear" />
+                    <span class="country-flag big">{{ flag(current.code) }}</span>
                     <div class="flex-grow-1 min-w-0">
-                        <div class="font-weight-bold text-truncate">{{ countryName(c.code) }}</div>
-                        <div class="text-caption text-medium-emphasis">{{ summary(c) }}</div>
+                        <div class="text-h6 font-weight-bold">{{ countryName(current.code) }}</div>
+                        <div class="text-caption text-medium-emphasis">{{ summary(current) }}</div>
                     </div>
                 </div>
-                <v-list density="compact" class="py-0">
-                    <v-list-item v-for="r in c.recipes" :key="r.id" :to="{name: 'RecipeViewPage', params: {id: r.id}}" @click.stop>
+                <v-list density="compact" class="py-0 bg-transparent">
+                    <v-list-item v-for="r in current.recipes" :key="r.id" :to="{name: 'RecipeViewPage', params: {id: r.id}}">
                         <template #prepend>
-                            <v-avatar size="32" rounded class="me-2">
-                                <v-img v-if="r.image" :src="r.image" cover />
-                                <v-icon v-else icon="$recipes" size="small" />
-                            </v-avatar>
+                            <recipe-thumb :src="r.image" :size="40" rounded="md" class="me-3" />
                         </template>
-                        <v-list-item-title>{{ r.name }}</v-list-item-title>
+                        <v-list-item-title class="clamp-2">{{ r.name }}</v-list-item-title>
                         <v-list-item-subtitle>{{ [r.region, made(r)].filter(Boolean).join(' · ') }}</v-list-item-subtitle>
                         <template #append>
-                            <v-chip v-if="r.last_cooked" size="x-small" color="success" variant="tonal">Made</v-chip>
-                            <v-chip v-else size="x-small" variant="outlined">To try</v-chip>
+                            <v-chip v-if="r.last_cooked" size="x-small" label color="success" variant="tonal">Made</v-chip>
+                            <v-chip v-else size="x-small" label variant="outlined">To try</v-chip>
                         </template>
                     </v-list-item>
                 </v-list>
-            </v-card>
+            </div>
+        </define-detail>
+
+        <div class="map-layout" :class="{side: mdAndUp && countries.length}">
+            <v-sheet rounded="lg" border class="map-wrap">
+                <v-progress-linear v-if="!shapes.length" indeterminate />
+                <template v-else>
+                <svg :viewBox="viewBox" class="map" role="img" aria-label="World map of recipe origins">
+                    <path v-for="s in shapes" :key="s.key" :d="s.d" class="land" :class="[stateOf(s.code), {selected: s.code && s.code == selected}]"
+                          @click="select(s.code)">
+                        <title>{{ tooltip(s.code, s.name) }}</title>
+                    </path>
+                </svg>
+                <v-btn-toggle v-model="area" mandatory density="compact" variant="outlined" divided class="zoom">
+                    <v-btn v-for="(_, name) in AREAS" :key="name" :value="name" size="small">{{ name }}</v-btn>
+                </v-btn-toggle>
+                </template>
+            </v-sheet>
+            <v-sheet v-if="mdAndUp && countries.length" rounded="lg" border class="panel">
+                <div class="panel-scroll">
+                    <reuse-detail v-if="current" />
+                    <template v-else>
+                        <div class="text-overline text-medium-emphasis px-4 pt-3">Your countries</div>
+                        <reuse-list />
+                    </template>
+                </div>
+            </v-sheet>
         </div>
+
+        <v-sheet v-if="!loading && !countries.length && !error" rounded="lg" border class="pa-8 mt-5 text-center text-medium-emphasis">
+            No recipes have a country yet. Edit a recipe and choose its <b>Country of origin</b>, like France for French Onion Soup.
+        </v-sheet>
+
+        <template v-if="!mdAndUp && countries.length">
+            <v-sheet rounded="lg" border class="mt-4"><reuse-list /></v-sheet>
+            <v-bottom-sheet :model-value="!!current" @update:model-value="v => !v && clear()">
+                <v-card rounded="t-xl" class="pb-4"><reuse-detail /></v-card>
+            </v-bottom-sheet>
+        </template>
     </v-container>
 </template>
 
 <script setup lang="ts">
-import {computed, nextTick, onMounted, ref, shallowRef} from 'vue'
+import RecipeThumb from '@/components/display/RecipeThumb.vue'
+import {computed, onMounted, ref, shallowRef} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
+import {useDisplay} from 'vuetify'
+import {createReusableTemplate} from '@vueuse/core'
 import {geoEqualEarth, geoPath} from 'd3-geo'
 import {feature} from 'topojson-client'
 import {codeForShape, countryName, flag} from '@/utils/countries'
@@ -81,6 +113,9 @@ type OriginRecipe = {id: number, name: string, image: string | null, region: str
 type Country = {code: string, recipes: OriginRecipe[]}
 
 const W = 960, H = 470
+const {mdAndUp} = useDisplay()
+const [DefineList, ReuseList] = createReusableTemplate()
+const [DefineDetail, ReuseDetail] = createReusableTemplate()
 const route = useRoute()
 const router = useRouter()
 const countries = ref<Country[]>([])
@@ -95,9 +130,9 @@ const byCode = computed(() => new Map(countries.value.map(c => [c.code, c])))
 const isMade = (c: Country) => c.recipes.some(r => r.last_cooked)
 const madeCountries = computed(() => countries.value.filter(isMade))
 const toTryCountries = computed(() => countries.value.filter(c => !isMade(c)))
-// the chosen country first, then the ones you've cooked, then the rest by name
-const sorted = computed(() => [...countries.value].sort((a, b) =>
-    Number(b.code == selected.value) - Number(a.code == selected.value) || Number(isMade(b)) - Number(isMade(a)) || countryName(a.code).localeCompare(countryName(b.code))))
+// the ones you've cooked first, then the rest by name
+const sorted = computed(() => [...countries.value].sort((a, b) => Number(isMade(b)) - Number(isMade(a)) || countryName(a.code).localeCompare(countryName(b.code))))
+const current = computed(() => selected.value ? byCode.value.get(selected.value) : undefined)
 
 function stateOf(code?: string) {
     const c = code ? byCode.value.get(code) : undefined
@@ -134,14 +169,16 @@ const viewBox = computed(() => {
     return `${x0} ${y0} ${x1 - x0} ${y1 - y0}`
 })
 
-async function select(code?: string, scroll = true) {
+function select(code?: string) {
     if (!code || !byCode.value.has(code)) return
     selected.value = code
     router.replace({query: {...route.query, country: code}})
-    if (scroll) {
-        await nextTick()
-        document.getElementById(`country-${code}`)?.scrollIntoView({behavior: 'smooth', block: 'nearest'})
-    }
+}
+
+function clear() {
+    selected.value = undefined
+    const {country, ...rest} = route.query
+    router.replace({query: rest})
 }
 
 async function drawMap() {
@@ -192,9 +229,13 @@ onMounted(() => {
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
 .swatch.made { background: rgb(var(--v-theme-primary)); }
 .swatch.try { background: rgba(var(--v-theme-primary), .4); }
-.country-grid { display: grid; align-items: start; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-.country { border-color: rgba(var(--v-theme-on-surface), .12); scroll-margin-top: 80px; }
-.country.selected { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgb(var(--v-theme-primary)); }
-.country-flag { font-size: 1.8rem; line-height: 1; }
+.map-layout.side { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
+.panel { position: relative; min-height: 320px; }
+.panel-scroll { position: absolute; inset: 0; overflow-y: auto; }
+.country-flag { font-size: 1.5rem; line-height: 1; }
+.country-flag.big { font-size: 2rem; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.dot.made { background: rgb(var(--v-theme-primary)); }
+.dot.try { background: rgba(var(--v-theme-primary), .4); }
 .min-w-0 { min-width: 0; }
 </style>

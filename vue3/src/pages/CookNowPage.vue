@@ -56,10 +56,9 @@
         <v-row v-else>
             <v-col v-for="r in shown" :key="r.id" cols="12" sm="6" md="4">
                 <v-card class="cook-card h-100" :to="{name: 'RecipeViewPage', params: {id: r.id}}">
-                    <v-img v-if="r.image" :src="r.image" aspect-ratio="1.6" cover />
-                    <div v-else class="no-image"><v-icon icon="$recipes" size="32" /></div>
+                    <recipe-thumb :src="r.image" rounded="0" />
                     <v-card-text>
-                        <div class="text-subtitle-1 font-weight-bold mb-2 name">{{ r.name }}</div>
+                        <div class="text-subtitle-1 font-weight-bold mb-2 name clamp-2">{{ r.name }}</div>
                         <div class="d-flex align-center justify-space-between text-body-2 mb-1">
                             <span><b>{{ r.have }}</b> of {{ r.total }} ingredients</span>
                             <span v-if="r.missing.length == 0" class="ready"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />Ready</span>
@@ -123,6 +122,7 @@
 </template>
 
 <script setup lang="ts">
+import RecipeThumb from '@/components/display/RecipeThumb.vue'
 // home fork: "Ready to Cook" (cookbook/views/home_cook.py)
 import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
@@ -293,7 +293,6 @@ onMounted(load)
 .cook-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; margin: 16px 0 28px; }
 .count { margin-left: 6px; font-size: .75rem; opacity: .65; }
 .cook-card .name { line-height: 1.3; }
-.no-image { aspect-ratio: 1.6; display: flex; align-items: center; justify-content: center; background: rgba(var(--v-theme-on-surface), .05); color: rgba(var(--v-theme-on-surface), .35); }
 .ready { color: rgb(var(--v-theme-success)); font-weight: 600; font-size: .8125rem; }
 .staple-group { margin-bottom: 16px; }
 .staple-group h3 { margin: 8px 0 4px; }

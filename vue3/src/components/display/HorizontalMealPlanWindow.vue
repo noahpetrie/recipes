@@ -32,7 +32,7 @@
                                 <v-list-item v-for="p in mealPlanGridItem.plan_entries" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)">
                                     <template #prepend>
                                         <!-- home: square photo thumbnails, like the rest of the app -->
-                                        <v-avatar :image="p.recipe.image" v-if="p.recipe?.image" rounded="lg" size="44" class="mp-thumb"></v-avatar>
+                                        <recipe-thumb :src="p.recipe.image" v-if="p.recipe?.image" :size="44" class="mp-thumb"></recipe-thumb>
                                         <v-avatar v-else rounded="lg" size="44" class="mp-thumb"><v-icon icon="fa-solid fa-pizza-slice" size="small" class="opacity-60"></v-icon></v-avatar>
                                     </template>
                                     <v-list-item-title class="mp-title">
@@ -66,6 +66,7 @@
 
 
 <script lang="ts" setup>
+import RecipeThumb from '@/components/display/RecipeThumb.vue'
 import {useI18n} from "vue-i18n";
 const {t} = useI18n()
 

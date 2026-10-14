@@ -37,7 +37,7 @@
             <v-card-title class="text-h6 pb-1">{{ $t('HomeRemoveMealQ', 'Remove this meal?') }}</v-card-title>
             <v-card-text class="pb-2">
                 <div class="d-flex align-center ga-3 mpc-meal">
-                    <v-avatar v-if="plan.recipe?.image" rounded="lg" size="56" :image="plan.recipe.image" class="mpc-thumb"></v-avatar>
+                    <recipe-thumb v-if="plan.recipe?.image" :size="56" :src="plan.recipe.image" class="mpc-thumb"></recipe-thumb>
                     <v-avatar v-else rounded="lg" size="56" class="mpc-thumb"><v-icon icon="fa-solid fa-pizza-slice" class="opacity-50"></v-icon></v-avatar>
                     <div class="min-w-0">
                         <div class="font-weight-medium">{{ planName }}</div>
@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import RecipeThumb from '@/components/display/RecipeThumb.vue'
 import {computed, PropType, ref} from 'vue'
 import {DateTime} from "luxon";
 import {MealPlan} from "@/openapi";

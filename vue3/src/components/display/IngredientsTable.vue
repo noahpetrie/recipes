@@ -39,7 +39,7 @@
                     <!-- display calculated food amount or empty cell -->
                     <td style="width: 1%; text-wrap: nowrap"
                         class="pr-1"
-                        v-html="calculateFoodAmount(i.amount, props.ingredientFactor, useUserPreferenceStore().userSettings.useFractions)"
+                        v-html="useUserPreferenceStore().userSettings.useFractions ? calculateFoodAmount(i.amount, props.ingredientFactor, true) : formatAmount(i.amount, props.ingredientFactor, i.unit?.name)"
                         v-if="!i.noAmount && i.amount != 0">
                     </td>
                     <td style="width: 1%; text-wrap: nowrap" class="pr-1" v-else></td>
@@ -96,7 +96,7 @@
 <script lang="ts" setup>
 import {ApiApi, Ingredient, ShoppingListEntry} from "@/openapi";
 import {computed, ref} from "vue";
-import {calculateFoodAmount} from "../../utils/number_utils";
+import {calculateFoodAmount, formatAmount} from "../../utils/number_utils";
 import {useUserPreferenceStore} from "../../stores/UserPreferenceStore";
 import {ingredientToFoodString, ingredientToUnitString} from "@/utils/model_utils.ts";
 import {TFood, TUnit} from "@/types/Models.ts";
