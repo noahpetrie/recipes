@@ -1,3 +1,4 @@
+import re
 import traceback
 import uuid
 from datetime import timedelta
@@ -1215,7 +1216,7 @@ class RecipeOverviewSerializer(RecipeBaseSerializer):
         fields = (
             'id', 'name', 'description', 'image', 'keywords', 'working_time',
             'waiting_time', 'created_by', 'created_at', 'updated_at',
-            'internal', 'private', 'servings', 'servings_text', 'rating', 'last_cooked', 'new', 'recent'
+            'internal', 'private', 'servings', 'servings_text', 'rating', 'last_cooked', 'new', 'recent', 'origin_country', 'origin_region'
         )
         # TODO having these readonly fields makes "RecipeOverview.ts" (API Client) not generate the RecipeOverviewToJSON second else block which leads to errors when using the api
         # TODO find a solution (custom schema?) to have these fields readonly (to save performance) and generate a proper client (two serializers would probably do the trick)
@@ -1256,9 +1257,16 @@ class RecipeSerializer(RecipeBaseSerializer):
         fields = (
             'id', 'name', 'description', 'image', 'keywords', 'steps', 'working_time', 'waiting_time', 'created_by', 'created_at', 'updated_at', 'source_url',
             'internal', 'show_ingredient_overview', 'nutrition', 'properties', 'food_properties', 'servings', 'file_path', 'servings_text', 'diameter', 'diameter_text', 'rating',
-            'last_cooked', 'private', 'shared'
+            'last_cooked', 'private', 'shared', 'origin_country', 'origin_region'
         )
         read_only_fields = ['image', 'created_by', 'created_at', 'food_properties', 'file_path',]
+
+    def validate_origin_country(self, value):
+        # home fork: an ISO country code (FR), or empty
+        value = (value or '').strip().upper()
+        if value and not re.fullmatch(r'[A-Z]{2}', value):
+            raise serializers.ValidationError('Use a two-letter country code, like FR.')
+        return value
 
     def validate(self, data):
         above_limit, msg = above_space_limit(self.context['request'].space)

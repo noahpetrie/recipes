@@ -1112,6 +1112,9 @@ class Recipe(ExportModelOperationsMixin('recipe'), models.Model, PermissionModel
     shared = models.ManyToManyField(User, blank=True, related_name='recipe_shared_with')
 
     source_url = models.CharField(max_length=1024, default=None, blank=True, null=True)
+    # home fork: where the dish comes from, ISO 3166-1 alpha-2 country (FR) and an optional region (Burgundy)
+    origin_country = models.CharField(max_length=2, blank=True, default='')
+    origin_region = models.CharField(max_length=128, blank=True, default='')
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

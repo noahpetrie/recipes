@@ -48,6 +48,21 @@
                         </v-row>
 
                         <v-model-select multiple chips v-model="editingObj.keywords" model="Keyword" create></v-model-select>
+                        <!-- home fork: where the dish comes from, for the food map -->
+                        <v-row dense>
+                            <v-col cols="12" md="6">
+                                <v-autocomplete label="Country of origin" v-model="editingObj.originCountry" :items="countryItems" item-title="name" item-value="code"
+                                                clearable auto-select-first prepend-inner-icon="fa-solid fa-earth-europe" @update:model-value="v => editingObj.originCountry = v ?? ''">
+                                    <template #item="{props, item}">
+                                        <v-list-item v-bind="props" :title="item.raw.name"><template #prepend><span class="me-3">{{ item.raw.flag }}</span></template></v-list-item>
+                                    </template>
+                                </v-autocomplete>
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-text-field label="Region (optional)" v-model="editingObj.originRegion" placeholder="e.g. Burgundy" clearable maxlength="128"
+                                              :disabled="!editingObj.originCountry" @update:model-value="v => editingObj.originRegion = v ?? ''"></v-text-field>
+                            </v-col>
+                        </v-row>
                         <v-row dense>
                             <v-col cols="12" md="6">
                                 <v-number-input :label="$t('WaitingTime')" v-model="editingObj.waitingTime" :step="5"></v-number-input>
@@ -184,6 +199,7 @@
 </template>
 
 <script setup lang="ts">
+import {COUNTRIES, flag} from "@/utils/countries";
 
 import {onMounted, PropType, ref, shallowRef, watch} from "vue";
 import {ApiApi, Ingredient, Recipe, Step} from "@/openapi";
@@ -208,6 +224,8 @@ import {useI18n} from "vue-i18n";
 import VModelSelect from "@/components/inputs/VModelSelect.vue";
 
 
+// home fork
+const countryItems = COUNTRIES.map(([code, , name]) => ({code, name, flag: flag(code)}))
 const props = defineProps({
     item: {type: {} as PropType<Recipe>, required: false, default: null},
     itemId: {type: [Number, String], required: false, default: undefined},

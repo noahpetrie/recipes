@@ -211,6 +211,18 @@ export interface Recipe {
      * @memberof Recipe
      */
     shared?: Array<User>;
+    /**
+     * home fork: ISO 3166-1 alpha-2 country the dish comes from (FR)
+     * @type {string}
+     * @memberof Recipe
+     */
+    originCountry?: string;
+    /**
+     * home fork: region within the country (Burgundy)
+     * @type {string}
+     * @memberof Recipe
+     */
+    originRegion?: string;
 }
 
 /**
@@ -265,6 +277,8 @@ export function RecipeFromJSONTyped(json: any, ignoreDiscriminator: boolean): Re
         'lastCooked': (json['last_cooked'] == null ? null : new Date(json['last_cooked'])),
         '_private': json['private'] == null ? undefined : json['private'],
         'shared': json['shared'] == null ? undefined : ((json['shared'] as Array<any>).map(UserFromJSON)),
+        'originCountry': json['origin_country'] == null ? undefined : json['origin_country'],
+        'originRegion': json['origin_region'] == null ? undefined : json['origin_region'],
     };
 }
 
@@ -298,6 +312,8 @@ export function RecipeToJSONTyped(value?: Omit<Recipe, 'image'|'created_by'|'cre
         'diameter_text': value['diameterText'],
         'private': value['_private'],
         'shared': value['shared'] == null ? undefined : ((value['shared'] as Array<any>).map(UserToJSON)),
+        'origin_country': value['originCountry'],
+        'origin_region': value['originRegion'],
     };
 }
 

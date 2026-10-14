@@ -142,6 +142,18 @@ export interface RecipeOverview {
      * @memberof RecipeOverview
      */
     readonly recent: string;
+    /**
+     * home fork: ISO 3166-1 alpha-2 country the dish comes from (FR)
+     * @type {string}
+     * @memberof RecipeOverview
+     */
+    originCountry?: string;
+    /**
+     * home fork: region within the country (Burgundy)
+     * @type {string}
+     * @memberof RecipeOverview
+     */
+    originRegion?: string;
 }
 
 /**
@@ -194,6 +206,8 @@ export function RecipeOverviewFromJSONTyped(json: any, ignoreDiscriminator: bool
         'lastCooked': (json['last_cooked'] == null ? null : new Date(json['last_cooked'])),
         '_new': json['new'],
         'recent': json['recent'],
+        'originCountry': json['origin_country'] == null ? undefined : json['origin_country'],
+        'originRegion': json['origin_region'] == null ? undefined : json['origin_region'],
     };
 }
 
@@ -212,6 +226,8 @@ export function RecipeOverviewToJSONTyped(value?: Omit<RecipeOverview, 'image'|'
         'name': value['name'],
         'description': value['description'],
         'private': value['_private'],
+        'origin_country': value['originCountry'],
+        'origin_region': value['originRegion'],
     };
 }
 

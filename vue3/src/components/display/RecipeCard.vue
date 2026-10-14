@@ -22,6 +22,7 @@
             <keywords-component variant="outlined" :keywords="props.recipe.keywords" :max-keywords="3" v-if="props.showKeywords">
                 <template #prepend>
                     <made-it-badge class="mb-1 me-1" :recipe="props.recipe"></made-it-badge>
+                    <span v-if="props.recipe.originCountry" class="mb-1 me-1 origin-flag" :title="countryName(props.recipe.originCountry)">{{ flag(props.recipe.originCountry) }}</span>
                     <v-chip class="mb-1 me-1" size="x-small" label variant="outlined" v-if="recipe._private">
                         <private-recipe-badge  :show-text="false"></private-recipe-badge>
                     </v-chip>
@@ -110,6 +111,7 @@ import RecipeImage from "@/components/display/RecipeImage.vue";
 import {useRouter} from "vue-router";
 import PrivateRecipeBadge from "@/components/display/PrivateRecipeBadge.vue";
 import MadeItBadge from "@/components/display/MadeItBadge.vue";
+import {countryName, flag} from "@/utils/countries";
 
 const props = defineProps({
     recipe: {type: {} as PropType<Recipe | RecipeOverview>, required: true,},

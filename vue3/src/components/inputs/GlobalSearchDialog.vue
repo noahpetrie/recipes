@@ -76,6 +76,7 @@ const PAGES: (Item & { words: string })[] = [
     {key: 'p-home', name: 'Home', icon: 'fa-solid fa-house', to: {name: 'StartPage'}, words: 'start'},
     {key: 'p-plan', name: 'Meal Plan', icon: '$mealplan', to: {name: 'MealPlanPage'}, words: 'planner calendar week dinner schedule'},
     {key: 'p-cook', name: 'Ready to Cook', icon: 'fa-solid fa-fire-burner', to: {name: 'CookNowPage'}, words: 'cook now what can i make staples'},
+    {key: 'p-map', name: 'Food map', icon: 'fa-solid fa-earth-americas', to: {name: 'FoodMapPage'}, words: 'map world countries origin cuisine where from'},
     {key: 'p-shop', name: 'Shopping list', icon: '$shopping', to: {name: 'ShoppingListPage'}, words: 'shopping buy groceries list'},
     {key: 'p-pantry', name: 'Pantry', icon: '$pantry', to: {name: 'PantryPage'}, words: 'inventory stock fridge freezer'},
     {key: 'p-groceries', name: 'Add groceries', icon: 'fa-solid fa-basket-shopping', to: {name: 'GroceriesPage'}, words: 'bought receipt order restock'},
