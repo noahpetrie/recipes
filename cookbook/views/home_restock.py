@@ -42,9 +42,10 @@ def away_soon(space):
     """the next meal plan entry that looks like being away, if it starts within a few days"""
     now = timezone.now()
     plans = MealPlan.objects.filter(space=space, to_date__gte=now, from_date__lte=now + datetime.timedelta(days=AWAY_SOON_DAYS)) \
-        .select_related('recipe').order_by('from_date')
+        .select_related('recipe', 'meal_type').order_by('from_date')
     for m in plans:
-        if AWAY.search(m.title or '') or (m.recipe and AWAY.search(m.recipe.name)):
+        # the "Away" meal type (Meal Plan: I'm away…), or an older entry titled like a trip
+        if (m.meal_type and m.meal_type.name.lower() == 'away') or AWAY.search(m.title or '') or (m.recipe and AWAY.search(m.recipe.name)):
             return {'title': m.title or m.recipe.name, 'from': m.from_date.date().isoformat(), 'to': m.to_date.date().isoformat()}
     return None
 
