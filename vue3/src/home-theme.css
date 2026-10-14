@@ -639,11 +639,15 @@
 .v-table.ing-table .ing-note {
     color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
     font-size: 0.85rem;
-    margin-left: 6px;
 }
 
+/* reads like a recipe: "Beef tenderloin, or top sirloin"; a note in brackets just follows with a space */
 .v-table.ing-table .ing-note::before {
-    content: "· ";
+    content: ", ";
+}
+
+.v-table.ing-table .ing-note.paren::before {
+    content: " ";
 }
 
 .v-table.ing-table tr.ing-checked > td {

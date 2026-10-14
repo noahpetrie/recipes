@@ -57,7 +57,7 @@
 
                         </template>
                         <!-- home: show notes inline instead of behind a tooltip icon -->
-                        <span class="ing-note" v-if="i.note && !useUserPreferenceStore().isPrintMode">{{ i.note }}</span>
+                        <span class="ing-note" :class="{paren: /^[(\[]/.test(i.note)}" v-if="i.note && !useUserPreferenceStore().isPrintMode">{{ i.note }}</span>
                     </td>
                     <td v-if="useUserPreferenceStore().isPrintMode">
                         <span class="text-disabled font-italic"> {{ i.note }}</span>
