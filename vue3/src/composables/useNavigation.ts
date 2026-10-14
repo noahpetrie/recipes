@@ -20,6 +20,7 @@ export function useNavigation() {
             {component: VListItem, prependIcon: 'fa-solid fa-fire-burner', title: 'Ready to Cook', to: {name: 'CookNowPage', params: {}}},
             {component: VListItem, prependIcon: '$shopping', title: t('Shopping'), to: {name: 'ShoppingListPage', params: {}}},
             {component: VListItem, prependIcon: '$pantry', title: t('Pantry'), to: {name: 'PantryPage', params: {}}},
+            {component: VListItem, prependIcon: 'fa-solid fa-blender', title: 'Equipment', to: {name: 'EquipmentPage', params: {}}},
             {component: VListItem, prependIcon: '$books', title: t('Books'), to: {name: 'BooksPage', params: {}}},
             {component: VListItem, prependIcon: 'fa-solid fa-earth-americas', title: 'Food map', to: {name: 'FoodMapPage', params: {}}},
         ]
@@ -42,6 +43,7 @@ export function useNavigation() {
         let navigation = [
             {component: VListItem, prependIcon: 'fa-solid fa-fire-burner', title: 'Ready to Cook', to: {name: 'CookNowPage', params: {}}},
             {component: VListItem, prependIcon: '$books', title: t('Books'), to: {name: 'BooksPage', params: {}}},
+            {component: VListItem, prependIcon: 'fa-solid fa-blender', title: 'Equipment', to: {name: 'EquipmentPage', params: {}}},
             {component: VListItem, prependIcon: 'fa-solid fa-earth-americas', title: 'Food map', to: {name: 'FoodMapPage', params: {}}},
             {component: VListItem, prependIcon: 'fas fa-globe', title: t('Import'), to: {name: 'RecipeImportPage', params: {}}},
             {component: VListItem, prependIcon: 'fa-solid fa-folder-tree', title: t('Database'), to: {name: 'DatabasePage', params: {}}},

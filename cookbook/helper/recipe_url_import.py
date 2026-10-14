@@ -204,6 +204,15 @@ def get_from_scraper(scrape, request):
         pass
     home_import.spread(recipe_json['steps'])
 
+    # home fork: the site's equipment list (schema.org "tool") becomes an Equipment step, which
+    # Kitchen turns into the recipe's equipment the first time it's opened (home_equipment.ensure)
+    try:
+        tools = [t for t in (scrape.equipment() or []) if isinstance(t, str) and t.strip()]
+    except Exception:
+        tools = []
+    if tools:
+        recipe_json['steps'].append({'name': 'Equipment', 'instruction': '\n'.join(f'- {t.strip()}' for t in tools), 'ingredients': []})
+
     recipe_json['properties'] = []
     try:
         recipe_json['properties'] = get_recipe_properties(request.space, scrape.schema.nutrients())

@@ -45,6 +45,7 @@ let routes = [
     {path: '/pantry', component: () => import("@/pages/PantryPage.vue"), name: 'PantryPage', meta: {title: 'Pantry'}},
     {path: "/cook", component: () => import("@/pages/CookNowPage.vue"), name: "CookNowPage", meta: {title: "Ready to Cook"}},
     // home fork: where the recipes you've made come from
+    {path: '/equipment', component: () => import("@/pages/EquipmentPage.vue"), name: 'EquipmentPage', meta: {title: 'Equipment'}},
     {path: '/food-map', component: () => import("@/pages/FoodMapPage.vue"), name: 'FoodMapPage', meta: {title: 'Food map'}},
     {path: "/pantry/activity", component: () => import("@/pages/PantryActivityPage.vue"), name: "PantryActivityPage", meta: {title: "Inventory activity"}},
     // home fork: put a whole shop away at once

@@ -21,9 +21,9 @@ from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from cookbook.helper import home_nutrition, home_products
+from cookbook.helper import home_equipment, home_nutrition, home_products
 from cookbook.helper.permission_helper import CustomIsUser, CustomTokenHasReadWriteScope, get_household_user_ids
-from cookbook.models import Food, Ingredient, InventoryEntry, Recipe
+from cookbook.models import Food, Ingredient, InventoryEntry, Recipe, RecipeEquipment
 
 PERMS = [CustomIsUser & CustomTokenHasReadWriteScope]
 SOON_DAYS = 7  # same window as the home page's "Use it up"
@@ -106,6 +106,15 @@ def cookable(request):
             sub_cache[food.id] = any(s.id in have_ids for s in substitutes_of(food))
         return sub_cache[food.id]
 
+    # equipment the recipe needs (not optional) that the kitchen doesn't have
+    home_equipment.ensure_all(request.space)
+    gear = home_equipment.Kitchen(request.space)
+    no_gear = defaultdict(list)
+    for l in RecipeEquipment.objects.filter(space=request.space, optional=False, recipe_id__in=lines.keys()).select_related('equipment'):
+        eq = gear.all.get(l.equipment_id)
+        if eq and not eq.hidden and gear.have(eq) is None:
+            no_gear[l.recipe_id].append({'id': eq.id, 'name': eq.name})
+
     out = []
     for r in Recipe.objects.filter(space=request.space, id__in=lines.keys()).filter(Q(private=False) | Q(created_by=request.user) | Q(shared=request.user)).distinct():
         foods = {f.id: f for f in lines[r.id]}.values()
@@ -115,11 +124,12 @@ def cookable(request):
         total = len(foods)
         out.append({'id': r.id, 'name': r.name, 'image': image_url(r), 'total': total, 'have': total - len(missing),
                     'missing': sorted(missing, key=lambda x: x['name'].lower()), 'expiring': expiring,
+                    'equipment_missing': no_gear.get(r.id, []),
                     'working_time': r.working_time, 'waiting_time': r.waiting_time})
 
     # recipes that use something about to expire first, then the fewest things to buy
     out.sort(key=lambda x: (0 if x['expiring'] else 1, x['expiring'][0]['expires'] if x['expiring'] else '',
-                            len(x['missing']), -x['have'] / max(x['total'], 1), x['name'].lower()))
+                            len(x['missing']) + len(x['equipment_missing']), -x['have'] / max(x['total'], 1), x['name'].lower()))
     return Response({'recipes': out, 'staples': len(staples), 'in_stock': len(stock), 'soon_days': SOON_DAYS})
 
 

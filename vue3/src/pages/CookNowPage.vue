@@ -61,9 +61,9 @@
                         <div class="text-subtitle-1 font-weight-bold mb-2 name clamp-2">{{ r.name }}</div>
                         <div class="d-flex align-center justify-space-between text-body-2 mb-1">
                             <span><b>{{ r.have }}</b> of {{ r.total }} ingredients</span>
-                            <span v-if="r.missing.length == 0" class="ready"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />Ready</span>
+                            <span v-if="isReady(r)" class="ready"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />Ready</span>
                         </div>
-                        <v-progress-linear :model-value="r.total ? 100 * r.have / r.total : 0" rounded height="6" :color="r.missing.length == 0 ? 'success' : 'primary'" bg-opacity=".12" />
+                        <v-progress-linear :model-value="r.total ? 100 * r.have / r.total : 0" rounded height="6" :color="isReady(r) ? 'success' : 'primary'" bg-opacity=".12" />
 
                         <div v-if="r.expiring.length" class="mt-3 d-flex flex-wrap ga-1">
                             <v-chip v-for="e in r.expiring" :key="e.id" size="small" color="warning" variant="tonal" prepend-icon="fa-solid fa-hourglass-half">
@@ -84,6 +84,22 @@
                                     </v-list>
                                 </v-menu>
                                 <v-chip v-if="r.missing.length > 6 && !expanded.has(r.id)" size="small" variant="text" @click.prevent.stop="expanded.add(r.id)">+{{ r.missing.length - 6 }} more</v-chip>
+                            </div>
+                        </div>
+
+                        <!-- home fork: equipment the recipe needs that the kitchen doesn't have (home_equipment) -->
+                        <div v-if="r.equipment_missing?.length" class="mt-3">
+                            <div class="text-caption text-medium-emphasis mb-1">Need equipment</div>
+                            <div class="d-flex flex-wrap ga-1">
+                                <v-menu v-for="m in r.equipment_missing" :key="m.id">
+                                    <template #activator="{props}">
+                                        <v-chip v-bind="props" size="small" variant="outlined" prepend-icon="fa-solid fa-blender" @click.prevent.stop>{{ m.name }}</v-chip>
+                                    </template>
+                                    <v-list density="compact">
+                                        <v-list-item prepend-icon="fa-solid fa-check" title="I have this" subtitle="Mark it as owned" @click="ownIt(m.id)" />
+                                        <v-list-item prepend-icon="fa-solid fa-blender" title="Equipment" subtitle="See everything you own" :to="{name: 'EquipmentPage'}" />
+                                    </v-list>
+                                </v-menu>
                             </div>
                         </div>
                     </v-card-text>
@@ -130,7 +146,7 @@ import {getCookie} from '@/utils/cookie'
 import {daysUntil, pantryVersion} from '@/composables/useScan'
 
 type Missing = { id: number, name: string }
-type Cookable = { id: number, name: string, image: string | null, total: number, have: number, missing: Missing[], expiring: { id: number, name: string, expires: string }[] }
+type Cookable = { id: number, name: string, image: string | null, total: number, have: number, missing: Missing[], equipment_missing?: Missing[], expiring: { id: number, name: string, expires: string }[] }
 type StapleFood = { id: number, name: string, recipes: number, on_hand: boolean, in_stock: boolean, suggested: boolean }
 
 const data = ref<{ recipes: Cookable[], staples: number, in_stock: number } | null>(null)
@@ -195,17 +211,37 @@ async function load() {
     }
 }
 
+// ingredients and equipment both count: a recipe needing an ice cream maker you don't own isn't ready
+const missingCount = (r: Cookable) => r.missing.length + (r.equipment_missing?.length ?? 0)
+const isReady = (r: Cookable) => missingCount(r) == 0
+const isClose = (r: Cookable) => missingCount(r) > 0 && missingCount(r) <= 2
+
 const counts = computed(() => {
     const rs = data.value?.recipes ?? []
-    return {ready: rs.filter(r => r.missing.length == 0).length, close: rs.filter(r => r.missing.length > 0 && r.missing.length <= 2).length, all: rs.length}
+    return {ready: rs.filter(isReady).length, close: rs.filter(isClose).length, all: rs.length}
 })
 
 const shown = computed(() => {
     const rs = data.value?.recipes ?? []
-    if (filter.value == 'ready') return rs.filter(r => r.missing.length == 0)
-    if (filter.value == 'close') return rs.filter(r => r.missing.length > 0 && r.missing.length <= 2)
+    if (filter.value == 'ready') return rs.filter(isReady)
+    if (filter.value == 'close') return rs.filter(isClose)
     return rs
 })
+
+// home fork: "I have this" for a piece of equipment (home_equipment)
+async function ownIt(id: number) {
+    const {getDjangoUrl} = useDjangoUrls()
+    try {
+        await fetch(getDjangoUrl(`api/home/equipment/${id}/`), {
+            method: 'PATCH', credentials: 'same-origin',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') ?? ''},
+            body: JSON.stringify({owned: true}),
+        })
+        await load()
+    } catch {
+        error.value = true
+    }
+}
 
 function expiresText(iso: string) {
     const d = daysUntil(iso)

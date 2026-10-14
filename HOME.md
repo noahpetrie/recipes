@@ -104,6 +104,22 @@ public here, as the AGPL requires.
   - Shopping: page title with items left, labelled Select/Undo, 44px rows with an amount column
     and an empty circle to tick off, light aisle labels.
 
+- **Equipment** (home.30; `cookbook/helper/home_equipment.py`, `cookbook/views/home_equipment.py`,
+  `EquipmentPage.vue`, `RecipeEquipmentCard.vue`, migration `0247_home_equipment`). Like Mealie's "tools":
+  - `Equipment` (a general kind such as *Stand mixer*, or a product filed under one) and `RecipeEquipment`
+    (recipe, equipment, optional, size note). Kinds come from `CATALOG`; basic cookware and supplies start owned.
+  - A need is met by the piece, anything under it, another product of the same kind (ChefSteps' Smart Oven
+    Air Fryer Pro → your Smart Oven Air), or a kind that does the job (stand mixer covers hand mixer).
+  - Each recipe is read once (`Recipe.equipment_checked`): a ChefSteps/website "Equipment" step (website
+    imports add one from schema.org `tool`) becomes the list and the step is removed; otherwise the step text
+    is scanned ("a blender or food processor" → both optional).
+  - `sync_homebox_cookbooks` also brings every Homebox item in the Kitchen location over as owned equipment
+    (unknown kinds come over hidden); items that leave the Kitchen stop counting. Homebox decides "owned" for those.
+  - Recipe page card (✓ / don't have, "I have this", edit list), `/equipment` page (Recipes need / You have / All),
+    Ready to Cook and the start-page rows count missing equipment like missing ingredients.
+  - API: `GET/POST /api/home/equipment/`, `PATCH/DELETE /api/home/equipment/<id>/`,
+    `GET/PUT /api/home/equipment/recipe/<id>/`; `cookable` returns `equipment_missing`.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

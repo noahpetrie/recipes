@@ -1115,6 +1115,8 @@ class Recipe(ExportModelOperationsMixin('recipe'), models.Model, PermissionModel
     # home fork: where the dish comes from, ISO 3166-1 alpha-2 country (FR) and an optional region (Burgundy)
     origin_country = models.CharField(max_length=2, blank=True, default='')
     origin_region = models.CharField(max_length=128, blank=True, default='')
+    # home fork: equipment has been read from the recipe once (cookbook/helper/home_equipment.py)
+    equipment_checked = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1489,6 +1491,46 @@ class StockCountLine(models.Model, PermissionModelMixin):
 
     class Meta:
         ordering = ('id',)
+
+
+class Equipment(models.Model, PermissionModelMixin):
+    """
+    home fork: kitchen equipment (stand mixer, springform pan) recipes need and the household may own.
+    A specific item (Breville the Bakery Chef Stand Mixer) sits under a general one (Stand mixer);
+    items brought over from Homebox carry its id and are owned while they're in its Kitchen.
+    """
+    name = models.CharField(max_length=128)
+    general = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='specific')
+    owned = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False)  # not kitchen gear (a speaker that lives in the kitchen)
+    homebox_id = models.CharField(max_length=64, null=True, blank=True)
+    image = models.ImageField(upload_to='equipment/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    space = models.ForeignKey(Space, on_delete=models.CASCADE)
+    objects = ScopedManager(space='space')
+
+    class Meta:
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+
+
+class RecipeEquipment(models.Model, PermissionModelMixin):
+    """home fork: one piece of equipment a recipe calls for"""
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='equipment_lines')
+    equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, related_name='recipe_lines')
+    optional = models.BooleanField(default=False)
+    note = models.CharField(max_length=64, blank=True, default='')  # size: 9-inch, 8-quart
+    order = models.IntegerField(default=0)
+
+    space = models.ForeignKey(Space, on_delete=models.CASCADE)
+    objects = ScopedManager(space='space')
+
+    class Meta:
+        ordering = ('order', 'id')
+        constraints = [models.UniqueConstraint(fields=['recipe', 'equipment'], name='home_recipe_equipment_unique')]
 
 
 class ShareLink(ExportModelOperationsMixin('share_link'), models.Model, PermissionModelMixin):

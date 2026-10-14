@@ -24,9 +24,9 @@
                         <span v-if="row.key == 'use' && r.expiring.length" class="text-warning" :title="r.expiring.map(e => e.name).join(', ')">
                             <v-icon icon="fa-solid fa-hourglass-half" size="x-small" class="me-1" />{{ r.expiring.map(e => e.name).join(', ') }}
                         </span>
-                        <span v-else-if="r.missing.length == 0" class="text-success"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />You have everything</span>
-                        <span v-else class="text-medium-emphasis" :title="`Need ${r.missing.map(m => m.name).join(', ')}`">
-                            <v-icon icon="fa-solid fa-cart-shopping" size="x-small" class="me-1" />Need {{ r.missing.map(m => m.name).join(', ') }}
+                        <span v-else-if="need(r).length == 0" class="text-success"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />You have everything</span>
+                        <span v-else class="text-medium-emphasis" :title="`Need ${need(r).join(', ')}`">
+                            <v-icon icon="fa-solid fa-cart-shopping" size="x-small" class="me-1" />Need {{ need(r).join(', ') }}
                         </span>
                     </template>
                 </home-recipe-tile>
@@ -43,7 +43,7 @@ import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {pantryVersion} from '@/composables/useScan'
 import {useHomeShown} from '@/composables/useHomeShown'
 
-type Cookable = { id: number, name: string, image: string | null, total: number, have: number, missing: { id: number, name: string }[], expiring: { id: number, name: string, expires: string }[] }
+type Cookable = { id: number, name: string, image: string | null, total: number, have: number, missing: { id: number, name: string }[], equipment_missing?: { id: number, name: string }[], expiring: { id: number, name: string, expires: string }[] }
 
 const cols = useHomeCols()
 const data = ref<{ recipes: Cookable[], staples: number, in_stock: number } | null>(null)
@@ -57,15 +57,18 @@ async function load() {
     }
 }
 
+// ingredients to buy and equipment the kitchen doesn't have (home_equipment)
+const need = (r: Cookable) => [...r.missing, ...(r.equipment_missing ?? [])].map(m => m.name)
+
 const rows = computed(() => {
     const rs = data.value?.recipes ?? []
     const out = []
     const use = rs.filter(r => r.expiring.length)
     if (use.length) out.push({key: 'use', title: 'Use it up', icon: 'fa-solid fa-hourglass-half', recipes: use.slice(0, cols.value)})
-    const ready = rs.filter(r => r.missing.length == 0 && !r.expiring.length)
+    const ready = rs.filter(r => need(r).length == 0 && !r.expiring.length)
     if (ready.length) out.push({key: 'ready', title: 'Ready to cook', icon: 'fa-solid fa-check', recipes: ready.slice(0, cols.value)})
     else if (data.value?.staples || data.value?.in_stock) {
-        const close = rs.filter(r => r.missing.length > 0 && r.missing.length <= 2)
+        const close = rs.filter(r => need(r).length > 0 && need(r).length <= 2)
         if (close.length) out.push({key: 'close', title: 'Almost ready', icon: 'fa-solid fa-cart-shopping', recipes: close.slice(0, cols.value)})
     }
     return out

@@ -132,6 +132,10 @@
             <steps-overview :steps="recipe.steps" :ingredient-factor="ingredientFactor" @scale="(factor: number) => {servings = recipe.servings * factor}"></steps-overview>
         </v-card>
 
+        <!-- home fork: equipment the recipe needs (RecipeEquipmentCard.vue); a generated "Equipment" step becomes this list -->
+        <recipe-equipment-card v-if="recipe.id && !useUserPreferenceStore().isPrintMode" :recipe-id="recipe.id" :can-edit="useUserPreferenceStore().isAuthenticated"
+                               @converted="recipe.steps = recipe.steps.filter(s => (s.name || '').trim().toLowerCase() != 'equipment')"></recipe-equipment-card>
+
         <v-card class="mt-1" v-for="(step, index) in recipe.steps" :key="step.id">
             <step-view v-model="recipe.steps[index]" :step-number="index+1" :ingredientFactor="ingredientFactor"></step-view>
         </v-card>
@@ -170,6 +174,7 @@ import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {AiProvider, ApiApi, Recipe} from "@/openapi"
 import NumberScalerDialog from "@/components/inputs/NumberScalerDialog.vue"
 import StepsOverview from "@/components/display/StepsOverview.vue";
+import RecipeEquipmentCard from "@/components/display/RecipeEquipmentCard.vue";
 import RecipeActivity from "@/components/display/RecipeActivity.vue";
 import RecipeContextMenu from "@/components/inputs/RecipeContextMenu.vue";
 import RecipeImage from "@/components/display/RecipeImage.vue";

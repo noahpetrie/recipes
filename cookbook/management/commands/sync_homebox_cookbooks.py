@@ -10,6 +10,11 @@ Name, author and description are written when the cookbook is first brought over
 Kitchen are kept); the cover is filled in whenever Kitchen has none. Nothing is deleted here when
 a book leaves Homebox, since a cookbook may have recipes attached by then.
 
+It also brings the household's kitchen equipment over: every Homebox item kept in the Kitchen
+(or somewhere inside it) becomes owned Equipment, filed under its kind (Vitamix … Blender under
+Blender); things that aren't a known kind of kitchen gear (a speaker on the counter) come over
+hidden. When an item leaves the Kitchen in Homebox, Kitchen stops counting it as owned.
+
 Runs every few minutes from launchd on the host:
     docker exec home-apps-tandoor-1 /opt/recipes/venv/bin/python manage.py sync_homebox_cookbooks
 Settings (environment): HOMEBOX_URL (e.g. http://host.docker.internal:8383), HOMEBOX_API_KEY,
@@ -28,7 +33,8 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django_scopes import scopes_disabled
 
-from cookbook.models import RecipeBook, UserSpace
+from cookbook.helper import home_equipment
+from cookbook.models import Equipment, RecipeBook, UserSpace
 
 TAG = 'Cookbook'
 COOKING_SUBJECT = re.compile(r'cook|cookery|cookbook|recipe|baking|culinary', re.I)
@@ -102,6 +108,11 @@ class Command(BaseCommand):
                 self.sync_book(s, api, space, user, detail, fields)
                 synced += 1
 
+            try:
+                self.sync_equipment(s, api, get, space, items)
+            except Exception as e:  # the shelf still syncs if this part fails
+                self.log(f'equipment sync failed: {e}')
+
         state['checked'] = sorted(checked)
         state['detected'] = sorted(detected)
         self.save_state(state)
@@ -135,6 +146,58 @@ class Command(BaseCommand):
                 book.cover.save(f'{book.pk}_homebox{ext}', File(BytesIO(content)), save=True)
         if created:
             self.log(f'added to Kitchen: {book.name}')
+
+    def sync_equipment(self, s, api, get, space, items):
+        trails = {}
+
+        def in_kitchen(item):
+            parent = (item.get('parent') or {}).get('id')
+            if not parent:
+                return False
+            if parent not in trails:
+                try:
+                    trails[parent] = [p.get('name', '') for p in get(f'/entities/{parent}/path').json()]
+                except Exception:
+                    trails[parent] = [(item.get('parent') or {}).get('name', '')]
+            return any(n.strip().lower() == 'kitchen' for n in trails[parent])
+
+        kept = [i for i in items if (i.get('entityType') or {}).get('name') not in ('Book', 'Vehicle') and not i.get('archived')
+                and not (i.get('soldDate') or '').startswith(('1', '2')) and in_kitchen(i)]
+        seen = set()
+        for i in kept:
+            seen.add(i['id'])
+            eq = Equipment.objects.filter(space=space, homebox_id=i['id']).first()
+            if eq is None:
+                # already in Kitchen from a recipe ("Breville Bakery Chef™ Stand Mixer")?
+                k = home_equipment.key(i['name'])
+                eq = next((e for e in Equipment.objects.filter(space=space, homebox_id__isnull=True) if home_equipment.key(e.name) == k), None)
+            kind = home_equipment.kind_of(i['name'])
+            if eq is None:
+                general = home_equipment.general(space, kind) if kind else None
+                if general is not None and home_equipment.key(general.name) == home_equipment.key(i['name']):
+                    eq = general
+                else:
+                    eq = Equipment(space=space, name=i['name'][:128], general=general, hidden=kind is None)
+                    self.log(f'equipment from Homebox: {i["name"]}' + ('' if kind else ' (hidden: not a known kind of kitchen gear)'))
+            elif not eq.homebox_id and eq.general_id is None and kind and home_equipment.key(kind) != home_equipment.key(eq.name):
+                eq.general = home_equipment.general(space, kind)
+            eq.homebox_id = i['id']
+            eq.owned = True
+            eq.save()
+            if not eq.image:
+                try:
+                    photo = self.primary_photo(get(f"/entities/{i['id']}").json())
+                    if photo:
+                        r = s.get(f"{api}/entities/{i['id']}/attachments/{photo['id']}", timeout=30)
+                        if r.ok and r.content:
+                            ext = '.png' if 'png' in r.headers.get('content-type', '') else '.jpg'
+                            eq.image.save(f'hb-{eq.pk}{ext}', File(BytesIO(r.content)), save=True)
+                except Exception:
+                    pass
+        gone = Equipment.objects.filter(space=space, homebox_id__isnull=False, owned=True).exclude(homebox_id__in=seen)
+        for eq in gone:
+            self.log(f'no longer in the Homebox kitchen: {eq.name}')
+        gone.update(owned=False)
 
     def describe(self, s, api, item, fields):
         # same shape as the hand-made ones: "Subtitle. Publisher, 2011 · 287 pages · ISBN … · Kept in …"
