@@ -77,9 +77,6 @@
                                                      class="flex-column mb-auto mt-2 float-right"></recipe-context-menu>
                             </div>
                             <p>
-                                {{ $t('created_by') }} {{ recipe.createdBy.displayName }} ({{ DateTime.fromJSDate(recipe.createdAt).toLocaleString(DateTime.DATE_SHORT) }})
-                            </p>
-                            <p>
                                 <i>{{ recipe.description }}</i>
                             </p>
 
