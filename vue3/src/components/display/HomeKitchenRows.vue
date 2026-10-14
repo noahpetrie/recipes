@@ -18,29 +18,26 @@
             <router-link :to="{name: 'CookNowPage'}" class="row-title">
                 <h4><i :class="row.icon + ' fa-fw'"></i> {{ row.title }} <span class="ms-2 text-body-2">More <i class="fa-solid fa-chevron-right"></i></span></h4>
             </router-link>
-            <v-row dense>
-                <v-col v-for="r in row.recipes" :key="r.id" cols="6" sm="4" md="3">
-                    <v-card class="h-100 kitchen-card" variant="flat" :to="{name: 'RecipeViewPage', params: {id: r.id}}">
-                        <recipe-thumb :src="r.image" />
-                        <div class="pt-2">
-                            <div class="font-weight-bold name">{{ r.name }}</div>
-                            <div class="text-caption mt-1">
-                                <span v-if="row.key == 'use' && r.expiring.length" class="text-warning">
-                                    <v-icon icon="fa-solid fa-hourglass-half" size="x-small" class="me-1" />{{ r.expiring.map(e => e.name).join(', ') }}
-                                </span>
-                                <span v-else-if="r.missing.length == 0" class="text-success"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />You have everything</span>
-                                <span v-else class="text-medium-emphasis">Need {{ r.missing.map(m => m.name).join(', ') }}</span>
-                            </div>
-                        </div>
-                    </v-card>
-                </v-col>
-            </v-row>
+            <div class="home-grid" :style="{gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`}">
+                <home-recipe-tile v-for="r in row.recipes" :key="r.id" :recipe="r">
+                    <template #status>
+                        <span v-if="row.key == 'use' && r.expiring.length" class="text-warning" :title="r.expiring.map(e => e.name).join(', ')">
+                            <v-icon icon="fa-solid fa-hourglass-half" size="x-small" class="me-1" />{{ r.expiring.map(e => e.name).join(', ') }}
+                        </span>
+                        <span v-else-if="r.missing.length == 0" class="text-success"><v-icon icon="fa-solid fa-check" size="x-small" class="me-1" />You have everything</span>
+                        <span v-else class="text-medium-emphasis" :title="`Need ${r.missing.map(m => m.name).join(', ')}`">
+                            <v-icon icon="fa-solid fa-cart-shopping" size="x-small" class="me-1" />Need {{ r.missing.map(m => m.name).join(', ') }}
+                        </span>
+                    </template>
+                </home-recipe-tile>
+            </div>
         </section>
     </div>
 </template>
 
 <script setup lang="ts">
-import RecipeThumb from '@/components/display/RecipeThumb.vue'
+import HomeRecipeTile from '@/components/display/HomeRecipeTile.vue'
+import {useHomeCols} from '@/composables/useHomeCols'
 import {computed, onMounted, ref, watch, watchEffect} from 'vue'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {pantryVersion} from '@/composables/useScan'
@@ -48,6 +45,7 @@ import {useHomeShown} from '@/composables/useHomeShown'
 
 type Cookable = { id: number, name: string, image: string | null, total: number, have: number, missing: { id: number, name: string }[], expiring: { id: number, name: string, expires: string }[] }
 
+const cols = useHomeCols()
 const data = ref<{ recipes: Cookable[], staples: number, in_stock: number } | null>(null)
 
 async function load() {
@@ -63,12 +61,12 @@ const rows = computed(() => {
     const rs = data.value?.recipes ?? []
     const out = []
     const use = rs.filter(r => r.expiring.length)
-    if (use.length) out.push({key: 'use', title: 'Use it up', icon: 'fa-solid fa-hourglass-half', recipes: use.slice(0, 4)})
+    if (use.length) out.push({key: 'use', title: 'Use it up', icon: 'fa-solid fa-hourglass-half', recipes: use.slice(0, cols.value)})
     const ready = rs.filter(r => r.missing.length == 0 && !r.expiring.length)
-    if (ready.length) out.push({key: 'ready', title: 'Ready to cook', icon: 'fa-solid fa-check', recipes: ready.slice(0, 4)})
+    if (ready.length) out.push({key: 'ready', title: 'Ready to cook', icon: 'fa-solid fa-check', recipes: ready.slice(0, cols.value)})
     else if (data.value?.staples || data.value?.in_stock) {
         const close = rs.filter(r => r.missing.length > 0 && r.missing.length <= 2)
-        if (close.length) out.push({key: 'close', title: 'Almost ready', icon: 'fa-solid fa-cart-shopping', recipes: close.slice(0, 4)})
+        if (close.length) out.push({key: 'close', title: 'Almost ready', icon: 'fa-solid fa-cart-shopping', recipes: close.slice(0, cols.value)})
     }
     return out
 })
@@ -82,7 +80,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.kitchen-card { background: transparent; }
+.home-grid { display: grid; gap: 16px; padding: 0 2px; }
 .row-title { color: inherit; text-decoration: none; display: block; margin-bottom: 8px; }
-.kitchen-card .name { line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 </style>

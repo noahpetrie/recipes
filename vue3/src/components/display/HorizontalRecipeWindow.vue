@@ -12,13 +12,10 @@
             <v-col>
                 <v-window show-arrows>
                     <v-window-item v-for="w in recipeWindows" class="pt-1 pb-1">
-                        <v-row dense>
-                            <v-col class="pr-0 pl-0" v-for="r in w" :key="r.id">
-                                <recipe-card :recipe="r" :show_description="true" :show-keywords="true"></recipe-card>
-                            </v-col>
-                            <!-- home fork: empty slots keep a short row's cards the usual size -->
-                            <v-col class="pr-0 pl-0" v-for="n in numberOfCols - w.length" :key="'pad' + n"></v-col>
-                        </v-row>
+                        <!-- home fork: compact cards, as many across as fit; a short row keeps the usual card size -->
+                        <div class="home-grid" :style="{gridTemplateColumns: `repeat(${numberOfCols}, minmax(0, 1fr))`}">
+                            <home-recipe-tile v-for="r in w" :key="r.id" :recipe="r" />
+                        </div>
                     </v-window-item>
                 </v-window>
             </v-col>
@@ -28,11 +25,9 @@
             <v-col>
                 <v-window>
                     <v-window-item>
-                        <v-row>
-                            <v-col v-for="n in skeletons">
-                                <v-skeleton-loader :elevation="3" type="card"></v-skeleton-loader>
-                            </v-col>
-                        </v-row>
+                        <div class="home-grid" :style="{gridTemplateColumns: `repeat(${numberOfCols}, minmax(0, 1fr))`}">
+                            <v-skeleton-loader v-for="n in numberOfCols" :key="n" type="image, text" />
+                        </div>
                     </v-window-item>
                 </v-window>
             </v-col>
@@ -43,10 +38,10 @@
 
 <script lang="ts" setup>
 import {computed, onMounted, PropType, ref, watchEffect} from 'vue'
-import RecipeCard from "@/components/display/RecipeCard.vue";
+import HomeRecipeTile from "@/components/display/HomeRecipeTile.vue";
 import {useDisplay} from "vuetify";
 import {ApiApi, ApiRecipeListRequest, Keyword, Recipe, RecipeOverview, User} from "@/openapi";
-import {homePageCols} from "@/utils/breakpoint_utils";
+import {useHomeCols} from "@/composables/useHomeCols";
 import {useI18n} from "vue-i18n";
 import {DateTime} from "luxon";
 import {tr} from "vuetify/locale";
@@ -123,9 +118,7 @@ const icon = computed(() => {
 /**
  * number of columns to show depending on display size
  */
-const numberOfCols = computed(() => {
-    return homePageCols(name.value)
-})
+const numberOfCols = useHomeCols()
 
 const homeShown = useHomeShown(props.order)
 const shown = computed(() => recipes.value.filter(r => !homeShown.taken.value.has(r.id!)))
@@ -246,5 +239,5 @@ function openSearch() {
 
 
 <style scoped>
-
+.home-grid { display: grid; gap: 16px; padding: 0 2px; }
 </style>
