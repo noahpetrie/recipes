@@ -7,11 +7,15 @@
             </router-link>
             <v-spacer />
             <v-progress-circular v-if="loading" indeterminate size="16" width="2" class="me-2" />
-            <v-btn icon="fa-solid fa-chevron-left" size="small" variant="text" :disabled="page == 0" aria-label="Earlier days" @click="page--" />
-            <v-btn icon="fa-solid fa-chevron-right" size="small" variant="text" :disabled="(page + 1) * numberOfCols >= DAYS" aria-label="Later days" @click="page++" />
+            <!-- while dragging a meal, holding it over an arrow turns the page -->
+            <v-btn icon="fa-solid fa-chevron-left" size="small" variant="text" :disabled="page == 0" aria-label="Earlier days" @click="page--"
+                   @dragenter="hoverPage(-1)" @dragover.prevent @dragleave="hoverPage(0)" />
+            <v-btn icon="fa-solid fa-chevron-right" size="small" variant="text" :disabled="(page + 1) * numberOfCols >= DAYS" aria-label="Later days" @click="page++"
+                   @dragenter="hoverPage(1)" @dragover.prevent @dragleave="hoverPage(0)" />
         </div>
         <div class="mp-grid" :style="{gridTemplateColumns: `repeat(${numberOfCols}, minmax(0, 1fr))`}">
-            <v-sheet v-for="d in shownDays" :key="d.create_default_date" rounded="lg" border class="mp-day" :class="{today: d.today}">
+            <v-sheet v-for="d in shownDays" :key="d.create_default_date" rounded="lg" border class="mp-day" :class="{today: d.today, 'drop-target': dropDay == d.create_default_date}"
+                     @dragover="dragOver(d, $event)" @dragleave="dragLeave(d, $event)" @drop="dropOn(d, $event)">
                 <!-- click the date, or right-click anywhere on this bar, for the day's menu (plan a meal, I'm away) -->
                 <div class="mp-head" @contextmenu="openDayMenu(d, $event)">
                     <button type="button" class="mp-date flex-grow-1 text-truncate" @click="openDayMenu(d, $event)">{{ d.date_label }}<v-icon icon="fa-solid fa-chevron-down" size="10" class="ms-1 mp-chev" /></button>
@@ -21,7 +25,8 @@
                     </v-btn>
                 </div>
                 <!-- days away: a banner instead of a "Dinner" line -->
-                <div v-for="p in d.away" :key="p.id" class="mp-away" :class="{fill: d.meals.length == 0}" @contextmenu="openMenu(p, $event)">
+                <div v-for="p in d.away" :key="p.id" class="mp-away" :class="{fill: d.meals.length == 0}" @contextmenu="openMenu(p, $event)"
+                     :draggable="mouse" @dragstart="dragStart(p, $event)" @dragend="dragEnd">
                     <v-icon icon="fa-solid fa-suitcase-rolling" size="small" class="me-2" />
                     <span class="flex-grow-1 text-truncate">Away<template v-if="awayPlace(p)"> · {{ awayPlace(p) }}</template></span>
                     <model-edit-dialog model="MealPlan" :item="p"></model-edit-dialog>
@@ -29,7 +34,8 @@
                 </div>
                 <div v-if="d.plan_entries.length == 0" class="mp-empty text-body-2 text-medium-emphasis">{{ $t('HomeNothingPlanned', 'Nothing planned') }}</div>
                 <v-list v-else-if="d.meals.length" density="compact" class="py-1 bg-transparent">
-                    <v-list-item v-for="p in d.meals" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)" class="px-2">
+                    <v-list-item v-for="p in d.meals" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)" class="px-2"
+                                 :draggable="mouse" @dragstart="dragStart(p, $event)" @dragend="dragEnd">
                         <template #prepend>
                             <recipe-thumb v-if="p.recipe" :src="p.recipe.image" :size="40" class="me-3" />
                             <div v-else class="mp-icon me-3"><v-icon icon="fa-regular fa-note-sticky" size="small" /></div>
@@ -74,6 +80,7 @@ import {useRouter} from "vue-router";
 import MealPlanContextMenu from "@/components/inputs/MealPlanContextMenu.vue";
 import AwayDialog from "@/components/dialogs/AwayDialog.vue";
 import {awayPlace, isAway} from "@/composables/useAway";
+import {movePlan} from "@/composables/useMealPlanMove";
 
 const router = useRouter()
 
@@ -154,6 +161,52 @@ function openDayMenu(d: MealPlanGridItem, e: MouseEvent) {
     dayMenu.value = true
 }
 
+// drag a meal (or a whole trip) to another day; hold ⌥ Option / Alt when dropping to copy it instead
+const dragging = ref<MealPlan | null>(null)
+const dropDay = ref<string | null>(null)
+let pageTimer: ReturnType<typeof setTimeout> | undefined
+
+function dragStart(p: MealPlan, e: DragEvent) {
+    dragging.value = p
+    e.dataTransfer?.setData('text/plain', p.recipe?.name || p.title || '')
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove'
+}
+
+function dragEnd() {
+    dragging.value = null
+    dropDay.value = null
+    hoverPage(0)
+}
+
+function dragOver(d: MealPlanGridItem, e: DragEvent) {
+    if (!dragging.value) return
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move'
+    dropDay.value = d.create_default_date as string
+}
+
+function dragLeave(d: MealPlanGridItem, e: DragEvent) {
+    // only when leaving the card itself, not moving between its children
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node) && dropDay.value == d.create_default_date) dropDay.value = null
+}
+
+function dropOn(d: MealPlanGridItem, e: DragEvent) {
+    const p = dragging.value
+    if (!p) return
+    e.preventDefault()
+    dragEnd()
+    movePlan(p, d.date.startOf('day'), e.altKey)
+}
+
+function hoverPage(dir: number) {
+    clearTimeout(pageTimer)
+    if (!dir || !dragging.value) return
+    pageTimer = setTimeout(() => {
+        const last = Math.ceil(DAYS / numberOfCols.value) - 1
+        page.value = Math.min(last, Math.max(0, page.value + dir))
+    }, 600)
+}
+
 function clickMealPlan(plan: MealPlan) {
     if (plan.recipe) {
         router.push({
@@ -185,6 +238,8 @@ function clickMealPlan(plan: MealPlan) {
     background: rgba(var(--v-theme-on-surface), .06); color: rgba(var(--v-theme-on-surface), .75); min-width: 0; }
 .mp-away.fill { flex: 1; margin-bottom: 8px; }
 .mp-away-menu { margin: -6px 0; }
+.mp-day.drop-target { border-color: rgb(var(--v-theme-primary)) !important; background: rgba(var(--v-theme-primary), .06); }
+.mp-day [draggable="true"] { cursor: grab; }
 .mp-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 14px 8px; }
 .mp-icon { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(var(--v-theme-on-surface), .06); color: rgba(var(--v-theme-on-surface), .55); }
 

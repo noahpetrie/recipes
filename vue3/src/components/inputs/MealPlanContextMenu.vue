@@ -14,6 +14,23 @@
                     {{ $t('Edit') }}
                     <model-edit-dialog model="MealPlan" :item="plan"></model-edit-dialog>
                 </v-list-item>
+                <!-- home: move to another day (phones can't drag) -->
+                <v-list-item prepend-icon="fa-regular fa-calendar" append-icon="fa-solid fa-chevron-right" link>
+                    Move to…
+                    <v-menu activator="parent" location="end" open-on-hover open-on-click :close-on-content-click="true">
+                        <v-list density="compact">
+                            <v-list-item v-for="d in moveDays" :key="d.toISODate()!" :disabled="d.hasSame(planDay, 'day')" @click="moveTo(d)">{{ capital(dayLabel(d)) }}</v-list-item>
+                            <v-divider class="my-1"></v-divider>
+                            <v-list-item prepend-icon="fa-regular fa-calendar-days" @click="pickDate = true">Pick a date…</v-list-item>
+                        </v-list>
+                    </v-menu>
+    <v-dialog v-model="pickDate" max-width="340">
+        <v-card title="Move to">
+            <v-card-text><v-text-field v-model="pickedDate" type="date" label="Date" autofocus @keydown.enter="movePicked" /></v-card-text>
+            <v-card-actions><v-spacer /><v-btn variant="text" @click="pickDate = false">Cancel</v-btn><v-btn color="primary" variant="flat" :disabled="!pickedDate" @click="movePicked">Move</v-btn></v-card-actions>
+        </v-card>
+    </v-dialog>
+                </v-list-item>
                 <template v-if="plan.recipe">
                     <v-divider class="my-1"></v-divider>
                     <v-list-item prepend-icon="fa-solid fa-cart-shopping" link>
@@ -57,7 +74,8 @@
 
 <script setup lang="ts">
 import RecipeThumb from '@/components/display/RecipeThumb.vue'
-import {computed, PropType, ref} from 'vue'
+import {computed, PropType, ref, watch} from 'vue'
+import {dayLabel, movePlan} from '@/composables/useMealPlanMove'
 import {DateTime} from "luxon";
 import {MealPlan} from "@/openapi";
 import ModelEditDialog from "@/components/dialogs/ModelEditDialog.vue";
@@ -97,6 +115,20 @@ const shortDate = computed(() => {
     return days == 0 ? t('Today') : days == 1 ? t('Tomorrow', 'Tomorrow') : d.toLocaleString({weekday: 'short', month: 'short', day: 'numeric'})
 })
 const dateLabel = computed(() => DateTime.fromJSDate(props.plan.fromDate).toLocaleString({weekday: 'long', month: 'short', day: 'numeric'}))
+
+// home: Move to… (composables/useMealPlanMove.ts)
+const planDay = computed(() => DateTime.fromJSDate(props.plan.fromDate))
+const moveDays = computed(() => Array.from({length: 7}, (_, i) => DateTime.now().startOf('day').plus({days: i})))
+const pickDate = ref(false)
+const pickedDate = ref('')
+watch(pickDate, o => { if (o) pickedDate.value = planDay.value.toISODate()! })
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+function moveTo(d: DateTime) { movePlan(props.plan, d) }
+function movePicked() {
+    if (!pickedDate.value) return
+    movePlan(props.plan, DateTime.fromISO(pickedDate.value))
+    pickDate.value = false
+}
 
 function openAt(e: MouseEvent) {
     point.value = [e.clientX, e.clientY]

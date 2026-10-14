@@ -123,6 +123,7 @@
             <hardware-scanner></hardware-scanner>
             <camera-scan-dialog></camera-scan-dialog>
             <pantry-scan-panel></pantry-scan-panel>
+            <home-undo-toast></home-undo-toast>
         </template>
 
         <v-snackbar-queued
@@ -144,6 +145,7 @@ import logoColor from "@/assets/logo_color.svg"
 import HardwareScanner from "@/components/inputs/HardwareScanner.vue"
 import CameraScanDialog from "@/components/dialogs/CameraScanDialog.vue"
 import PantryScanPanel from "@/components/dialogs/PantryScanPanel.vue"
+import HomeUndoToast from "@/components/display/HomeUndoToast.vue"
 import {openScanPanel} from "@/composables/useScan"
 import {toVuetifyLocale} from "@/vuetify"
 import VSnackbarQueued from "@/components/display/VSnackbarQueued.vue";
