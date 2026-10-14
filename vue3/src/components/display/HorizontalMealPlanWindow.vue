@@ -32,7 +32,7 @@
                                 <v-list-item v-for="p in mealPlanGridItem.plan_entries" :key="p.id" @click="clickMealPlan(p)" link @contextmenu="openMenu(p, $event)">
                                     <template #prepend>
                                         <!-- home: square photo thumbnails, like the rest of the app -->
-                                        <recipe-thumb :src="p.recipe.image" v-if="p.recipe?.image" :size="44" class="mp-thumb"></recipe-thumb>
+                                        <recipe-thumb :src="p.recipe.image" v-if="p.recipe?.image" :size="44" class="mp-thumb me-4"></recipe-thumb>
                                         <v-avatar v-else rounded="lg" size="44" class="mp-thumb"><v-icon icon="fa-solid fa-pizza-slice" size="small" class="opacity-60"></v-icon></v-avatar>
                                     </template>
                                     <v-list-item-title class="mp-title">
