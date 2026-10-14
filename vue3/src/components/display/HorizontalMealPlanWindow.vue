@@ -169,7 +169,31 @@ let pageTimer: ReturnType<typeof setTimeout> | undefined
 function dragStart(p: MealPlan, e: DragEvent) {
     dragging.value = p
     e.dataTransfer?.setData('text/plain', p.recipe?.name || p.title || '')
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copyMove'
+    if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'copyMove'
+        // the browser's own picture can take in the whole day card; show just this meal
+        const ghost = dragGhost(p)
+        e.dataTransfer.setDragImage(ghost, 24, 24)
+        setTimeout(() => ghost.remove())
+    }
+}
+
+function dragGhost(p: MealPlan): HTMLElement {
+    const el = document.createElement('div')
+    el.className = 'mp-ghost'
+    const name = p.recipe?.name || (isAway(p) ? `Away${awayPlace(p) ? ' · ' + awayPlace(p) : ''}` : p.title) || ''
+    if (p.recipe?.image) {
+        const img = document.createElement('img')
+        img.src = p.recipe.image
+        el.appendChild(img)
+    } else {
+        const icon = document.createElement('i')
+        icon.className = isAway(p) ? 'fa-solid fa-suitcase-rolling' : 'fa-regular fa-note-sticky'
+        el.appendChild(icon)
+    }
+    el.appendChild(document.createTextNode(name))
+    document.body.appendChild(el)
+    return el
 }
 
 function dragEnd() {
