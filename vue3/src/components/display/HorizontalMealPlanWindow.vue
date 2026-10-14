@@ -25,7 +25,7 @@
                     <v-icon icon="fa-solid fa-suitcase-rolling" size="small" class="me-2" />
                     <span class="flex-grow-1 text-truncate">Away<template v-if="awayPlace(p)"> · {{ awayPlace(p) }}</template></span>
                     <model-edit-dialog model="MealPlan" :item="p"></model-edit-dialog>
-                    <span class="mp-away-menu" @click.stop><meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p"></meal-plan-context-menu></span>
+                    <span class="mp-away-menu" @click.stop><meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p" :hide-button="mouse"></meal-plan-context-menu></span>
                 </div>
                 <div v-if="d.plan_entries.length == 0" class="mp-empty text-body-2 text-medium-emphasis">{{ $t('HomeNothingPlanned', 'Nothing planned') }}</div>
                 <v-list v-else-if="d.meals.length" density="compact" class="py-1 bg-transparent">
@@ -38,7 +38,7 @@
                         <v-list-item-subtitle>{{ p.mealType.name }}</v-list-item-subtitle>
                         <model-edit-dialog model="MealPlan" :item="p" v-if="!p.recipe"></model-edit-dialog>
                         <template #append>
-                            <meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p"></meal-plan-context-menu>
+                            <meal-plan-context-menu :ref="el => setMenuRef(p.id!, el)" :plan="p" :hide-button="mouse"></meal-plan-context-menu>
                         </template>
                     </v-list-item>
                 </v-list>
@@ -79,6 +79,8 @@ const router = useRouter()
 
 const loading = ref(false)
 const page = ref(0)
+// with a mouse the meal menus open by right-click, so no ⋮ buttons; touch screens keep them
+const mouse = window.matchMedia('(hover: hover) and (pointer: fine)').matches
 const numberOfCols = useHomeCols()
 // two weeks ahead; a week fits across a wide screen
 const DAYS = 14
@@ -179,7 +181,7 @@ function clickMealPlan(plan: MealPlan) {
 .mp-date:hover, .mp-date:focus-visible { color: rgb(var(--v-theme-primary)); }
 .mp-chev { opacity: 0; transition: opacity .15s; }
 .mp-head:hover .mp-chev, .mp-date:focus-visible .mp-chev { opacity: .6; }
-.mp-away { display: flex; align-items: center; margin: 8px 8px 0; padding: 6px 4px 6px 10px; border-radius: 8px; cursor: pointer; font-size: .875rem; font-weight: 500;
+.mp-away { display: flex; align-items: center; margin: 8px 8px 0; padding: 6px 4px 6px 10px; min-height: 40px; border-radius: 8px; cursor: pointer; font-size: .875rem; font-weight: 500;
     background: rgba(var(--v-theme-on-surface), .06); color: rgba(var(--v-theme-on-surface), .75); min-width: 0; }
 .mp-away.fill { flex: 1; margin-bottom: 8px; }
 .mp-away-menu { margin: -6px 0; }
