@@ -1,7 +1,13 @@
 <template>
     <v-app>
         <v-app-bar color="surface" flat density="comfortable" v-if="!useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode">
-            <a href="https://tandoor.dev">
+            <!-- home: signed out (2.7's Vue sign-in page), use the name and icon the server themed the page with
+                 (UNAUTHENTICATED_THEME_FROM_SPACE) instead of the Tandoor logo -->
+            <span class="home-brand ms-3" v-if="serverAppName != 'Tandoor'">
+                <img :src="faviconHref() || logoColor" alt="" class="home-brand-icon">
+                <span class="home-brand-name">{{ serverAppName }}</span>
+            </span>
+            <a href="https://tandoor.dev" v-else>
                 <v-img src="../../assets/brand_logo.svg" width="140px" class="ms-2"></v-img>
             </a>
         </v-app-bar>
@@ -177,9 +183,15 @@ const {t} = useI18n()
 
 // home: the space's own icon for the toolbar — the server already puts it in the page as the favicon
 // (theme_values.logo_color_svg), which also covers icons the file API can't preview (SVG)
+// home: the server renders <title> with the space's app name (also when signed out); keep it before the app retitles the page
+const serverAppName = document.title?.trim() || 'Tandoor'
+function faviconHref() {
+    return (document.querySelector('link[rel="icon"]') as HTMLLinkElement | null)?.href
+}
+
 const spaceIcon = computed(() => {
     const sp = useUserPreferenceStore().activeSpace
-    const favicon = (document.querySelector('link[rel="icon"]') as HTMLLinkElement | null)?.href
+    const favicon = faviconHref()
     return sp.logoColorSvg || sp.logoColor192 ? (favicon || logoColor) : logoColor
 })
 
@@ -189,13 +201,13 @@ const title = useTitle()
 const routeTitle = ref('')
 
 function applyTitle() {
-    const appName = useUserPreferenceStore().activeSpace?.appName || 'Tandoor'
+    const appName = useUserPreferenceStore().activeSpace?.appName || serverAppName
     title.value = routeTitle.value ? `${routeTitle.value} · ${appName}` : appName
 }
 
 watch(() => useUserPreferenceStore().activeSpace?.appName, (now, before) => {
     // only touch the title if it is still the generic one (recipe pages set their own)
-    const before_ = before || 'Tandoor'
+    const before_ = before || serverAppName
     if (title.value == before_ || title.value?.endsWith(` · ${before_}`)) applyTitle()
 })
 const router = useRouter()
