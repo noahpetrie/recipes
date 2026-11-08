@@ -23,8 +23,7 @@
                     <v-form :disabled="loading">
 
                         <!-- what -->
-                        <v-model-select v-if="!editingObj.recipe" model="Recipe" v-model="editingObj.recipe" hide-details
-                                        @update:modelValue="editingObj.servings = editingObj.recipe ? editingObj.recipe.servings : 1"></v-model-select>
+                        <v-model-select v-if="!editingObj.recipe" model="Recipe" v-model="editingObj.recipe" hide-details></v-model-select>
 
                         <!-- home: pick a recipe with one click from photos, instead of searching -->
                         <div v-if="!editingObj.recipe && quickPicks.length && !editingObj.title" class="mpe-picks mt-3">
@@ -243,6 +242,17 @@ const dateLabel = computed(() => {
     const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime())
     const first = sorted[0]!, last = sorted[sorted.length - 1]!
     return DateTime.fromJSDate(first).hasSame(DateTime.fromJSDate(last), 'day') ? fmt(first) : `${fmt(first)} – ${fmt(last)}`
+})
+
+/**
+ * pre-fill servings from the recipe when the user actually selects a different recipe.
+ * Not when the editor is (re-)populated from the outside, e.g. loading an existing entry or the save response replacing the edited object
+ * (VModelSelect emits update:modelValue in those cases too, which used to overwrite the stored servings)
+ */
+watch(() => [editingObj.value.recipe?.id, editingObj.value.id], ([newRecipeId, newId], [oldRecipeId, oldId]) => {
+    if (newRecipeId !== oldRecipeId && newId === oldId) {
+        editingObj.value.servings = editingObj.value.recipe ? editingObj.value.recipe.servings : 1
+    }
 })
 
 watch(() => editingObj.value.mealType, (newType, oldType) => {
