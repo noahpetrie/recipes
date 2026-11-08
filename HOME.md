@@ -125,6 +125,14 @@ Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/def
 
 ## Updating to a new upstream release
 
+2.7.2 (2026-11-08) was brought in with a merge instead of a rebase (`git merge 2.7.2` on top of `home`):
+one round of conflicts instead of one per home commit. Notes from that update:
+- Upstream 2.7.2 changed `CookLog.servings` to a DecimalField without a migration; `0249_home_cooklog_decimal_servings`
+  adds it. If upstream later ships its own, fake-apply one of them.
+- `0248_home_merge_2_7` joins upstream's 0243 with the home 0243–0247 chain.
+- TypeScript 7 breaks `vue-tsc`; type-check with `npm i --no-save typescript@5.9` first.
+- Sign-in is now the Vue page `/account/login/`; the signed-out bar shows the space's name/icon from the server's `<title>`/favicon.
+
 ```bash
 git fetch upstream --tags
 git rebase --onto <new-tag> <old-tag> home      # replay the home commits
