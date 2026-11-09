@@ -1,25 +1,23 @@
 <template>
     <v-container>
-        <v-card>
-            <v-card-title class="text-h5">
-                <v-icon :icon="THousehold.icon" size="small" class="mr-3"></v-icon>
-                {{ $t('Households') }}
-            </v-card-title>
-            <v-card-text class="text-body-1">
+        <v-card class="page-header" :prepend-icon="THousehold.icon" :title="$t('Households')"></v-card>
+        <v-card class="mb-16">
+            <v-card-text class="text-body-2">
                 <p>{{ $t('HouseholdSetup1') }}</p>
                 <p class="mt-2">{{ $t('HouseholdSetup2') }}</p>
                 <p class="mt-2">{{ $t('HouseholdSetup3') }}</p>
                 <p class="mt-2">{{ $t('HouseholdSetup4') }}</p>
 
-                <v-row>
-                    <v-col>
-                        <v-text-field v-model="householdName" :label="$t('Household')" :disabled="useUserPreferenceStore().activeUserSpace?.household != null" class="mt-4">
-                        </v-text-field>
-                        <v-btn color="success" @click="createAndJoinHousehold" :loading="loading" :disabled="useUserPreferenceStore().activeUserSpace?.household != null">
-                            {{ $t('CreateAndJoin') }}
-                        </v-btn>
-                    </v-col>
-                </v-row>
+                <!-- home: once you're in a household, say so instead of showing a disabled form -->
+                <v-alert v-if="useUserPreferenceStore().activeUserSpace?.household != null" type="success" variant="tonal" class="mt-5" icon="fa-solid fa-check">
+                    You’re in the household <b>{{ useUserPreferenceStore().activeUserSpace?.household?.name }}</b>.
+                </v-alert>
+                <div v-else class="d-flex flex-wrap ga-2 align-start mt-5">
+                    <v-text-field v-model="householdName" :label="$t('Household')" hide-details class="household-name"></v-text-field>
+                    <v-btn color="primary" variant="flat" height="40" @click="createAndJoinHousehold" :loading="loading">
+                        {{ $t('CreateAndJoin') }}
+                    </v-btn>
+                </div>
 
                 <v-row>
                     <database-model-col model="UserSpace" :disabled="useUserPreferenceStore().activeUserSpace?.household == null || loading"></database-model-col>
@@ -27,7 +25,7 @@
 
             </v-card-text>
             <v-card-actions>
-                <v-btn color="warning" variant="tonal" @click=" skipHouseholdSetup()" :loading="loading">{{ $t('Skip') }}</v-btn>
+                <v-btn variant="text" @click=" skipHouseholdSetup()" :loading="loading">{{ $t('Skip') }}</v-btn>
             </v-card-actions>
         </v-card>
 
@@ -110,6 +108,8 @@ function skipHouseholdSetup() {
 </script>
 
 <style scoped>
+.household-name { flex: 1 1 240px; max-width: 420px; }
+
 
 
 </style>

@@ -1,7 +1,10 @@
 <template>
     <v-container>
         <v-card :loading="recipeLoading || propertyTypesLoading">
-            <v-card-title>{{ $t('Property_Editor') }}</v-card-title>
+            <v-card-title class="d-flex align-center">
+                <v-btn variant="text" size="small" icon="fa-solid fa-arrow-left" class="me-1 ms-n2" :aria-label="$t('Back')" @click="$router.back()"></v-btn>
+                {{ $t('Property_Editor') }}
+            </v-card-title>
             <v-card-text>
                 <v-model-select model="Recipe" v-model="recipe" @update:model-value="loadRecipe(recipe.id!)">
                     <template #append>
@@ -17,28 +20,25 @@
                     <tr>
                         <th>{{ $t('Food') }}</th>
                         <th>
-                            <v-btn variant="outlined" block href="https://fdc.nal.usda.gov/food-search" target="_blank" prepend-icon="$search" stacked>{{ $t('FDC_ID') }}</v-btn>
+                            <v-btn variant="text" size="small" href="https://fdc.nal.usda.gov/food-search" target="_blank" append-icon="fa-solid fa-arrow-up-right-from-square">{{ $t('FDC_ID') }}</v-btn>
                         </th>
                         <th>
-                            <v-btn variant="outlined" @click="dialog = true" block stacked>{{ $t('Amount') }}</v-btn>
+                            <v-btn variant="text" size="small" @click="dialog = true">{{ $t('Amount') }}</v-btn>
                         </th>
                         <th>
-                            <v-btn variant="outlined" @click="dialog = true" block stacked>{{ $t('Properties_Food_Unit') }}</v-btn>
+                            <v-btn variant="text" size="small" @click="dialog = true">{{ $t('Properties_Food_Unit') }}</v-btn>
                         </th>
                         <th v-for="pt in propertyTypes" :key="pt.id!">
-                            <v-btn stacked block variant="outlined" class="mt-2 mb-2">
+                            <!-- home: a plain column header; the dot shows whether the property is linked to FDC data -->
+                            <v-btn variant="text" size="small" :title="pt.fdcId ? 'Linked to FDC' : 'Not linked to FDC'">
                                 <span>{{ pt.name }}</span>
-                                <span>
-                        <v-chip color="info" size="x-small"><v-icon icon="fa-solid fa-arrow-down-1-9"></v-icon>{{ pt.order }}</v-chip>
-                        <v-chip color="success" size="x-small" v-if="pt.fdcId"><v-icon icon="fa-solid fa-check"></v-icon>FDC</v-chip>
-                        <v-chip color="error" size="x-small" v-if="!pt.fdcId"><v-icon icon="fa-solid fa-times"></v-icon>FDC</v-chip>
-                        </span>
+                                <span class="fdc-dot ms-2" :class="pt.fdcId ? 'bg-success' : 'bg-error'"></span>
                                 <model-edit-dialog model="PropertyType" :item="pt"></model-edit-dialog>
                             </v-btn>
                         </th>
                         <th>
-                            <v-btn color="create" class="mt-1 float-right">
-                                <v-icon icon="$create"></v-icon>
+                            <v-btn variant="outlined" size="small" icon class="float-right" :aria-label="$t('Create')">
+                                <v-icon icon="$create" size="small"></v-icon>
                                 <model-edit-dialog model="PropertyType" @create="(pt:PropertyType) => propertyTypes.push(pt)"></model-edit-dialog>
                             </v-btn>
                         </th>
@@ -108,28 +108,28 @@
                     </tr>
                     </tbody>
                     <!-- TODO remove once append to body for model select is working properly -->
-                    <v-spacer style="margin-top: 120px;"></v-spacer>
+                    <v-spacer style="margin-top: 24px;"></v-spacer>
                 </v-table>
 
                 <v-card prepend-icon="fa-solid fa-calculator" :title="$t('Calculator')">
                     <v-card-text>
                         <v-row dense>
-                            <v-col cols="3">
-                                <v-text-field type="number" v-model="calculatorFromNumerator">
+                            <v-col cols="6" md="3">
+                                <v-text-field type="number" v-model="calculatorFromNumerator" label="Amount">
                                     <template #append>
                                         <i class="fa-solid fa-divide"></i>
                                     </template>
                                 </v-text-field>
                             </v-col>
-                            <v-col cols="3">
-                                <v-text-field type="number" v-model="calculatorFromDenominator">
+                            <v-col cols="6" md="3">
+                                <v-text-field type="number" v-model="calculatorFromDenominator" label="Per">
                                     <template #append>
                                         <i class="fa-solid fa-equals"></i>
                                     </template>
                                 </v-text-field>
                             </v-col>
-                            <v-col cols="3">
-                                <v-text-field type="number" v-model="calculatorToNumerator">
+                            <v-col cols="6" md="3">
+                                <v-text-field type="number" v-model="calculatorToNumerator" label="Result">
                                     <template #append>
                                         <i class="fa-solid fa-divide"></i>
                                     </template>
@@ -138,8 +138,8 @@
                                     </template>
                                 </v-text-field>
                             </v-col>
-                            <v-col cols="3">
-                                <v-text-field type="number" v-model="calculatorToDenominator"></v-text-field>
+                            <v-col cols="6" md="3">
+                                <v-text-field type="number" v-model="calculatorToDenominator" label="Per"></v-text-field>
                             </v-col>
                         </v-row>
 
@@ -389,5 +389,7 @@ function changeAllPropertyFoodAmounts(amount: number) {
 </script>
 
 <style scoped>
+.fdc-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+
 
 </style>

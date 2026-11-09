@@ -1,7 +1,7 @@
 <template>
     <v-card class="mt-2" v-if="hasFoodProperties || hasRecipeProperties">
-        <v-card-title>
-            <v-icon icon="$properties"></v-icon>
+        <v-card-title class="text-body-1 font-weight-bold">
+            <v-icon icon="$properties" size="small" class="me-1"></v-icon>
             {{ $t('Properties') }}
 
             <v-btn-toggle border divided density="compact" class="float-right d-print-none" v-if="hasRecipeProperties && hasRecipeProperties" v-model="sourceSelectedToShow">
@@ -10,7 +10,7 @@
             </v-btn-toggle>
         </v-card-title>
         <v-card-text>
-            <v-table density="compact" style="max-width: 800px">
+            <v-table density="compact">
                 <thead>
                 <tr>
                     <th></th>

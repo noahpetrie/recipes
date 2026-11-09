@@ -7,7 +7,7 @@
 
         <v-model-select model="MealType" v-model="useUserPreferenceStore().userSettings.defaultMealType"></v-model-select>
 
-        <v-btn class="mt-3" color="success" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">{{ $t('Save') }}</v-btn>
+        <v-btn class="mt-3" color="primary" variant="flat" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">{{ $t('Save') }}</v-btn>
 
         <p class="text-h6 mt-2">{{ $t('DeviceSettings') }}</p>
         <v-divider></v-divider>

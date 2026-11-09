@@ -15,8 +15,9 @@ export default createVuetify({
         //     class: 'overflow-visible' // this is needed so that vue-multiselect options show above a card, vuetify uses overlay container to avoid this
         // },
         // without this action buttons are left aligned in normal cards but right aligned in dialogs (I think)
+        // home fork: right-aligned with flex instead of a float, so cards and dialogs keep their height
         VCardActions: {
-            class: 'float-right'
+            class: 'home-card-actions'
         },
         // home fork: pages use the whole width (was capped at 1400px)
         VContainer: {
@@ -54,6 +55,12 @@ export default createVuetify({
         VCombobox: {variant: 'outlined', density: 'compact'},
         VNumberInput: {variant: 'outlined', density: 'compact'},
         VFileInput: {variant: 'outlined', density: 'compact'},
+        // date inputs were left at 56px with an outer calendar icon; match the 40px fields
+        VDateInput: {variant: 'outlined', density: 'compact', prependIcon: '', prependInnerIcon: '$calendar'},
+        // checkboxes: 40px rows that line up with the field edges (see home-theme.css)
+        VCheckbox: {density: 'compact'},
+        // tabs that don't fit (editors on phones) get scroll arrows instead of being cut off
+        VTabs: {showArrows: true},
         // date pickers: one "October 2026 ▾" label with ‹ › (shadcn calendar), faded days from the next/previous month
         VDatePicker: {controlVariant: 'modal', showAdjacentMonths: true},
         // flat buttons: no drop shadows
@@ -83,8 +90,8 @@ export default createVuetify({
                     warning: '#c98a12',
                     error: '#a7240e',
 
-                    save: '#4f8a5b',
-                    create: '#4f8a5b',
+                    save: '#a05a38',
+                    create: '#a05a38',
                     edit: '#2f5f8a',
                     delete: '#a7240e',
                     cancel: '#c98a12',
@@ -106,8 +113,8 @@ export default createVuetify({
                     warning: '#e6b04a',
                     error: '#e06a55',
 
-                    save: '#7fb48a',
-                    create: '#7fb48a',
+                    save: '#d9a07a',
+                    create: '#d9a07a',
                     edit: '#7aa7d1',
                     delete: '#e06a55',
                     cancel: '#e6b04a',

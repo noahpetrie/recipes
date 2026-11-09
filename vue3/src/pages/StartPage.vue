@@ -44,7 +44,7 @@
 
             <v-row>
                 <v-col class="text-center">
-                    <v-btn size="x-large" rounded="xl" prepend-icon="$search" variant="tonal" :to="{name: 'SearchPage', params: {query: ''}}">{{ $t('View_Recipes') }}</v-btn>
+                    <v-btn prepend-icon="$search" variant="outlined" :to="{name: 'SearchPage', params: {query: ''}}">{{ $t('View_Recipes') }}</v-btn>
                 </v-col>
             </v-row>
 

@@ -139,7 +139,7 @@
 
         <template v-if="recipes.length > 0 && useUserPreferenceStore().deviceSettings.search_viewMode == 'grid'">
             <v-row>
-                <v-col cols="6" md="4" v-for="r in recipes" :key="r.id" class="pa-0">
+                <v-col cols="6" md="4" lg="3" v-for="r in recipes" :key="r.id" class="pa-0 mb-5">
                     <recipe-card :recipe="r"></recipe-card>
                 </v-col>
 
@@ -150,7 +150,7 @@
             <v-col cols="12" md="6" offset-md="3" class="text-center">
                 <v-pagination v-model="page" :length="Math.ceil(tableItemCount/pageSize)"
                               @update:modelValue="searchRecipes({page: page})" class="ms-2 me-2" size="small"
-                              v-if="filters['sortOrder'].modelValue != 'random'"
+                              v-if="filters['sortOrder'].modelValue != 'random' && tableItemCount > pageSize"
                 ></v-pagination>
                 <v-btn size="x-large" rounded="xl" prepend-icon="fa-solid fa-dice" variant="tonal" v-if="filters['sortOrder'].modelValue == 'random'"
                        @click="searchRecipes({page: 1})">

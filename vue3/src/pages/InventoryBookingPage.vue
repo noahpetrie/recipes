@@ -1,29 +1,20 @@
 <template>
     <v-container>
-        <v-row dense>
-            <v-col>
-                <v-card prepend-icon="fa-solid fa-boxes-stacked" :title="$t('InventoryBooking')">
-                    <template #subtitle>
-                        <div class="text-wrap">
-                            {{ $t('InventoryBookingHelp') }}
-                        </div>
-                    </template>
-                    <template #append>
-                        <v-btn class="float-right" icon="$pantry" color="create" :to="{name: 'PantryPage'}">
-                        </v-btn>
-                    </template>
-                </v-card>
-            </v-col>
-        </v-row>
+        <!-- home: the fork's page header (title, help text, a link back to the Pantry) -->
+        <v-card class="page-header" prepend-icon="fa-solid fa-boxes-stacked" :title="$t('InventoryBooking')">
+            <template #subtitle>
+                <div class="text-wrap">{{ $t('InventoryBookingHelp') }}</div>
+            </template>
+            <template #append>
+                <v-btn variant="outlined" prepend-icon="$pantry" :to="{name: 'PantryPage'}">{{ $t('Pantry') }}</v-btn>
+            </template>
+        </v-card>
         <v-row>
             <v-col cols="12" md="6">
                 <v-card :loading="formLoading">
-                    <v-card-title>
-                        {{ $t('InventoryBooking') }}
-                    </v-card-title>
                     <v-card-text>
-                        <v-form>
-                            <v-btn-toggle v-model="bookingMode" class="mb-5" border divided>
+                        <v-form class="home-form">
+                            <v-btn-toggle v-model="bookingMode" mandatory class="home-segmented align-self-start">
                                 <v-btn value="add" prepend-icon="$create">{{ $t('Add') }}</v-btn>
                                 <v-btn value="remove" prepend-icon="fa-solid fa-minus">{{ $t('Remove') }}</v-btn>
                                 <v-btn value="move" prepend-icon="fa-solid fa-arrow-right">{{ $t('Move') }}</v-btn>
@@ -51,15 +42,15 @@
 
                             <v-model-select model="InventoryLocation" v-model="inventoryLocation" v-if="['add','move'].includes(bookingMode)">
                                 <template #append>
-                                    <v-btn icon>
-                                        <v-icon icon="$create"></v-icon>
+                                    <v-btn variant="outlined" icon width="40" height="40" rounded="lg" :aria-label="$t('Create')">
+                                        <v-icon icon="$create" size="small"></v-icon>
                                         <model-edit-dialog model="InventoryLocation" @create="args => inventoryLocation = args"></model-edit-dialog>
                                     </v-btn>
                                 </template>
                             </v-model-select>
                             <v-text-field :label="$t('SubLocation')" :hint="$t('SubLocationHelp')" v-model="subLocation" v-if="['add','move'].includes(bookingMode)"></v-text-field>
 
-                            <closable-help-alert :text="$t('CodeHelp')" class="mb-2"></closable-help-alert>
+                            <closable-help-alert :text="$t('CodeHelp')"></closable-help-alert>
                             <v-text-field :label="$t('Code')" v-model="code" v-if="['add'].includes(bookingMode)"></v-text-field>
 
                             <v-number-input :label="$t('Amount')" :precision="2" v-model="amount" v-if="['add', 'remove'].includes(bookingMode)"></v-number-input>
@@ -67,8 +58,8 @@
 
                             <v-date-input :label="$t('Expires')" v-model="expires" v-if="['add'].includes(bookingMode)">
                                 <template #append-inner>
-                                    <v-btn variant="text" @click.stop="freezerExpiryDialog = true">
-                                        <v-icon icon="fa-solid fa-snowflake"></v-icon>
+                                    <v-btn variant="text" size="small" density="comfortable" icon class="my-n2" title="Freezer" @click.stop="freezerExpiryDialog = true">
+                                        <v-icon icon="fa-solid fa-snowflake" size="small"></v-icon>
                                         <freezer-expiry-dialog v-model:date="expires" v-model="freezerExpiryDialog"></freezer-expiry-dialog>
                                     </v-btn>
                                 </template>
@@ -76,8 +67,8 @@
                         </v-form>
                     </v-card-text>
                     <v-card-actions>
-                        <v-btn color="warning" prepend-icon="$reset" @click="resetForm()">{{ $t('Reset') }}</v-btn>
-                        <v-btn color="create" prepend-icon="$save" @click="save()">{{ $t('Save') }}</v-btn>
+                        <v-btn variant="text" @click="resetForm()">{{ $t('Reset') }}</v-btn>
+                        <v-btn color="primary" variant="flat" prepend-icon="$save" @click="save()">{{ $t('Save') }}</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-col>
@@ -119,7 +110,7 @@
                             </template>
                             <template #item.inventoryLocation="{ item }">
                                 {{ item.inventoryLocation.name }}
-                                <span class="text-body-2 text-disabled">
+                                <span class="text-body-2 home-muted">
                                     <br/>
                                 {{ item.subLocation }}
                                 </span>
@@ -158,13 +149,13 @@
                     {{ ingredientToString({food: bookingConfirmEntry.food, unit: bookingConfirmEntry.unit, amount: bookingConfirmEntry.amount} as Ingredient) }}
                 </p>
 
-                <p class="text-disabled mt-4">{{ $t('Code') }}</p>
+                <p class="home-muted mt-4">{{ $t('Code') }}</p>
                 <p class="text-h3 text-pre">
                     #{{ bookingConfirmEntry.code }}
                 </p>
 
                 <template v-if="bookingConfirmEntry.expires">
-                    <p class="text-disabled mt-4">{{ $t('Expires') }}</p>
+                    <p class="home-muted mt-4">{{ $t('Expires') }}</p>
                     <p>
                         <v-chip label :color="(bookingConfirmEntry.expires < DateTime.now() ? 'error' : 'success')">
                             {{ DateTime.fromJSDate(bookingConfirmEntry.expires).toLocaleString(DateTime.DATE_MED) }}
@@ -173,10 +164,10 @@
                 </template>
 
                 <p class="mt-10">
-                    <v-btn color="success" prepend-icon="$create" block @click="bookingConfirmDialog = false; resetForm(true, false)">
+                    <v-btn color="primary" variant="flat" prepend-icon="$create" block @click="bookingConfirmDialog = false; resetForm(true, false)">
                         {{ bookingConfirmEntry.inventoryLocation.name }}
                     </v-btn>
-                    <v-btn color="success" class="mt-2" prepend-icon="$create" block @click="bookingConfirmDialog = false; resetForm(false, true)">
+                    <v-btn color="primary" variant="flat" class="mt-2" prepend-icon="$create" block @click="bookingConfirmDialog = false; resetForm(false, true)">
                         {{ bookingConfirmEntry.food.name }}
                     </v-btn>
                     <v-btn color="info" class="mt-2" prepend-icon="fa-solid fa-boxes-stacked" block @click="bookingConfirmDialog = false; resetForm(true, true)">

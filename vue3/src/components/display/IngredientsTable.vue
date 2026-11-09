@@ -33,18 +33,18 @@
                     <td colspan="5" class="font-weight-bold">{{ i.note }}</td>
                 </template>
                 <template v-else>
-                    <td style="width: 1%; text-wrap: nowrap" class="pa-0 d-print-none" v-if="showCheckbox">
+                    <td class="pa-0 d-print-none ing-check" v-if="showCheckbox">
                         <v-checkbox-btn v-model="i.checked" color="success" v-if="!i.isHeader"></v-checkbox-btn>
                     </td>
                     <!-- display calculated food amount or empty cell -->
-                    <td style="width: 1%; text-wrap: nowrap"
-                        class="pr-1"
+                    <td style="text-wrap: nowrap"
+                        class="pr-1 ing-amount"
                         v-html="useUserPreferenceStore().userSettings.useFractions ? calculateFoodAmount(i.amount, props.ingredientFactor, true) : formatAmount(i.amount, props.ingredientFactor, i.unit?.name)"
                         v-if="!i.noAmount && i.amount != 0">
                     </td>
-                    <td style="width: 1%; text-wrap: nowrap" class="pr-1" v-else></td>
+                    <td style="text-wrap: nowrap" class="pr-1 ing-amount" v-else></td>
 
-                    <td style="width: 1%; text-wrap: nowrap" class="pr-1">
+                    <td style="text-wrap: nowrap" class="pr-1 ing-unit">
                         <template v-if="i.unit && !i.noAmount && i.amount != 0"> {{ ingredientToUnitString(i, ingredientFactor) }}</template>
                     </td>
                     <td>
@@ -166,5 +166,24 @@ function addToShopping(ingredient: Ingredient) {
 
 
 <style scoped>
+/* fixed amount/unit columns so food names line up from one step to the next */
+.ing-table :deep(table) {
+    table-layout: fixed;
+}
+
+.ing-table td.ing-amount {
+    width: 2.75rem;
+}
+
+.ing-table td.ing-check {
+    width: 40px;
+}
+
+.ing-table td.ing-unit {
+    width: 4.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 </style>

@@ -120,6 +120,24 @@ public here, as the AGPL requires.
   - API: `GET/POST /api/home/equipment/`, `PATCH/DELETE /api/home/equipment/<id>/`,
     `GET/PUT /api/home/equipment/recipe/<id>/`; `cookable` returns `equipment_missing`.
 
+- **UI audit pass** (2.7.2-home.2, 2026-11-09). Every screen checked at desktop and at iPhone Duo sizes
+  (closed 375 px, open 530 px portrait, 1150×530 landscape):
+  - Global (`vuetify.ts`, `home-theme.css` "Round 5"): date inputs and checkboxes use the compact 40 px
+    defaults; card actions are a right-aligned flex row instead of a float; hints leave room for the next
+    floating label; alerts are hairline cards with body-coloured text; tabs scroll with arrows; `create`/`save`
+    are the primary terracotta (no more green); small buttons are all 32 px; steppers show step numbers.
+  - Dialog header (`VClosableCardTitle.vue`): icon in a tinted chip, aligned with the content; `.home-form`
+    (16 px rhythm, fields share a row ≥480 px) and `.home-segmented` (segmented toggle) for dialogs and pages.
+  - Rebuilt: Auto-Planner (preselects the only meal type, this week from today), recipe "Log a cook" form,
+    shopping item dialog (one row of quiet actions), pantry product dialog (one main action + menu), book
+    header (cover, author, back link), Help (no fixed 70vh box), 404, household, inventory booking, API tokens
+    (masked), space usage tiles (no bar when unlimited), language help button, nav colour behind a swatch.
+  - Phones: Settings has a section picker instead of the 12-item list; Shopping toolbar wraps and "Due to
+    restock" starts folded (also on short landscape screens); Ready to Cook uses compact rows; Add groceries
+    folds aisles and pins "Add to pantry" above the bottom bar; meal plan toolbar wraps under the date range;
+    pantry scan modes share one "Scan" menu; list pages drop the selection column; tables scroll sideways.
+  - Home is a house icon (sidebar, bottom bar, ⌘K); ⌘K lists the sidebar pages first.
+
 Almost all of the styling lives in `vue3/src/home-theme.css` and the palette/defaults in
 `vue3/src/vuetify.ts`, so upstream merges rarely conflict.
 

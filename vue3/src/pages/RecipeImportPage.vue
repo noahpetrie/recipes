@@ -4,7 +4,7 @@
             <v-col>
 
 
-                <v-stepper v-model="stepper">
+                <v-stepper v-model="stepper" flat border rounded="lg">
                     <template v-slot:default="{ prev, next }">
                         <v-stepper-header>
                             <v-stepper-item :title="$t('Type')" value="type" icon=" "></v-stepper-item>
@@ -55,7 +55,7 @@
                                             prepend-icon="$import"
                                             variant="outlined"
                                             :color="(importType == 'url') ? 'primary' : ''"
-                                            elevation="1"
+                                            elevation="0"
                                             @click="importType = 'url'">
                                         </v-card>
                                     </v-col>
@@ -67,7 +67,7 @@
                                             prepend-icon="$ai"
                                             variant="outlined"
                                             :color="(importType == 'ai') ? 'primary' : ''"
-                                            elevation="1"
+                                            elevation="0"
                                             @click="importType = 'ai'"
                                             :disabled="!useUserPreferenceStore().activeSpace.aiEnabled">
                                         </v-card>
@@ -80,7 +80,7 @@
                                             prepend-icon="fa-solid fa-folder-open"
                                             variant="outlined"
                                             :color="(importType == 'app') ? 'primary' : ''"
-                                            elevation="1"
+                                            elevation="0"
                                             @click="importType = 'app'">
                                         </v-card>
                                     </v-col>
@@ -91,7 +91,7 @@
                                             prepend-icon="fa-solid fa-bookmark"
                                             variant="outlined"
                                             :color="(importType == 'bookmarklet') ? 'primary' : ''"
-                                            elevation="1"
+                                            elevation="0"
                                             @click="importType = 'bookmarklet'">
                                         </v-card>
                                     </v-col>
@@ -102,7 +102,7 @@
                                             prepend-icon="fa-solid fa-code"
                                             variant="outlined"
                                             :color="(importType == 'source') ? 'primary' : ''"
-                                            elevation="1"
+                                            elevation="0"
                                             @click="importType = 'source'">
                                         </v-card>
                                     </v-col>
@@ -113,7 +113,7 @@
                                             prepend-icon="fa-solid fa-list"
                                             variant="outlined"
                                             :color="(importType == 'url-list') ? 'primary' : ''"
-                                            elevation="1"
+                                            elevation="0"
                                             @click="importType = 'url-list'">
                                         </v-card>
                                     </v-col>
@@ -123,10 +123,10 @@
                                         <v-spacer></v-spacer>
                                     </template>
                                     <template #next>
-                                        <v-btn @click="stepper = 'url'" v-if="['url','ai', 'source'].includes(importType)" color="success">{{ $t('Next') }}</v-btn>
-                                        <v-btn @click="stepper = 'app'" v-if="importType == 'app'" color="success">{{ $t('Next') }}</v-btn>
-                                        <v-btn @click="stepper = 'bookmarklet'" v-if="importType == 'bookmarklet'" color="success">{{ $t('Next') }}</v-btn>
-                                        <v-btn @click="stepper = 'url_list_input'" v-if="importType == 'url-list'" color="success">{{ $t('Next') }}</v-btn>
+                                        <v-btn @click="stepper = 'url'" v-if="['url','ai', 'source'].includes(importType)" color="primary" variant="flat">{{ $t('Next') }}</v-btn>
+                                        <v-btn @click="stepper = 'app'" v-if="importType == 'app'" color="primary" variant="flat">{{ $t('Next') }}</v-btn>
+                                        <v-btn @click="stepper = 'bookmarklet'" v-if="importType == 'bookmarklet'" color="primary" variant="flat">{{ $t('Next') }}</v-btn>
+                                        <v-btn @click="stepper = 'url_list_input'" v-if="importType == 'url-list'" color="primary" variant="flat">{{ $t('Next') }}</v-btn>
                                     </template>
                                 </v-stepper-actions>
                             </v-stepper-window-item>
@@ -413,7 +413,7 @@
                                         <v-btn @click="stepper = 'step_editor'">{{ $t('Back') }}</v-btn>
                                     </template>
                                     <template #next>
-                                        <v-btn @click="createRecipeFromImport()" :disabled="false" color="success">{{ $t('Import') }}</v-btn>
+                                        <v-btn @click="createRecipeFromImport()" :disabled="false" color="primary" variant="flat">{{ $t('Import') }}</v-btn>
                                     </template>
                                 </v-stepper-actions>
                             </v-stepper-window-item>
@@ -426,7 +426,7 @@
 
                                 <v-row>
                                     <v-col cols="12" md="3" v-for="i in INTEGRATIONS">
-                                        <v-card prepend-icon="fa-solid fa-carrot" :title="i.name" @click="importApp = i.id" variant="outlined" elevation="1"
+                                        <v-card prepend-icon="fa-solid fa-carrot" :title="i.name" @click="importApp = i.id" variant="outlined" elevation="0"
                                                 :color="(importApp == i.id) ? 'primary' : ''">
                                             <template #append>
                                                 <v-btn icon="$help" variant="plain" :href="i.helpUrl" target="_blank"></v-btn>
@@ -447,7 +447,7 @@
                             <v-stepper-window-item value="file">
                                 <v-file-upload v-model="appImportFiles" multiple></v-file-upload>
 
-                                <v-alert variant="outlined" elevation="1" density="compact" :title="$t('Duplicate')" :text="$t('import_duplicates')" class="mt-2">
+                                <v-alert variant="outlined" elevation="0" density="compact" :title="$t('Duplicate')" :text="$t('import_duplicates')" class="mt-2">
                                     <template #prepend>
                                         <v-checkbox v-model="appImportDuplicates"></v-checkbox>
                                     </template>
@@ -559,7 +559,7 @@
         </v-row>
         <v-row dense>
             <v-col class="text-center">
-                <v-btn size="small" prepend-icon="fa-solid fa-arrow-rotate-left" variant="tonal" color="warning" @click="resetImporter()">{{ $t('Reset') }}</v-btn>
+                <v-btn size="small" prepend-icon="fa-solid fa-arrow-rotate-left" variant="text" @click="resetImporter()">{{ $t('Reset') }}</v-btn>
             </v-col>
         </v-row>
     </v-container>

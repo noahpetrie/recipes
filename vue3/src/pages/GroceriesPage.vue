@@ -23,7 +23,7 @@
 
         <v-row>
             <v-col cols="12" md="7">
-                <v-btn-toggle v-model="mode" mandatory density="comfortable" variant="outlined" divided class="mb-4">
+                <v-btn-toggle v-model="mode" mandatory class="home-segmented mb-4">
                     <v-btn value="pick" prepend-icon="fa-solid fa-list-check">Pick items</v-btn>
                     <v-btn value="paste" prepend-icon="fa-solid fa-receipt">Paste a receipt</v-btn>
                 </v-btn-toggle>
@@ -38,7 +38,16 @@
                             <span class="flex-grow-1">Add “{{ search.trim() }}” as a new item</span>
                         </div>
                         <template v-for="group in groups" :key="group.aisle">
-                            <h3 class="aisle">{{ group.aisle }}</h3>
+                            <!-- home: on phones aisles start folded (tap to open); searching opens them all -->
+                            <h3 class="aisle" :class="{'aisle--toggle': foldAisles}" @click="foldAisles && toggleAisle(group.aisle)"
+                                :role="foldAisles ? 'button' : undefined" :aria-expanded="foldAisles ? aisleOpen(group.aisle) : undefined">
+                                <span class="flex-grow-1">{{ group.aisle }}</span>
+                                <span v-if="foldAisles" class="aisle-count">
+                                    <span v-if="pickedIn(group)" class="text-primary me-1">{{ pickedIn(group) }} picked ·</span>{{ group.foods.length }}
+                                    <v-icon :icon="aisleOpen(group.aisle) ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" size="x-small" class="ms-2" />
+                                </span>
+                            </h3>
+                            <template v-if="aisleOpen(group.aisle)">
                             <div v-for="f in group.foods" :key="f.id" class="pick-row" :class="{picked: inCart(f.id)}" role="checkbox" :aria-checked="inCart(f.id)" tabindex="0"
                                  @click="toggle(f)" @keydown.enter.prevent="toggle(f)" @keydown.space.prevent="toggle(f)">
                                 <v-checkbox-btn :model-value="inCart(f.id)" tabindex="-1" density="compact" class="flex-none" :aria-label="f.name" @click.stop="toggle(f)" />
@@ -47,6 +56,7 @@
                                 <span v-else-if="f.staple" class="badge">Staple</span>
                                 <span v-if="f.recipes" class="text-caption text-medium-emphasis">{{ f.recipes }} {{ f.recipes == 1 ? 'recipe' : 'recipes' }}</span>
                             </div>
+                            </template>
                         </template>
                         <p v-if="groups.length == 0 && !q" class="text-medium-emphasis">Nothing to pick yet. Import a recipe first.</p>
                     </div>
@@ -72,7 +82,7 @@
             </v-col>
 
             <v-col cols="12" md="5">
-                <v-card border flat class="cart">
+                <v-card border flat class="cart" ref="cartEl">
                     <v-card-title class="d-flex align-center justify-space-between pt-4">
                         <span>Your shop</span>
                         <span class="text-body-2 text-medium-emphasis">{{ cart.length }} {{ cart.length == 1 ? 'item' : 'items' }}</span>
@@ -103,12 +113,21 @@
                 </v-card>
             </v-col>
         </v-row>
+
+        <!-- home: phones get the shop total and the add button pinned above the bottom bar -->
+        <div v-if="foldAisles && cart.length" class="cart-bar">
+            <button class="cart-bar__count" type="button" @click="scrollToCart">
+                <b>{{ cart.length }}</b> {{ cart.length == 1 ? 'item' : 'items' }}<span class="text-medium-emphasis ms-1">· Review</span>
+            </button>
+            <v-btn color="primary" variant="flat" :loading="saving" @click="save">Add to pantry</v-btn>
+        </div>
     </v-container>
 </template>
 
 <script setup lang="ts">
 // home fork: put a whole shop into the pantry at once (cookbook/views/home_groceries.py)
-import {computed, onMounted, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
+import {useDisplay} from 'vuetify'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {getCookie} from '@/utils/cookie'
 import {pantryVersion} from '@/composables/useScan'
@@ -165,6 +184,16 @@ const groups = computed(() => {
     out.forEach(g => g.foods.sort((a, b) => Number(a.staple || a.in_stock) - Number(b.staple || b.in_stock) || b.recipes - a.recipes || a.name.localeCompare(b.name)))
     return out
 })
+
+// phones: aisles fold so the list isn't hundreds of rows long
+const {smAndDown} = useDisplay()
+const foldAisles = computed(() => smAndDown.value)
+const openAisles = reactive(new Set<string>())
+function aisleOpen(aisle: string) { return !foldAisles.value || !!q.value || openAisles.has(aisle) }
+function toggleAisle(aisle: string) { openAisles.has(aisle) ? openAisles.delete(aisle) : openAisles.add(aisle) }
+function pickedIn(group: { foods: GroceryFood[] }) { return group.foods.filter(f => inCart(f.id)).length }
+const cartEl = ref<any>(null)
+function scrollToCart() { (cartEl.value?.$el ?? cartEl.value)?.scrollIntoView({behavior: 'smooth', block: 'start'}) }
 
 function addDays(days: number | null) {
     if (!days || !data.value) return null
@@ -274,6 +303,21 @@ onMounted(load)
 .match-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(var(--v-theme-on-surface), .08); }
 .match-row .line { overflow-wrap: anywhere; font-family: ui-monospace, Menlo, monospace; }
 .cart { position: sticky; top: 80px; }
+.aisle { display: flex; align-items: center; }
+.aisle--toggle { cursor: pointer; min-height: 44px; border-bottom: 1px solid var(--home-hairline); margin: 0 !important; }
+.aisle-count { text-transform: none; letter-spacing: 0; font-size: .8125rem; font-weight: 500; color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity)); display: inline-flex; align-items: center; }
+.cart-bar {
+    position: fixed; left: 12px; right: 12px; z-index: 5;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px);
+    display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px;
+    background: rgb(var(--v-theme-surface)); border-radius: 12px;
+    box-shadow: 0 0 0 1px var(--home-hairline), 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+.cart-bar__count { flex: 1 1 auto; text-align: start; font-size: .9375rem; background: none; border: 0; color: inherit; }
+@media (max-width: 959.98px) {
+    .cart { position: static; }
+    .groceries-page { padding-bottom: 96px; }
+}
 .cart-item { padding: 12px 0; border-top: 1px solid rgba(var(--v-theme-on-surface), .08); }
 .cart-item:first-of-type { border-top: 0; }
 .cart-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }

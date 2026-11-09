@@ -12,7 +12,7 @@
         :editing-object="editingObj">
 
         <v-card-text class="pa-0">
-            <v-tabs v-model="tab" :disabled="loading || fileApiLoading" grow>
+            <v-tabs v-model="tab" :disabled="loading || fileApiLoading" grow show-arrows>
                 <v-tab value="recipe">{{ $t('Recipe') }}</v-tab>
                 <v-tab value="steps">{{ $t('Steps') }}</v-tab>
                 <v-tab value="properties" :disabled="!isUpdate()">{{ $t('Properties') }}</v-tab>
@@ -38,11 +38,9 @@
                                 </v-file-upload>
                             </v-col>
                             <v-col cols="12" md="6" v-if="editingObj.image">
-                                <v-img style="max-height: 180px" cover class="mb-2" :src="editingObj.image">
-                                    <v-btn color="delete" class="float-right mt-2 mr-2" prepend-icon="$delete" v-if="editingObj.image" @click="deleteImage()">{{
-                                            $t('Delete')
-                                        }}
-                                    </v-btn>
+                                <v-img :height="mobile ? 160 : 224" cover rounded="lg" class="mb-2" :src="editingObj.image">
+                                    <v-btn icon="$delete" size="small" variant="flat" class="float-right mt-2 mr-2 text-delete" :title="$t('Delete')" :aria-label="$t('Delete')"
+                                           v-if="editingObj.image" @click="deleteImage()"></v-btn>
                                 </v-img>
                             </v-col>
                         </v-row>
@@ -51,7 +49,7 @@
                         <!-- home fork: where the dish comes from, for the food map -->
                         <v-row dense>
                             <v-col cols="12" md="6">
-                                <v-autocomplete label="Country of origin" v-model="editingObj.originCountry" :items="countryItems" item-title="name" item-value="code"
+                                <v-autocomplete label="Country of origin" :model-value="editingObj.originCountry || null" :items="countryItems" item-title="name" item-value="code"
                                                 clearable auto-select-first prepend-inner-icon="fa-solid fa-earth-europe" @update:model-value="v => editingObj.originCountry = v ?? ''">
                                     <template #item="{props, item}">
                                         <v-list-item v-bind="props" :title="item.raw.name"><template #prepend><span class="me-3">{{ item.raw.flag }}</span></template></v-list-item>
@@ -60,21 +58,21 @@
                             </v-col>
                             <v-col cols="12" md="6">
                                 <v-text-field label="Region (optional)" v-model="editingObj.originRegion" placeholder="e.g. Burgundy" clearable maxlength="128"
-                                              :disabled="!editingObj.originCountry" @update:model-value="v => editingObj.originRegion = v ?? ''"></v-text-field>
+                                              @update:model-value="v => editingObj.originRegion = v ?? ''"></v-text-field>
                             </v-col>
                         </v-row>
                         <v-row dense>
                             <v-col cols="12" md="6">
-                                <v-number-input :label="$t('WaitingTime')" v-model="editingObj.waitingTime" :step="5"></v-number-input>
+                                <v-number-input :label="$t('WorkingTime')" v-model="editingObj.workingTime" :step="5"></v-number-input>
                             </v-col>
                             <v-col cols="12" md="6">
-                                <v-number-input :label="$t('WorkingTime')" v-model="editingObj.workingTime" :step="5"></v-number-input>
+                                <v-number-input :label="$t('WaitingTime')" v-model="editingObj.waitingTime" :step="5"></v-number-input>
                             </v-col>
                             <v-col cols="12" md="6">
                                 <v-number-input :label="$t('Servings')" v-model="editingObj.servings">
                                     <template #append-inner>
-                                        <v-btn icon variant="plain">
-                                            <v-icon icon="fa-solid fa-sort-numeric-up"></v-icon>
+                                        <v-btn icon variant="text" size="small" density="comfortable" class="my-n2" :title="$t('Scale')">
+                                            <v-icon icon="fa-solid fa-sort-numeric-up" size="small"></v-icon>
                                             <number-scaler-dialog :number="editingObj.servings" @confirm="scaleRecipe" :text="$t('ScaleRecipeHelp')"></number-scaler-dialog>
                                         </v-btn>
                                     </template>
@@ -84,7 +82,7 @@
                                 <v-text-field :label="$t('ServingsText')" v-model="editingObj.servingsText" clearable></v-text-field>
                             </v-col>
                             <v-col cols="12">
-                                <closable-help-alert :text="$t('ScalingHelp')"></closable-help-alert>
+                                <closable-help-alert class="mb-3" :text="$t('ScalingHelp')"></closable-help-alert>
                             </v-col>
                             <v-col cols="12" md="6">
                                 <v-number-input :label="$t('Diameter')" v-model="editingObj.diameter"></v-number-input>

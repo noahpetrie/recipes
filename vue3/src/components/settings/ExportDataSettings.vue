@@ -18,7 +18,7 @@
                 {{ $t('Recipes') }}: {{ exportLog.exportedRecipes }}
             </p>
 
-            <v-btn color="success" :href="useDjangoUrls().getDjangoUrl(`export-file/${exportLog.id!}`)" class="mt-2" :disabled="exportLog.running">{{ $t('Download') }}</v-btn>
+            <v-btn color="primary" variant="flat" :href="useDjangoUrls().getDjangoUrl(`export-file/${exportLog.id!}`)" class="mt-2" :disabled="exportLog.running">{{ $t('Download') }}</v-btn>
 
             <v-textarea :label="$t('Messages')" auto-grow readonly max-rows="20" v-model="exportLog.msg" class="mt-2"></v-textarea>
 

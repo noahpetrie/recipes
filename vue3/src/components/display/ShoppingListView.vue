@@ -9,12 +9,12 @@
     <v-tabs v-model="currentTab" v-if="!selectEnabled && props.mealPlanId == undefined">
         <v-tab value="shopping"><i class="fas fa-fw"
                                    :class="{'fa-circle-notch fa-spin':useShoppingStore().currentlyUpdating, 'fa-shopping-cart ': !useShoppingStore().currentlyUpdating}"></i> <span
-            class="d-none d-md-block ms-1">{{ $t('Shopping_list') }} ({{ useShoppingStore().totalFoods }})</span></v-tab>
-        <v-tab value="recipes"><i class="fas fa-book fa-fw"></i> <span class="d-none d-md-block ms-1">{{
+            class="d-none d-sm-block ms-1">{{ $t('Shopping_list') }} ({{ useShoppingStore().totalFoods }})</span></v-tab>
+        <v-tab value="recipes"><i class="fas fa-book fa-fw"></i> <span class="d-none d-sm-block ms-1">{{
                 $t('Recipes')
             }} ({{ useShoppingStore().getAssociatedRecipes().length }})</span></v-tab>
         <v-tab value="selected_supermarket" v-if="useUserPreferenceStore().deviceSettings.shopping_selected_supermarket != null">
-            <i class="fa-solid fa-store fa-fw"></i> <span class="d-none d-md-block ms-1">{{ useUserPreferenceStore().deviceSettings.shopping_selected_supermarket.name }}</span>
+            <i class="fa-solid fa-store fa-fw"></i> <span class="d-none d-sm-block ms-1">{{ useUserPreferenceStore().deviceSettings.shopping_selected_supermarket.name }}</span>
         </v-tab>
 
         <v-menu :close-on-content-click="false">
@@ -122,26 +122,27 @@
 
                 <v-row class="pa-0" dense>
                     <v-col class="pa-0">
-                        <v-chip-group>
+                        <!-- home: one wrapping row of same-size buttons (was a chip group that scrolled sideways on phones) -->
+                        <div class="shop-toolbar">
                             <!-- enable selection -->
-                            <v-btn label size="small" variant="outlined" prepend-icon="fa-solid fa-list-check" @click="selectEnabled = true;  selectedLines= []" v-if="!selectEnabled">
+                            <v-btn size="small" variant="outlined" prepend-icon="fa-solid fa-list-check" @click="selectEnabled = true;  selectedLines= []" v-if="!selectEnabled">
                                 {{ $t('Select') }}
                             </v-btn>
 
                             <!-- select all/none -->
-                            <v-btn label size="small" variant="outlined" @click="selectAll(); " v-if="!isAllSelected() && selectEnabled">
+                            <v-btn size="small" variant="outlined" @click="selectAll(); " v-if="!isAllSelected() && selectEnabled">
                                 <v-icon icon="fa-solid fa-square-check"></v-icon>
                             </v-btn>
-                            <v-btn label size="small" variant="outlined" @click="selectedLines = []; " v-if="isAllSelected() && selectEnabled">
+                            <v-btn size="small" variant="outlined" @click="selectedLines = []; " v-if="isAllSelected() && selectEnabled">
                                 <v-icon icon="fa-regular fa-square"></v-icon>
                             </v-btn>
 
                             <!-- undo -->
-                            <v-btn label size="small" class="ms-1" variant="outlined" prepend-icon="fa-solid fa-rotate-left" @click="useShoppingStore().undoChange()" :disabled="useShoppingStore().undoStack.length == 0">
+                            <v-btn size="small" variant="outlined" prepend-icon="fa-solid fa-rotate-left" @click="useShoppingStore().undoChange()" :disabled="useShoppingStore().undoStack.length == 0">
                                 {{ $t('Undo') }}
                             </v-btn>
 
-                            <v-chip label size="small" variant="outlined" class="ms-1 me-0 mt-0 mb-0 h-100" style="max-width: 50%;" :prepend-icon="TSupermarket.icon"
+                            <v-btn size="small" variant="outlined" class="shop-toolbar__menu" :prepend-icon="TSupermarket.icon"
                                     append-icon="fa-solid fa-caret-down" v-if="props.mealPlanId == undefined">
                             <span v-if="useUserPreferenceStore().deviceSettings.shopping_selected_supermarket != null">
                                 {{ useUserPreferenceStore().deviceSettings.shopping_selected_supermarket.name }}
@@ -162,15 +163,15 @@
                                         </v-list-item>
                                     </v-list>
                                 </v-menu>
-                            </v-chip>
+                            </v-btn>
 
                             <shopping-list-select-chip
-                                class="ms-1 mt-0 mb-0 h-100"
+                                class="shop-toolbar__menu"
                                 v-model:ids="useUserPreferenceStore().deviceSettings.shopping_selected_shopping_lists"
                                 :shopping-lists="useShoppingStore().shoppingLists"
                                 @refresh="useShoppingStore().loadShoppingLists()"
                             ></shopping-list-select-chip>
-                        </v-chip-group>
+                        </div>
 
                     </v-col>
                 </v-row>
@@ -591,5 +592,30 @@ function isAllSelected(category: IShoppingListCategory | undefined = undefined) 
 </script>
 
 <style scoped>
+.shop-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 12px;
+}
+
+.shop-toolbar > * {
+    margin: 0 !important;
+}
+
+.shop-toolbar :deep(.shop-toolbar__menu) {
+    height: 32px !important;
+    max-width: 100%;
+    border-radius: 8px !important;
+}
+
+.shop-toolbar :deep(.shop-toolbar__menu .v-btn__content),
+.shop-toolbar :deep(.shop-toolbar__menu .v-chip__content) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 
 </style>

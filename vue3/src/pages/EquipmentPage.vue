@@ -15,7 +15,7 @@
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }} <v-btn variant="text" size="small" @click="load">Retry</v-btn></v-alert>
 
         <div class="d-flex flex-wrap align-center ga-3 mb-4">
-            <v-btn-toggle v-model="view" mandatory density="comfortable" variant="outlined" divided>
+            <v-btn-toggle v-model="view" mandatory class="home-segmented">
                 <v-btn value="needed">Recipes need <span class="count">{{ needed.length }}</span></v-btn>
                 <v-btn value="have">You have <span class="count">{{ haveCount }}</span></v-btn>
                 <v-btn value="all">All <span class="count">{{ visible.length }}</span></v-btn>
@@ -30,7 +30,7 @@
         </v-sheet>
 
         <v-card v-else-if="items">
-            <div v-if="view == 'needed'" class="px-4 pt-4 text-body-2 text-medium-emphasis">Equipment your recipes call for that Kitchen doesn’t know you have. Tick what you own.</div>
+            <div v-if="view == 'needed'" class="px-4 pt-4 pb-3 text-body-2 text-medium-emphasis">Equipment your recipes call for that Kitchen doesn’t know you have. Tick what you own.</div>
             <div class="eq-list">
                 <template v-for="g in groups" :key="g.top.id">
                     <div class="eq-row" :class="{'is-top': true}">

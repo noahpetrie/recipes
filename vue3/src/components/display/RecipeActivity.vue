@@ -1,29 +1,25 @@
 <template>
-    <v-card class="mt-1" v-if="useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode" :loading="loading">
-        <v-card-text>
-            <v-textarea :label="$t('Comment')" rows="2" v-model="newCookLog.comment" auto-grow></v-textarea>
-            <v-row dense>
-                <v-col cols="12" md="4">
-                    <v-label>{{ $t('Rating') }}</v-label>
-                    <br/>
-                    <v-rating v-model="newCookLog.rating" clearable hover density="compact"></v-rating>
-                </v-col>
-                <v-col cols="12" md="4">
-
-                    <v-number-input :label="$t('Servings')" v-model="newCookLog.servings" :precision="null"></v-number-input>
-                </v-col>
-                <v-col cols="12" md="4">
-                    <v-date-input :label="$t('Date')" v-model="newCookLog.createdAt"></v-date-input>
-
-                </v-col>
-            </v-row>
+    <v-card class="mt-3" v-if="useUserPreferenceStore().isAuthenticated && !useUserPreferenceStore().isPrintMode" :loading="loading">
+        <v-card-title class="pb-0">Log a cook</v-card-title>
+        <v-card-text class="pt-3">
+            <div class="home-form">
+                <v-textarea :label="$t('Comment')" rows="2" v-model="newCookLog.comment" auto-grow hide-details></v-textarea>
+                <div class="home-form-row cooklog-row">
+                    <v-number-input :label="$t('Servings')" v-model="newCookLog.servings" :precision="null" control-variant="split" :min="0" hide-details></v-number-input>
+                    <v-date-input :label="$t('Date')" v-model="newCookLog.createdAt" hide-details></v-date-input>
+                    <div class="cooklog-rating">
+                        <span class="cooklog-rating__label">{{ $t('Rating') }}</span>
+                        <v-rating v-model="newCookLog.rating" clearable hover density="compact" size="small" color="primary" active-color="primary"></v-rating>
+                    </div>
+                </div>
+            </div>
         </v-card-text>
-        <v-card-actions>
-            <v-btn color="create" prepend-icon="$create" @click="saveCookLog()">{{ $t('Create') }}</v-btn>
+        <v-card-actions class="pt-0 px-4 pb-4">
+            <v-btn variant="flat" color="primary" prepend-icon="fa-solid fa-check" @click="saveCookLog()">Log cook</v-btn>
         </v-card-actions>
     </v-card>
 
-    <v-card class="mt-1" v-if="cookLogs.length > 0" :loading="loading">
+    <v-card class="mt-3" v-if="cookLogs.length > 0" :loading="loading">
         <v-card-title>{{ $t('Activity') }}</v-card-title>
         <v-card-text>
             <v-list>
@@ -154,5 +150,17 @@ watch(() => props.servings, (newVal) => {
 </script>
 
 <style scoped>
+.cooklog-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+}
+
+.cooklog-rating__label {
+    font-size: 0.875rem;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
 
 </style>

@@ -36,7 +36,7 @@
         </v-sheet>
 
         <div v-if="data" class="d-flex flex-wrap align-center ga-3 mb-5">
-            <v-btn-toggle v-model="filter" mandatory density="comfortable" variant="outlined" divided>
+            <v-btn-toggle v-model="filter" mandatory class="home-segmented cook-filter">
                 <v-btn value="ready">Have everything <span class="count">{{ counts.ready }}</span></v-btn>
                 <v-btn value="close">Missing 1–2 <span class="count">{{ counts.close }}</span></v-btn>
                 <v-btn value="all">All <span class="count">{{ counts.all }}</span></v-btn>
@@ -45,7 +45,7 @@
         </div>
 
         <v-row v-if="loading && !data">
-            <v-col v-for="n in 6" :key="n" cols="12" sm="6" md="4"><v-skeleton-loader type="image, article" /></v-col>
+            <v-col v-for="n in 6" :key="n" cols="12" sm="6" md="4" lg="3"><v-skeleton-loader type="image, article" /></v-col>
         </v-row>
 
         <v-sheet v-else-if="data && shown.length == 0" rounded="lg" border class="pa-8 text-center text-medium-emphasis">
@@ -54,10 +54,11 @@
         </v-sheet>
 
         <v-row v-else>
-            <v-col v-for="r in shown" :key="r.id" cols="12" sm="6" md="4">
+            <v-col v-for="r in shown" :key="r.id" cols="12" sm="6" md="4" lg="3" xxl="2" class="cook-col">
+                <!-- home: on phones a compact row (small photo beside the text) so the page isn't a mile long -->
                 <v-card class="cook-card h-100" :to="{name: 'RecipeViewPage', params: {id: r.id}}">
-                    <recipe-thumb :src="r.image" rounded="0" />
-                    <v-card-text>
+                    <div class="cook-card__thumb"><recipe-thumb :src="r.image" rounded="0" /></div>
+                    <v-card-text class="cook-card__body">
                         <div class="text-subtitle-1 font-weight-bold mb-2 name clamp-2">{{ r.name }}</div>
                         <div class="d-flex align-center justify-space-between text-body-2 mb-1">
                             <span><b>{{ r.have }}</b> of {{ r.total }} ingredients</span>
@@ -74,7 +75,7 @@
                         <div v-if="r.missing.length" class="mt-3">
                             <div class="text-caption text-medium-emphasis mb-1">Need</div>
                             <div class="d-flex flex-wrap ga-1">
-                                <v-menu v-for="m in r.missing.slice(0, expanded.has(r.id) ? 99 : 6)" :key="m.id">
+                                <v-menu v-for="m in r.missing.slice(0, expanded.has(r.id) ? 99 : chipLimit)" :key="m.id">
                                     <template #activator="{props}">
                                         <v-chip v-bind="props" size="small" variant="outlined" @click.prevent.stop>{{ m.name }}</v-chip>
                                     </template>
@@ -83,7 +84,7 @@
                                         <v-list-item prepend-icon="fa-solid fa-jar" title="I always have this" subtitle="Mark as a staple" @click="setStaple(m.id, true)" />
                                     </v-list>
                                 </v-menu>
-                                <v-chip v-if="r.missing.length > 6 && !expanded.has(r.id)" size="small" variant="text" @click.prevent.stop="expanded.add(r.id)">+{{ r.missing.length - 6 }} more</v-chip>
+                                <v-chip v-if="r.missing.length > chipLimit && !expanded.has(r.id)" size="small" variant="text" @click.prevent.stop="expanded.add(r.id)">+{{ r.missing.length - chipLimit }} more</v-chip>
                             </div>
                         </div>
 
@@ -141,6 +142,7 @@
 import RecipeThumb from '@/components/display/RecipeThumb.vue'
 // home fork: "Ready to Cook" (cookbook/views/home_cook.py)
 import {computed, onMounted, reactive, ref, watch} from 'vue'
+import {useDisplay} from 'vuetify'
 import {useDjangoUrls} from '@/composables/useDjangoUrls'
 import {getCookie} from '@/utils/cookie'
 import {daysUntil, pantryVersion} from '@/composables/useScan'
@@ -154,6 +156,9 @@ const loading = ref(false)
 const error = ref(false)
 const filter = ref<'ready' | 'close' | 'all'>('all')
 const expanded = reactive(new Set<number>())
+const {xs} = useDisplay()
+// phones: fewer "Need" chips per row before "+N more"
+const chipLimit = computed(() => xs.value ? 3 : 6)
 
 const staplesOpen = ref(false)
 const foods = ref<StapleFood[] | null>(null)
@@ -335,8 +340,19 @@ onMounted(load)
 .staple-row { display: flex; align-items: center; gap: 8px; min-height: 40px; text-align: start; }
 .staple-row :deep(.v-selection-control) { flex: none; }
 .badge { font-size: .75rem; padding: 1px 8px; border-radius: 6px; background: rgba(var(--v-theme-success), .12); color: rgb(var(--v-theme-success)); }
+.cook-filter { max-width: 100%; overflow-x: auto; }
 @media (max-width: 600px) {
     .cook-header { margin-top: 8px; gap: 16px; }
     .cook-header h1 { font-size: 1.75rem !important; }
+}
+/* phones: compact rows with a small square photo */
+@media (max-width: 599.98px) {
+    .cook-col { padding-block: 4px; }
+    .cook-card { display: flex; align-items: stretch; }
+    .cook-card__thumb { flex: 0 0 92px; min-height: 92px; }
+    .cook-card__thumb :deep(.recipe-thumb) { height: 100%; aspect-ratio: auto !important; }
+    .cook-card__body { padding: 10px 12px !important; min-width: 0; }
+    .cook-card .name { font-size: 0.9375rem !important; margin-bottom: 4px !important; }
+    .cook-card :deep(.v-chip) { --v-chip-height: 24px; font-size: 0.75rem; }
 }
 </style>

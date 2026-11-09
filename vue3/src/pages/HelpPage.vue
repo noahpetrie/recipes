@@ -1,12 +1,7 @@
 <template>
 
-    <v-container height="70vh">
-        <v-row height="70vh" >
-            <v-col height="70vh">
-                <help-view height="70vh"></help-view>
-            </v-col>
-        </v-row>
-
+    <v-container>
+        <help-view></help-view>
     </v-container>
 
 </template>

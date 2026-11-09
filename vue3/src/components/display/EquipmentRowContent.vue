@@ -5,7 +5,7 @@
     <v-tooltip v-else text="In your Homebox kitchen" location="top">
         <template #activator="{props}"><span v-bind="props" class="hb-check"><v-icon icon="fa-solid fa-house-circle-check" size="small" color="success" /></span></template>
     </v-tooltip>
-    <span v-if="e.image || child" class="eq-photo" aria-hidden="true">
+    <span class="eq-photo" aria-hidden="true">
         <img v-if="e.image" :src="e.image" alt="" loading="lazy">
         <v-icon v-else icon="fa-solid fa-blender" size="small" class="text-medium-emphasis" />
     </span>
@@ -14,7 +14,6 @@
         <div class="text-caption text-medium-emphasis eq-meta">
             <span v-if="e.owned">You have this</span>
             <span v-else-if="e.via" class="text-success">Covered by your {{ e.via }}</span>
-            <span v-else-if="e.recipes">You don’t have this</span>
             <span v-if="e.basic && e.owned"> · basic kit</span>
             <span v-if="e.homebox"> · from Homebox</span>
         </div>

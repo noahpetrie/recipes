@@ -13,7 +13,7 @@
             </v-closable-card-title>
             <v-divider></v-divider>
             <v-card-text class="pa-0">
-                <help-view v-model="drawer"></help-view>
+                <help-view v-model="drawer" dialog></help-view>
             </v-card-text>
         </v-card>
     </v-dialog>

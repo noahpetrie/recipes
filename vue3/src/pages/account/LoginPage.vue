@@ -1,5 +1,5 @@
 <template>
-    <v-container style="max-width: 450px; margin: auto;">
+    <v-container style="max-width: 450px; margin: auto; min-height: calc(100vh - 120px); display: flex; flex-direction: column; justify-content: center;">
         <v-row>
             <v-col>
                 <v-card>

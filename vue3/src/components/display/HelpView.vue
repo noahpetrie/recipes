@@ -1,38 +1,31 @@
 <template>
 
 
-    <v-layout style="height: 70vh">
-
-        <v-navigation-drawer style="height: calc(100% + 0px)" v-model="drawer">
-            <v-list>
-
-                <!--                <v-list-item>-->
-                <!--                    <v-text-field density="compact" variant="outlined" class="pt-2 pb-2" :label="$t('Search')" hide-details clearable></v-text-field>-->
-                <!--                </v-list-item>-->
-                <!--                <v-divider></v-divider>-->
-                <v-list-item link :title="$t('Start')" @click="window = 'start'" prepend-icon="fa-solid fa-house"></v-list-item>
-                <v-list-item link :title="$t('Space')" @click="window = 'space'" prepend-icon="fa-solid fa-database"></v-list-item>
-                <v-list-item link :title="$t('Recipes')" @click="window = 'recipes'" prepend-icon="$recipes"></v-list-item>
-                <v-list-item link :title="$t('Import')" @click="window = 'import'" prepend-icon="$import"></v-list-item>
-                <v-list-item link :title="$t('AI')" @click="window = 'ai'" prepend-icon="$ai"></v-list-item>
-                <v-list-item link :title="$t('Unit')" @click="window = 'unit'" prepend-icon="fa-solid fa-scale-balanced"></v-list-item>
-                <v-list-item link :title="$t('Food')" @click="window = 'food'" prepend-icon="fa-solid fa-carrot"></v-list-item>
-                <v-list-item link :title="$t('Keyword')" @click="window = 'keyword'" prepend-icon="fa-solid fa-tags"></v-list-item>
-                <v-list-item link :title="$t('Recipe Structure')" @click="window = 'recipe_structure'" prepend-icon="fa-solid fa-diagram-project"></v-list-item>
-                <v-list-item link :title="$t('Properties')" @click="window = 'properties'" prepend-icon="fa-solid fa-database"></v-list-item>
-                <v-list-item link :title="$t('Search')" @click="window = 'recipe_search'" prepend-icon="$search"></v-list-item>
-                <v-list-item link :title="$t('SavedSearch')" @click="window = 'search_filter'" prepend-icon="fa-solid fa-sd-card"></v-list-item>
-                <v-list-item link :title="$t('Books')" @click="window = 'books'" prepend-icon="$books"></v-list-item>
-                <v-list-item link :title="$t('Shopping')" @click="window = 'shopping'" prepend-icon="$shopping"></v-list-item>
-                <v-list-item link :title="$t('Meal_Plan')" @click="window = 'meal_plan'" prepend-icon="$mealplan"></v-list-item>
-                <v-list-item link :title="$t('Translations')" @click="window = 'translations'" prepend-icon="fa-solid fa-language"></v-list-item>
+    <!-- home: a plain two-column layout that grows with its content (was a fixed 70vh box that cut content off) -->
+    <div class="help-layout" :class="{'help-layout--dialog': props.dialog}">
+        <nav class="help-nav" v-if="lgAndUp && drawer !== false">
+            <v-list density="compact" class="bg-transparent home-subnav">
+                <v-list-item link :title="$t('Start')" @click="window = 'start'" :active="window == 'start'" prepend-icon="fa-solid fa-house"></v-list-item>
+                <v-list-item link :title="$t('Space')" @click="window = 'space'" :active="window == 'space'" prepend-icon="fa-solid fa-database"></v-list-item>
+                <v-list-item link :title="$t('Recipes')" @click="window = 'recipes'" :active="window == 'recipes'" prepend-icon="$recipes"></v-list-item>
+                <v-list-item link :title="$t('Import')" @click="window = 'import'" :active="window == 'import'" prepend-icon="$import"></v-list-item>
+                <v-list-item link :title="$t('AI')" @click="window = 'ai'" :active="window == 'ai'" prepend-icon="$ai"></v-list-item>
+                <v-list-item link :title="$t('Unit')" @click="window = 'unit'" :active="window == 'unit'" prepend-icon="fa-solid fa-scale-balanced"></v-list-item>
+                <v-list-item link :title="$t('Food')" @click="window = 'food'" :active="window == 'food'" prepend-icon="fa-solid fa-carrot"></v-list-item>
+                <v-list-item link :title="$t('Keyword')" @click="window = 'keyword'" :active="window == 'keyword'" prepend-icon="fa-solid fa-tags"></v-list-item>
+                <v-list-item link :title="$t('Recipe Structure')" @click="window = 'recipe_structure'" :active="window == 'recipe_structure'" prepend-icon="fa-solid fa-diagram-project"></v-list-item>
+                <v-list-item link :title="$t('Properties')" @click="window = 'properties'" :active="window == 'properties'" prepend-icon="fa-solid fa-database"></v-list-item>
+                <v-list-item link :title="$t('Search')" @click="window = 'recipe_search'" :active="window == 'recipe_search'" prepend-icon="$search"></v-list-item>
+                <v-list-item link :title="$t('SavedSearch')" @click="window = 'search_filter'" :active="window == 'search_filter'" prepend-icon="fa-solid fa-sd-card"></v-list-item>
+                <v-list-item link :title="$t('Books')" @click="window = 'books'" :active="window == 'books'" prepend-icon="$books"></v-list-item>
+                <v-list-item link :title="$t('Shopping')" @click="window = 'shopping'" :active="window == 'shopping'" prepend-icon="$shopping"></v-list-item>
+                <v-list-item link :title="$t('Meal_Plan')" @click="window = 'meal_plan'" :active="window == 'meal_plan'" prepend-icon="$mealplan"></v-list-item>
+                <v-list-item link :title="$t('Translations')" @click="window = 'translations'" :active="window == 'translations'" prepend-icon="fa-solid fa-language"></v-list-item>
             </v-list>
+        </nav>
 
-        </v-navigation-drawer>
-
-        <v-main scrollable>
-            <v-container>
-                <v-select v-model="window" :items="mobileMenuItems" class="d-block d-lg-none">  </v-select>
+        <div class="help-content">
+                <v-select v-model="window" :items="mobileMenuItems" class="d-block d-lg-none mb-2" hide-details></v-select>
 
                 <v-window v-model="window">
                     <v-window-item value="start">
@@ -446,9 +439,8 @@
                         </v-table>
                     </v-window-item>
                 </v-window>
-            </v-container>
-        </v-main>
-    </v-layout>
+        </div>
+    </div>
 
 
 </template>
@@ -463,12 +455,16 @@ import {localeCoverage, LOCALE_MIN_COVERAGE as minCoverage} from "@/i18n.ts";
 
 const props = withDefaults(defineProps<{
     defaultSection?: string
+    dialog?: boolean
 }>(), {
     defaultSection: undefined,
+    dialog: false,
 })
 
 const {t} = useI18n()
 const route = useRoute()
+import {useDisplay} from "vuetify";
+const {lgAndUp} = useDisplay()
 const drawer = defineModel()
 const section = props.defaultSection || (typeof route.query.section === 'string' ? route.query.section : null)
 const window = ref(section || 'start')
@@ -526,5 +522,35 @@ const sortedCoverage = computed(() => {
 
 
 <style scoped>
+.help-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.help-nav {
+    flex: 0 0 220px;
+    position: sticky;
+    top: 72px;
+}
+
+.help-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 80ch;
+}
+
+/* in the help dialog: a fixed-height box where each column scrolls */
+.help-layout--dialog {
+    height: 70vh;
+    padding: 12px 16px;
+}
+
+.help-layout--dialog .help-nav,
+.help-layout--dialog .help-content {
+    max-height: 100%;
+    overflow-y: auto;
+}
+
 
 </style>

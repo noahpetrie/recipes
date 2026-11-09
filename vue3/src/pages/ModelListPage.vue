@@ -57,7 +57,7 @@
                     :search="debouncedQuery"
                     :headers="genericModel.getTableHeaders()"
                     :items-per-page-options="itemsPerPageOptions"
-                    :show-select="!genericModel.model.disableDelete || genericModel.model.isMerge"
+                    :show-select="(!genericModel.model.disableDelete || genericModel.model.isMerge) && !xs"
                     :page="page"
                     :items-per-page="pageSize"
                     disable-sort
@@ -156,6 +156,8 @@
 </template>
 
 <script setup lang="ts">
+import {useDisplay} from "vuetify";
+
 
 
 import {onBeforeMount, PropType, ref, watch} from "vue";
@@ -177,6 +179,8 @@ import BatchEditFoodDialog from "@/components/dialogs/BatchEditFoodDialog.vue";
 import {useDebouncedSearch} from "@/composables/useDebouncedSearch";
 import BatchEditUserSpaceDialog from "@/components/dialogs/BatchEditUserSpaceDialog.vue";
 
+// home: phones hide the selection column so names have room
+const {xs} = useDisplay()
 const {t} = useI18n()
 const router = useRouter()
 const title = useTitle()

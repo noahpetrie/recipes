@@ -1,7 +1,10 @@
 <template>
     <v-container>
         <v-card :loading="filtersLoading">
-            <v-card-title>{{ $t('Ingredient Editor') }}</v-card-title>
+            <v-card-title class="d-flex align-center">
+                <v-btn variant="text" size="small" icon="fa-solid fa-arrow-left" class="me-1 ms-n2" :aria-label="$t('Back')" @click="$router.back()"></v-btn>
+                {{ $t('Ingredient Editor') }}
+            </v-card-title>
             <v-card-text>
                 <v-row>
                     <v-col>
@@ -15,8 +18,8 @@
 
                         <v-model-select model="Food" v-model="selectedFood" @update:modelValue="refreshPage()">
                             <template #append>
-                                <v-btn icon variant="plain">
-                                    <v-icon icon="$menu"></v-icon>
+                                <v-btn icon variant="text" size="small" density="comfortable" :aria-label="$t('Options', 'Options')">
+                                    <v-icon icon="$menu" size="small"></v-icon>
                                     <v-menu activator="parent">
                                         <v-list density="compact">
                                             <v-list-item link prepend-icon="$edit" :disabled="!selectedFood">
@@ -44,15 +47,15 @@
                                         </v-list>
                                     </v-menu>
                                 </v-btn>
-                                <v-btn icon="fa-solid fa-carrot" :to="{name: 'ModelListPage', params: {model: 'food'}}" variant="plain"></v-btn>
+                                <v-btn icon="fa-solid fa-carrot" :to="{name: 'ModelListPage', params: {model: 'food'}}" variant="text" size="small" density="comfortable"></v-btn>
                             </template>
                         </v-model-select>
                     </v-col>
                     <v-col cols="12" md="6">
                         <v-model-select model="Unit" v-model="selectedUnit" @update:modelValue="refreshPage()">
                             <template #append>
-                                <v-btn icon variant="plain">
-                                    <v-icon icon="$menu"></v-icon>
+                                <v-btn icon variant="text" size="small" density="comfortable" :aria-label="$t('Options', 'Options')">
+                                    <v-icon icon="$menu" size="small"></v-icon>
                                     <v-menu activator="parent">
                                         <v-list density="compact">
                                             <v-list-item link prepend-icon="$edit" :disabled="!selectedUnit">
@@ -78,7 +81,7 @@
                                         </v-list>
                                     </v-menu>
                                 </v-btn>
-                                <v-btn icon="fa-solid fa-scale-balanced" :to="{name: 'ModelListPage', params: {model: 'unit'}}" variant="plain"></v-btn>
+                                <v-btn icon="fa-solid fa-scale-balanced" :to="{name: 'ModelListPage', params: {model: 'unit'}}" variant="text" size="small" density="comfortable"></v-btn>
                             </template>
                         </v-model-select>
                     </v-col>
@@ -88,6 +91,7 @@
 
         <v-card class="mt-2">
             <v-data-table-server
+                no-data-text="Choose a food or a unit above to edit the ingredients that use it."
                 @update:options="loadItems"
                 :items="items"
                 :items-length="tableItemCount"

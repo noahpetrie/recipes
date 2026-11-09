@@ -99,7 +99,7 @@
 
         <v-bottom-navigation grow v-if="useUserPreferenceStore().isAuthenticated && !lgAndUp && !useUserPreferenceStore().isPrintMode">
             <v-btn value="recent" :to="{ name: 'StartPage', params: {} }">
-                <v-icon icon="fa-fw fas fa-book "/>
+                <v-icon icon="fa-fw fa-solid fa-house"/>
             </v-btn>
 
             <v-btn value="favorites" to="/mealplan">

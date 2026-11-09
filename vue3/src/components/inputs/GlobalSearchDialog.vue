@@ -76,13 +76,13 @@ const PAGES: (Item & { words: string })[] = [
     {key: 'p-home', name: 'Home', icon: 'fa-solid fa-house', to: {name: 'StartPage'}, words: 'start'},
     {key: 'p-plan', name: 'Meal Plan', icon: '$mealplan', to: {name: 'MealPlanPage'}, words: 'planner calendar week dinner schedule'},
     {key: 'p-cook', name: 'Ready to Cook', icon: 'fa-solid fa-fire-burner', to: {name: 'CookNowPage'}, words: 'cook now what can i make staples'},
-    {key: 'p-equipment', name: 'Equipment', icon: 'fa-solid fa-blender', to: {name: 'EquipmentPage'}, words: 'equipment tools gear appliances mixer blender pans own kitchen'},
-    {key: 'p-map', name: 'Food map', icon: 'fa-solid fa-earth-americas', to: {name: 'FoodMapPage'}, words: 'map world countries origin cuisine where from'},
     {key: 'p-shop', name: 'Shopping list', icon: '$shopping', to: {name: 'ShoppingListPage'}, words: 'shopping buy groceries list'},
     {key: 'p-pantry', name: 'Pantry', icon: '$pantry', to: {name: 'PantryPage'}, words: 'inventory stock fridge freezer'},
+    {key: 'p-equipment', name: 'Equipment', icon: 'fa-solid fa-blender', to: {name: 'EquipmentPage'}, words: 'equipment tools gear appliances mixer blender pans own kitchen'},
+    {key: 'p-books', name: 'Books', icon: '$books', to: {name: 'BooksPage'}, words: 'cookbooks library'},
+    {key: 'p-map', name: 'Food map', icon: 'fa-solid fa-earth-americas', to: {name: 'FoodMapPage'}, words: 'map world countries origin cuisine where from'},
     {key: 'p-groceries', name: 'Add groceries', icon: 'fa-solid fa-basket-shopping', to: {name: 'GroceriesPage'}, words: 'bought receipt order restock'},
     {key: 'p-activity', name: 'Pantry activity', icon: 'fa-solid fa-clock-rotate-left', to: {name: 'PantryActivityPage'}, words: 'history log undo'},
-    {key: 'p-books', name: 'Books', icon: '$books', to: {name: 'BooksPage'}, words: 'cookbooks library'},
     {key: 'p-search', name: 'All recipes', icon: '$recipes', to: {name: 'SearchPage'}, words: 'recipes search browse filter'},
     {key: 'p-new', name: 'New recipe', icon: 'fa-solid fa-plus', to: {name: 'ModelEditPage', params: {model: 'Recipe'}}, words: 'create add write'},
     {key: 'p-import', name: 'Import recipe', icon: '$import', to: {name: 'RecipeImportPage'}, words: 'url link website add'},
@@ -105,7 +105,7 @@ function matches(text: string, q: string) {
 const groups = computed(() => {
     const q = query.value
     const out: { title: string, items: Item[] }[] = []
-    const pages = q ? PAGES.filter(p => matches(p.name + ' ' + p.words, q)) : PAGES.slice(0, 7)
+    const pages = q ? PAGES.filter(p => matches(p.name + ' ' + p.words, q)) : PAGES.slice(0, 8)
     if (pages.length) out.push({title: 'Pages', items: pages.slice(0, q ? 5 : 7)})
 
     const recipes = (q ? flatRecipes.value.filter(r => matches(r.name, q)) : flatRecipes.value).slice(0, q ? 8 : 5)

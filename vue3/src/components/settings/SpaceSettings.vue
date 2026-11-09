@@ -1,6 +1,6 @@
 <template>
     <v-form>
-        <p class="text-h6">{{ useUserPreferenceStore().activeSpace.name }}</p>
+        <p class="text-h6">{{ $t('SpaceSettings') }}</p>
         <v-divider class="mb-3"></v-divider>
 
         <space-editor :item-id="useUserPreferenceStore().activeSpace.id!"></space-editor>

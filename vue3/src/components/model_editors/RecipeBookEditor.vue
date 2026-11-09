@@ -25,7 +25,7 @@
 
                     <v-form :disabled="loading">
                         <!-- home fork: printed cookbook or a collection of your own recipes -->
-                        <v-btn-toggle v-model="editingObj.kind" mandatory color="primary" variant="outlined" density="comfortable" class="mb-4">
+                        <v-btn-toggle v-model="editingObj.kind" mandatory class="home-segmented mb-4">
                             <v-btn value="collection" prepend-icon="fa-solid fa-layer-group">{{ $t('HomeCollection', 'Collection') }}</v-btn>
                             <v-btn value="cookbook" prepend-icon="$books">{{ $t('HomeCookbook', 'Cookbook') }}</v-btn>
                         </v-btn-toggle>

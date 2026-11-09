@@ -1,17 +1,22 @@
 <template>
     <template v-if="loading || shown.length > 0">
-        <v-row justify="space-between">
+        <v-row justify="space-between" align="center">
             <v-col>
                 <h4 @click="openSearch()" class="cursor-pointer">
                     <i :class="icon + ' fa-fw'"></i> {{ title }}
                     <span class="ms-2 text-body-2">{{ $t('More') }} <i class="fa-solid fa-chevron-right"></i></span></h4>
             </v-col>
+            <!-- home: page through the row with header chevrons (like the meal plan strip) instead of arrows over the photos -->
+            <v-col cols="auto" class="py-0" v-if="recipeWindows.length > 1">
+                <v-btn icon="fa-solid fa-chevron-left" variant="text" size="small" :disabled="windowIndex == 0" :aria-label="$t('Previous', 'Previous')" @click="windowIndex--"></v-btn>
+                <v-btn icon="fa-solid fa-chevron-right" variant="text" size="small" :disabled="windowIndex >= recipeWindows.length - 1" :aria-label="$t('Next')" @click="windowIndex++"></v-btn>
+            </v-col>
         </v-row>
 
         <v-row class="mt-0" v-if="recipeWindows.length > 0">
             <v-col>
-                <v-window show-arrows>
-                    <v-window-item v-for="w in recipeWindows" class="pt-1 pb-1">
+                <v-window v-model="windowIndex">
+                    <v-window-item v-for="(w, wi) in recipeWindows" :key="wi" :value="wi" class="pt-1 pb-1">
                         <!-- home fork: compact cards, as many across as fit; a short row keeps the usual card size -->
                         <div class="home-grid" :style="{gridTemplateColumns: `repeat(${numberOfCols}, minmax(0, 1fr))`}">
                             <home-recipe-tile v-for="r in w" :key="r.id" :recipe="r" />
@@ -63,6 +68,7 @@ const router = useRouter()
 const {name} = useDisplay()
 
 const loading = ref(true)
+const windowIndex = ref(0)
 const recipes = ref([] as Recipe[] | RecipeOverview[])
 const keyword = ref({} as Keyword)
 const createdByUser = ref({} as User)

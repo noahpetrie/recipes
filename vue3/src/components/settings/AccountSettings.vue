@@ -1,10 +1,10 @@
 <template>
 
-    <p class="text-h6 mt-3">{{ $t('Account') }}</p>
+    <p class="text-h6">{{ $t('Account') }}</p>
     <v-divider class="mb-3"></v-divider>
     <v-row v-if="user">
         <v-col>
-            <v-text-field class="mt-3" :label="$t('Username')" v-model="user.username" disabled :hint="$t('theUsernameCannotBeChanged')" persistent-hint></v-text-field>
+            <v-text-field :label="$t('Username')" v-model="user.username" disabled :hint="$t('theUsernameCannotBeChanged')" persistent-hint></v-text-field>
         </v-col>
     </v-row>
 
@@ -15,24 +15,25 @@
         <v-row>
             <v-col>
 
-                <v-list>
-                    <v-list-item v-for="email in emailAddresses" :key="email.email">
-                        {{ email.email }}
+                <v-list border rounded="lg" class="py-0">
+                    <v-list-item v-for="email in emailAddresses" :key="email.email" class="py-2">
+                        <span class="text-body-2 email-address">{{ email.email }}</span>
+                        <div class="d-flex flex-wrap ga-1 mt-1">
+                            <v-chip size="x-small" label v-if="email.primary">{{ $t('Primary') }}</v-chip>
+                            <v-chip size="x-small" label color="success" variant="tonal" v-if="email.verified">{{ $t('Verified') }}</v-chip>
+                            <v-chip size="x-small" label color="warning" variant="tonal" v-if="!email.verified">{{ $t('NotVerified') }}</v-chip>
+                        </div>
                         <template #append>
-                            <v-chip v-if="email.primary">{{ $t('Primary') }}</v-chip>
-                            <v-chip v-if="email.verified">{{ $t('Verified') }}</v-chip>
-                            <v-chip v-if="!email.verified" color="warning">{{ $t('NotVerified') }}</v-chip>
                             <!-- <v-btn @click="removeEmail(email.email)" icon="$delete"></v-btn>-->
                         </template>
 
                     </v-list-item>
                     <v-divider v-if="emailAddresses.length > 0"></v-divider>
-                    <v-list-item>
-                        <v-text-field type="email" density="compact" v-model="newEmail" :hint="$t('EmailAddHint')" persistent-hint>
-                            <template #append>
-                                <v-btn icon="$create" color="create" @click="addEmail()"></v-btn>
-                            </template>
-                        </v-text-field>
+                    <v-list-item class="py-3">
+                        <div class="d-flex ga-2 align-start">
+                            <v-text-field type="email" density="compact" v-model="newEmail" :label="$t('Email')" :hint="$t('EmailAddHint')" persistent-hint class="flex-grow-1"></v-text-field>
+                            <v-btn variant="outlined" height="40" prepend-icon="$create" @click="addEmail()">{{ $t('Add') }}</v-btn>
+                        </div>
                     </v-list-item>
                 </v-list>
             </v-col>
@@ -86,7 +87,7 @@
     <v-row>
         <v-col>
 
-            <v-data-table :items="sessions" :headers="sessionsTableHeaders" :hide-default-footer="sessions.length < 10">
+            <v-data-table :items="sessions" :headers="sessionsTableHeaders" :hide-default-footer="sessions.length < 10" :mobile="smAndDown" :hide-default-header="smAndDown" density="compact">
                 <template v-slot:item.createdAt="{ item }">
                     {{ DateTime.fromSeconds(item.createdAt).toLocaleString(DateTime.DATETIME_MED) }}
                 </template>
@@ -94,7 +95,7 @@
                     {{ DateTime.fromSeconds(item.lastSeenAt).toLocaleString(DateTime.DATETIME_MED) }}
                 </template>
                 <template v-slot:item.action="{ item }">
-                    <v-chip color="success" v-if="item.isCurrent">{{ $t('Current') }}</v-chip>
+                    <v-chip color="success" variant="tonal" size="small" label v-if="item.isCurrent">{{ $t('Current') }}</v-chip>
                     <v-btn icon="$delete" variant="plain" @click="endSessions([item])" v-if="!item.isCurrent"></v-btn>
                 </template>
             </v-data-table>
@@ -118,12 +119,15 @@ import {
     SessionsApi
 } from "@/authapi";
 import {onMounted, ref} from "vue";
+import {useDisplay} from "vuetify";
 import {ErrorMessageType, MessageType, PreparedMessage, useMessageStore} from "@/stores/MessageStore.ts";
 import {useI18n} from "vue-i18n";
 import {ApiApi, User} from "@/openapi";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore.ts";
 import {DateTime} from "luxon";
 import {getCookie} from "@/utils/cookie.ts";
+
+const {smAndDown} = useDisplay()
 
 const {getDjangoUrl} = useDjangoUrls()
 const {t} = useI18n()
@@ -364,5 +368,7 @@ function loadProviders() {
 </script>
 
 <style scoped>
+.email-address { overflow-wrap: anywhere; }
+
 
 </style>

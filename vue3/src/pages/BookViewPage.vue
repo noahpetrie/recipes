@@ -1,23 +1,20 @@
 <template>
     <v-container>
-        <v-row>
-            <v-col>
-                <v-card>
-                    <v-card-title>{{ book.name }}
-                        <v-btn class="float-right" variant="flat" :to="{name: 'BooksPage'}" prepend-icon="$books" v-if="mdAndUp">{{ $t('Books') }}</v-btn>
-                    </v-card-title>
-                    <v-card-text v-if="book.shared && book.shared.length > 0">
-                        <v-chip-group>
-                            <v-label class="me-2">{{ $t('shared_with') }}</v-label>
-                            <v-chip v-for="u in book.shared">{{ u.displayName }}</v-chip>
-                        </v-chip-group>
-                    </v-card-text>
-                    <v-card-text class="text-disabled">
-                        {{ book.description }}
-                    </v-card-text>
-                </v-card>
-            </v-col>
-        </v-row>
+        <!-- home: a book header with its cover, author and a way back on every screen size -->
+        <v-btn variant="text" size="small" prepend-icon="fa-solid fa-arrow-left" :to="{name: 'BooksPage'}" class="mb-2 ms-n2">{{ $t('Books') }}</v-btn>
+        <div class="book-header mb-6">
+            <img v-if="(book as any).cover" :src="(book as any).cover" alt="" class="book-header__cover">
+            <div class="book-header__text">
+                <h1 class="book-header__title">{{ book.name }}</h1>
+                <div class="home-muted text-body-2" v-if="book.author">{{ book.author }}</div>
+                <p class="home-muted text-body-2 mt-2" v-if="book.description">{{ book.description }}</p>
+                <div class="d-flex flex-wrap align-center ga-1 mt-2" v-if="book.shared && book.shared.length > 0">
+                    <span class="text-body-2 home-muted me-1">{{ $t('shared_with') }}</span>
+                    <v-chip v-for="u in book.shared" :key="u.id" size="small">{{ u.displayName }}</v-chip>
+                </div>
+                <div class="text-body-2 home-muted mt-2" v-if="!loading && !loadingEntries">{{ recipes.length }} {{ recipes.length == 1 ? 'recipe' : 'recipes' }}</div>
+            </div>
+        </div>
 
         <!-- home: a book opens as a grid of recipe cards; ingredients and steps stay on the recipe page -->
         <v-row>
@@ -26,7 +23,7 @@
             </v-col>
         </v-row>
         <v-row v-if="!loading && !loadingEntries && recipes.length == 0">
-            <v-col class="text-center text-disabled">{{ $t('No_Results') }}</v-col>
+            <v-col class="text-center home-muted">{{ $t('No_Results') }}</v-col>
         </v-row>
     </v-container>
 </template>
@@ -135,4 +132,41 @@ function recLoadFilter(filterId: number, page: number) {
 
 </script>
 
-<style scoped></style>
+<style scoped>
+.book-header {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.book-header__cover {
+    width: 96px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    flex: 0 0 auto;
+}
+
+.book-header__title {
+    font-family: var(--home-display-font);
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.book-header__text p {
+    max-width: 72ch;
+}
+
+@media (max-width: 599.98px) {
+    .book-header__cover {
+        width: 72px;
+    }
+
+    .book-header__title {
+        font-size: 1.375rem;
+    }
+}
+</style>

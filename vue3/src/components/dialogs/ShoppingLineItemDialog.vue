@@ -6,60 +6,43 @@
             <v-card-text class="pt-0 pr-4 pl-4">
                 <!-- home fork: "I have it" and the store product usually bought (cookbook/views/home_restock.py) -->
                 <div class="d-flex flex-wrap ga-2 mb-4">
-                    <v-btn color="success" variant="flat" prepend-icon="fa-solid fa-box-open" :loading="having" @click="haveIt">I have it</v-btn>
+                    <v-btn color="primary" variant="flat" prepend-icon="fa-solid fa-box-open" :loading="having" @click="haveIt">I have it</v-btn>
                     <v-btn v-if="storeLink" variant="outlined" prepend-icon="fa-solid fa-store" :href="storeLink.url" target="_blank" rel="noopener">Open at {{ storeLink.store || 'the store' }}</v-btn>
                 </div>
                 <p v-if="storeLink" class="text-caption text-medium-emphasis mt-n2 mb-4">Usually: {{ storeLink.name }}</p>
 
-                <v-label>{{ $t('Choose_Category') }}</v-label>
-                <v-model-select model="SupermarketCategory" @update:modelValue="category => useShoppingStore().updateCategories([shoppingListFood], category)" create></v-model-select>
+                <div class="home-form mb-4">
+                    <v-model-select model="SupermarketCategory" @update:modelValue="category => useShoppingStore().updateCategories([shoppingListFood], category)" create hide-details></v-model-select>
+                    <v-model-select model="ShoppingList" @update:modelValue="shoppingListUpdate" multiple chips create hide-details></v-model-select>
+                </div>
 
-                <v-label>{{ $t('ShoppingList') }}</v-label>
-                <v-model-select model="ShoppingList" @update:modelValue="shoppingListUpdate" multiple chips create></v-model-select>
-
-                <v-row>
-                    <v-col class="pr-0">
-                        <v-btn height="80px" color="info" density="compact" size="small" block stacked
-                               @click="useShoppingStore().delayEntries(entriesList, !isShoppingLineDelayed, true); showDialog=false">
-                            <i class="fa-solid fa-clock-rotate-left fa-2x mb-2"></i>
-                            <span v-if="!isShoppingLineDelayed">{{ $t('ShopLater') }}</span>
-                            <span v-if="isShoppingLineDelayed">{{ $t('ShopNow') }}</span>
-
-                        </v-btn>
-                    </v-col>
-                    <v-col>
-                        <v-btn height="80px" color="secondary" density="compact" size="small" block stacked
-                               @click="useShoppingStore().setFoodIgnoredState(entriesList,true, true);  showDialog = false">
-                            <i class="fa-solid fa-eye-slash fa-2x mb-2"></i>
-                            {{ $t('Ignore_Shopping') }}
-                        </v-btn>
-                    </v-col>
-                </v-row>
-                <v-row>
-                    <v-col class="pr-0 pt-0">
-                        <v-btn height="80px" color="primary" density="compact" size="small"
-                               :to="{name: 'ModelEditPage', params: {model: 'Food', id: shoppingListFood?.food.id!}}" target="_blank" block stacked>
-                            <i class="fa-solid fa-carrot fa-2x mb-2"></i>
-                            {{ $t('Edit') }}
-                        </v-btn>
-                    </v-col>
-                    <v-col class="pt-0">
-                        <v-btn height="80px" color="error" density="compact" size="small" @click="deleteAllEntries()" block stacked>
-                            <i class="fa-solid fa-trash fa-2x mb-2"></i>
-                            {{ $t('Delete_All') }}
-                        </v-btn>
-                    </v-col>
-                </v-row>
-
-                <div class="mt-2">
-                    <v-label class="mt-3">{{ $t('Entries') }}</v-label>
-                    <v-btn color="success" class="float-right" @click="addEntryForFood()">
-                        <v-icon icon="$create"></v-icon>
+                <!-- home: secondary actions as one quiet row instead of four coloured tiles -->
+                <div class="d-flex flex-wrap ga-2 mb-5">
+                    <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-clock-rotate-left"
+                           @click="useShoppingStore().delayEntries(entriesList, !isShoppingLineDelayed, true); showDialog=false">
+                        <span v-if="!isShoppingLineDelayed">{{ $t('ShopLater') }}</span>
+                        <span v-else>{{ $t('ShopNow') }}</span>
                     </v-btn>
+                    <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-eye-slash"
+                           @click="useShoppingStore().setFoodIgnoredState(entriesList,true, true);  showDialog = false">
+                        {{ $t('Ignore_Shopping') }}
+                    </v-btn>
+                    <v-btn variant="outlined" size="small" prepend-icon="$edit"
+                           :to="{name: 'ModelEditPage', params: {model: 'Food', id: shoppingListFood?.food.id!}}" target="_blank">
+                        {{ $t('Edit') }}
+                    </v-btn>
+                    <v-btn variant="text" size="small" color="delete" prepend-icon="$delete" @click="deleteAllEntries()">
+                        {{ $t('Delete_All') }}
+                    </v-btn>
+                </div>
+
+                <div class="d-flex align-center mb-1">
+                    <span class="text-body-2 font-weight-medium flex-grow-1">{{ $t('Entries') }}</span>
+                    <v-btn variant="outlined" size="small" prepend-icon="$create" @click="addEntryForFood()">{{ $t('Add') }}</v-btn>
                 </div>
                 <v-list density="compact">
                     <template v-for="[i, e] in shoppingListFood.entries" :key="e.id">
-                        <v-list-item border class="mt-1">
+                        <v-list-item border rounded="lg" class="mt-2 py-2">
                             <v-list-item-title>
                                 <b>
                                     <span v-if="e.amount != 0">{{ $n(e.amount) }}&nbsp;</span>
@@ -89,7 +72,7 @@
                                 <shopping-lists-bar :shopping-lists="e.shoppingLists"></shopping-lists-bar>
                             </v-list-item-subtitle>
 
-                            <v-btn-group divided border>
+                            <v-btn-group divided border density="compact" class="entry-actions mt-2">
                                 <v-btn icon="" @click="e.amount = e.amount / 2; updateEntryAmount(e)" v-if="!e.ingredient">
                                     <v-icon icon="fa-solid fa-divide"></v-icon>
                                 </v-btn>
@@ -103,17 +86,17 @@
                                 <v-btn icon="" @click="e.amount = e.amount * 2; updateEntryAmount(e)" v-if="!e.ingredient">
                                     <v-icon icon="fa-solid fa-times"></v-icon>
                                 </v-btn>
-                                <v-btn color="edit" icon="$edit" v-if="!e.ingredient">
+                                <v-btn icon="" v-if="!e.ingredient" :aria-label="$t('Edit')">
                                     <v-icon icon="$edit"></v-icon>
                                     <model-edit-dialog model="ShoppingListEntry" :item="e"
                                                        @delete="useShoppingStore().entries.delete(e.id!); shoppingListFood.entries.delete(e.id!)"
                                                        @save="(args: ShoppingListEntry) => { useShoppingStore().entries.set(e.id!, args); shoppingListFood.entries.set(e.id!, args) }"></model-edit-dialog>
                                 </v-btn>
-                                <v-btn color="edit" icon="$recipes" v-if="e.listRecipe && e.listRecipeData.recipe && e.ingredient"
+                                <v-btn icon="" v-if="e.listRecipe && e.listRecipeData.recipe && e.ingredient"
                                        :to="{name: 'RecipeViewPage', params: {id: e.listRecipeData.recipe}}">
                                     <v-icon icon="$recipes"></v-icon>
                                 </v-btn>
-                                <v-btn icon="" @click="useShoppingStore().deleteObject(e, true); shoppingListFood.entries.delete(e.id!)" color="delete">
+                                <v-btn icon="" @click="useShoppingStore().deleteObject(e, true); shoppingListFood.entries.delete(e.id!)" class="text-delete" :aria-label="$t('Delete')">
                                     <v-icon icon="$delete"></v-icon>
                                 </v-btn>
                             </v-btn-group>
@@ -126,7 +109,7 @@
 
             </v-card-text>
             <v-card-actions v-if="mobile">
-                <v-btn @click="showDialog = false">{{ $t('Close') }}</v-btn>
+                <v-btn variant="text" @click="showDialog = false">{{ $t('Close') }}</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -263,6 +246,18 @@ function updateEntryAmount(entry: ShoppingListEntry) {
 </script>
 
 <style scoped>
+.entry-actions {
+    height: 32px !important;
+}
+
+.entry-actions .v-btn {
+    width: 40px;
+}
+
+.entry-actions .v-btn :deep(.v-icon) {
+    font-size: 13px;
+}
+
 
 
 </style>

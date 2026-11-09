@@ -22,19 +22,19 @@
 
                 <v-card>
                     <v-sheet class="d-flex align-center">
-                    <span class="ps-2 text-h5  flex-grow-1 pa-1" :class="{'clamp-2': !showFullRecipeName}" @click="showFullRecipeName = !showFullRecipeName">
+                    <span class="text-h5 flex-grow-1 ps-4 pe-1 pt-3 pb-1" :class="{'clamp-2': !showFullRecipeName}" @click="showFullRecipeName = !showFullRecipeName">
                         {{ recipe.name }}
                     </span>
                         <recipe-context-menu :recipe="recipe" :servings="servings" v-if="useUserPreferenceStore().isAuthenticated"></recipe-context-menu>
                     </v-sheet>
-                    <recipe-meta-row class="px-2 pb-2" :recipe="recipe" :servings="servings"></recipe-meta-row>
-                    <v-sheet class="ps-2 text-disabled">
+                    <recipe-meta-row class="px-4 pb-2" :recipe="recipe" :servings="servings"></recipe-meta-row>
+                    <v-sheet class="px-4 pb-3 home-muted" v-if="recipe.description">
                         {{ recipe.description }}
                     </v-sheet>
                 </v-card>
             </v-card>
 
-            <v-card class="mt-1">
+            <v-card class="mt-3">
                 <v-container>
                     <v-row class="text-center text-body-2">
                         <v-col class="pt-1 pb-1">
@@ -127,7 +127,7 @@
             </v-card>
         </template>
 
-        <v-card class="mt-1"
+        <v-card class="mt-3"
                 v-if="recipe.showIngredientOverview && !useUserPreferenceStore().isPrintMode">
             <steps-overview :steps="recipe.steps" :ingredient-factor="ingredientFactor" @scale="(factor: number) => {servings = recipe.servings * factor}"></steps-overview>
         </v-card>
@@ -136,14 +136,14 @@
         <recipe-equipment-card v-if="recipe.id && !useUserPreferenceStore().isPrintMode" :recipe-id="recipe.id" :can-edit="useUserPreferenceStore().isAuthenticated"
                                @converted="recipe.steps = recipe.steps.filter(s => (s.name || '').trim().toLowerCase() != 'equipment')"></recipe-equipment-card>
 
-        <v-card class="mt-1" v-for="(step, index) in recipe.steps" :key="step.id">
+        <v-card class="mt-3" v-for="(step, index) in recipe.steps" :key="step.id">
             <step-view v-model="recipe.steps[index]" :step-number="index+1" :ingredientFactor="ingredientFactor"></step-view>
         </v-card>
 
         <property-view v-model="recipe" :ingredientFactor="ingredientFactor"></property-view>
 
         <!-- home: provenance as one quiet line instead of four boxes -->
-        <div class="recipe-meta d-flex flex-wrap align-center mt-3 mb-2 px-1">
+        <div class="recipe-meta d-flex flex-wrap align-center mt-3 mb-2 px-4">
             <router-link class="recipe-meta-item" v-if="useUserPreferenceStore().isAuthenticated"
                          :to="{name: 'SearchPage', query: {createdby: recipe.createdBy.id!}}">
                 <v-icon icon="fa-solid fa-user" size="x-small"></v-icon> {{ $t('CreatedBy') }} {{ recipe.createdBy.displayName }}

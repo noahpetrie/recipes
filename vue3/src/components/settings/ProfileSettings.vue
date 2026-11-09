@@ -10,21 +10,25 @@
 
         <v-text-field class="mt-3" :label="$t('First_name')" v-model="user.firstName"></v-text-field>
         <v-text-field :label="$t('Last_name')" v-model="user.lastName"></v-text-field>
-        <v-btn color="success" prepend-icon="$save" @click="save()">{{ $t('Save') }}</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="$save" @click="save()">{{ $t('Save') }}</v-btn>
 
 
 
         <p class="text-h6 mt-3">{{ $t('DeviceSettings') }}</p>
-        <p class="text-disabled">{{ $t('DeviceSettingsHelp') }}</p>
+        <v-divider class="mb-3"></v-divider>
+        <p class="text-body-2 home-muted">{{ $t('DeviceSettingsHelp') }}</p>
 
         <v-checkbox v-model="useUserPreferenceStore().deviceSettings.start_showMealPlan" :label="$t('ShowMealPlanOnStartPage')"></v-checkbox>
 
-        <v-btn @click="useUserPreferenceStore().resetDeviceSettings()" color="warning">{{ $t('Reset') }}</v-btn>  <br/>
-        <v-btn @click="useUserPreferenceStore().deviceSettings.general_closedHelpAlerts = []" color="warning" class="mt-1">{{ $t('ResetHelp') }}</v-btn> <br/>
-        <v-btn color="info" class="mt-1">
-            <message-list-dialog></message-list-dialog>
-            {{ $t('Messages') }}
-        </v-btn>
+        <p class="text-body-2 home-muted mt-4 mb-2">Reset this device’s display settings, bring back help tips you closed, or see recent messages.</p>
+        <div class="d-flex flex-wrap ga-2">
+            <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-arrow-rotate-left" @click="useUserPreferenceStore().resetDeviceSettings()">{{ $t('Reset') }}</v-btn>
+            <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-circle-question" @click="useUserPreferenceStore().deviceSettings.general_closedHelpAlerts = []">{{ $t('ResetHelp') }}</v-btn>
+            <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-envelope">
+                <message-list-dialog></message-list-dialog>
+                {{ $t('Messages') }}
+            </v-btn>
+        </div>
 
     </v-form>
 </template>

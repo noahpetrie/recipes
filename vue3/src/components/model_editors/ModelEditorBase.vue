@@ -1,5 +1,5 @@
 <template>
-    <v-card :loading="loading"  class="mb-10">
+    <v-card :loading="loading" class="mb-10">
         <v-closable-card-title
             :sub-title="isUpdate ? $t(modelClass.model.localizationKey) + ((isChanged) ? ` (${$t('unsaved')})` : '') : ''"
             :title="objectName"
@@ -14,18 +14,18 @@
         </slot>
         <v-divider></v-divider>
         <v-card-actions v-if="!(modelClass.model.name.toLowerCase() == 'recipe' && mobile)">
-            <v-btn color="delete" prepend-icon="$delete" v-if="isUpdate && !modelClass.model.disableDelete && !modelClass.model.isAdvancedDelete" :disabled="loading">
+            <v-btn color="delete" variant="text" prepend-icon="$delete" v-if="isUpdate && !modelClass.model.disableDelete && !modelClass.model.isAdvancedDelete" :disabled="loading">
                 {{ $t('Delete') }}
                 <delete-confirm-dialog :object-name="objectName" :model-name="$t(modelClass.model.localizationKey)" @delete="emit('delete')"></delete-confirm-dialog>
             </v-btn>
-            <v-btn color="delete" prepend-icon="$delete" v-if="isUpdate && !modelClass.model.disableDelete && modelClass.model.isAdvancedDelete"
+            <v-btn color="delete" variant="text" prepend-icon="$delete" v-if="isUpdate && !modelClass.model.disableDelete && modelClass.model.isAdvancedDelete"
                    :to="{name: 'ModelDeletePage', params: {model: modelClass.model.name, id: props.editingObject.id!}}" :disabled="loading">{{ $t('Delete') }}
             </v-btn>
 
             <v-spacer></v-spacer>
             <!-- home: Cancel already means "discard", so it doesn't ask again (the X still does) -->
             <v-btn variant="text" @click="emit('close')" v-if="dialog" :disabled="loading">{{ $t('Cancel') }}</v-btn>
-            <v-btn color="save" variant="flat" prepend-icon="$create" @click="emit('save')" v-if="!isUpdate && !modelClass.model.disableCreate" :loading="loading">{{ $t('Create') }}</v-btn>
+            <v-btn color="save" variant="flat" @click="emit('save')" v-if="!isUpdate && !modelClass.model.disableCreate" :loading="loading">{{ $t('Create') }}</v-btn>
             <v-btn color="save" variant="flat" prepend-icon="$save" @click="emit('save')" v-if="isUpdate && !modelClass.model.disableUpdate" :loading="loading"> {{ $t('Save') }}</v-btn>
         </v-card-actions>
     </v-card>
@@ -37,9 +37,9 @@
                 {{ $t('WarnPageLeave') }}
             </v-card-text>
             <v-card-actions>
-                <v-btn @click="leaveConfirmDialog = false; leaveGoTo = null">{{ $t('Cancel') }}</v-btn>
-                <v-btn :to="leaveGoTo" color="warning" v-if="!dialog">{{ $t('Confirm') }}</v-btn>
-                <v-btn @click="emit('close')" color="warning" v-if="dialog">{{ $t('Confirm') }}</v-btn>
+                <v-btn variant="text" @click="leaveConfirmDialog = false; leaveGoTo = null">{{ $t('Cancel') }}</v-btn>
+                <v-btn :to="leaveGoTo" variant="flat" color="warning" v-if="!dialog">{{ $t('Confirm') }}</v-btn>
+                <v-btn @click="emit('close')" variant="flat" color="warning" v-if="dialog">{{ $t('Confirm') }}</v-btn>
             </v-card-actions>
         </v-card>
 

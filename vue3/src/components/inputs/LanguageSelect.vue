@@ -20,10 +20,7 @@
             </v-list-item>
         </template>
         <template #append>
-            <div class="info-btn" @click="helpDialog = true" role="button" :aria-label="$t('Help')">
-                <div class="info-btn__overlay" />
-                <v-icon icon="fa-solid fa-info" size="x-small" />
-            </div>
+            <v-btn variant="outlined" icon="fa-solid fa-circle-info" width="40" height="40" rounded="lg" class="info-btn" :aria-label="$t('Help')" @click="helpDialog = true"></v-btn>
         </template>
     </v-select>
 
@@ -133,51 +130,14 @@ function updateLanguage() {
 
 <style>
 .language-select .v-input__append {
-    margin-inline-start: 0;
-}
-
-.language-select .v-field {
-    border-top-right-radius: 0;
+    margin-inline-start: 8px;
+    padding-top: 0;
 }
 </style>
 
 <style scoped>
-.info-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    align-self: stretch;
-    border-radius: 0 4px 0 0;
-    cursor: pointer;
-}
-
-.info-btn::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-bottom: var(--v-field-border-width, 1px) solid currentColor;
-    opacity: var(--v-field-border-opacity, 0.38);
-    pointer-events: none;
-}
-
-.info-btn .v-icon {
+.info-btn :deep(.v-icon) {
+    font-size: 14px;
     opacity: var(--v-medium-emphasis-opacity);
-}
-
-.info-btn:hover .v-icon {
-    opacity: var(--v-high-emphasis-opacity);
-}
-
-.info-btn__overlay {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background-color: currentColor;
-    opacity: 0.04;
-    pointer-events: none;
 }
 </style>

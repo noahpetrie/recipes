@@ -50,7 +50,7 @@
         <v-text-field :label="$t('csv_delim_label')" :hint="$t('csv_delim_help')" persistent-hint v-model="useUserPreferenceStore().userSettings.csvDelim"></v-text-field>
         <v-text-field :label="$t('csv_prefix_label')" :hint="$t('csv_prefix_help')" persistent-hint v-model="useUserPreferenceStore().userSettings.csvPrefix"></v-text-field>
 
-        <v-btn class="mt-3" color="success" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">
+        <v-btn class="mt-3" color="primary" variant="flat" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">
             {{ $t('Save') }}
         </v-btn>
     </v-form>

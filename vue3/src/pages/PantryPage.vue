@@ -8,10 +8,18 @@
             <div class="header-actions d-flex flex-wrap align-center ga-2">
                 <span class="scanner-status" :class="'s-' + scannerState.kind" role="status" :title="scannerState.help"><span class="dot"></span>{{ scannerState.text }}</span>
                 <v-btn variant="text" prepend-icon="fa-solid fa-clock-rotate-left" :to="{name: 'PantryActivityPage'}">Activity</v-btn>
-                <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" @click="openScanPanel({mode: 'lookup'})">Scan item</v-btn>
-                <v-btn variant="outlined" prepend-icon="fa-solid fa-list-check" @click="openScanPanel({mode: 'count'})">Stock count</v-btn>
-                <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" @click="openScanPanel({mode: 'restock'})">Restock by scanning</v-btn>
-                <v-btn color="create" prepend-icon="fa-solid fa-basket-shopping" :to="{name: 'GroceriesPage'}">Add groceries</v-btn>
+                <!-- home: the three scanning modes share one button -->
+                <v-btn variant="outlined" prepend-icon="fa-solid fa-barcode" append-icon="fa-solid fa-chevron-down">
+                    Scan
+                    <v-menu activator="parent" location="bottom end">
+                        <v-list density="compact">
+                            <v-list-item prepend-icon="fa-solid fa-barcode" title="Scan an item" subtitle="Look it up, add or use stock" @click="openScanPanel({mode: 'lookup'})" />
+                            <v-list-item prepend-icon="fa-solid fa-list-check" title="Stock count" subtitle="Count a shelf or storage place" @click="openScanPanel({mode: 'count'})" />
+                            <v-list-item prepend-icon="fa-solid fa-boxes-stacked" title="Restock by scanning" subtitle="Scan what you bought" @click="openScanPanel({mode: 'restock'})" />
+                        </v-list>
+                    </v-menu>
+                </v-btn>
+                <v-btn color="primary" variant="flat" prepend-icon="fa-solid fa-basket-shopping" :to="{name: 'GroceriesPage'}">Add groceries</v-btn>
             </div>
         </header>
 
@@ -28,15 +36,15 @@
             <v-card-text>
                 <div class="pantry-tools">
                     <v-text-field v-model="search" label="Search products or retail barcodes" prepend-inner-icon="$search" clearable hide-details />
-                    <v-btn variant="outlined" prepend-icon="fa-solid fa-filter" :aria-expanded="showFilters" aria-controls="pantry-filters" @click="showFilters = !showFilters">Filters</v-btn>
-                    <v-select v-model="sort" label="Sort by" :items="sortItems" hide-details class="pantry-sort" />
+                    <v-btn variant="outlined" height="40" prepend-icon="fa-solid fa-filter" :aria-expanded="showFilters" aria-controls="pantry-filters" @click="showFilters = !showFilters">Filters</v-btn>
+                    <v-select v-model="sort" :items="sortItems" hide-details class="pantry-sort" prepend-inner-icon="fa-solid fa-arrow-down-wide-short" aria-label="Sort by" />
                 </div>
                 <v-row v-show="showFilters" id="pantry-filters" class="mt-1">
                     <v-col cols="12" sm="6"><v-model-select model="Food" v-model="food" clearable hide-details /></v-col>
                     <v-col cols="12" sm="6"><v-model-select model="InventoryLocation" v-model="location" clearable hide-details /></v-col>
                 </v-row>
                 <!-- home fork: products on file with none in stock (home_pantry.catalog) -->
-                <v-btn-toggle v-model="view" mandatory density="comfortable" variant="outlined" divided class="mt-4 view-toggle">
+                <v-btn-toggle v-model="view" mandatory class="mt-4 view-toggle home-segmented">
                     <v-btn value="stock">On hand<span class="count">{{ allProducts.length }}</span></v-btn>
                     <v-btn value="missing">Not on hand<span class="count">{{ catalog.length }}</span></v-btn>
                 </v-btn-toggle>
@@ -73,7 +81,7 @@
                     <v-table v-else class="product-table">
                         <thead><tr><th scope="col">Product</th><th scope="col">On hand</th><th scope="col">Location</th><th scope="col">Expiry</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
                         <tbody><tr v-for="product in visibleProducts" :key="product.key" class="product-row" @click="selectedKey = product.key">
-                            <td data-label="Product"><div class="d-flex align-center ga-3"><pantry-product-image small :src="product.food?.productImage" /><div class="min-w-0"><button class="product-name" @click.stop="selectedKey = product.key">{{ product.food?.name || 'Unassigned product' }}</button><span v-if="product.batches.length > 1" class="text-caption text-medium-emphasis ms-2">{{ product.batches.length }} entries</span><div class="mobile-meta text-caption text-medium-emphasis">{{ product.locations.map(l => l.name).join(', ') }}<span v-if="product.earliestExpiry" :class="{'text-error': daysUntil(product.earliestExpiry)! < 0, 'text-warning': daysUntil(product.earliestExpiry)! >= 0 && daysUntil(product.earliestExpiry)! <= EXPIRY_WINDOW_DAYS}"> · {{ fmtDate(product.earliestExpiry) }}</span></div></div></div></td>
+                            <td data-label="Product"><div class="d-flex align-center ga-3"><pantry-product-image small :src="product.food?.productImage" /><div class="min-w-0"><button class="product-name" @click.stop="selectedKey = product.key">{{ product.food?.name || 'Unassigned product' }}</button><span v-if="product.batches.length > 1" class="text-caption text-medium-emphasis ms-2 text-no-wrap">{{ product.batches.length }} entries</span><div class="mobile-meta text-caption text-medium-emphasis">{{ product.locations.map(l => l.name).join(', ') }}<span v-if="product.earliestExpiry" :class="{'text-error': daysUntil(product.earliestExpiry)! < 0, 'text-warning': daysUntil(product.earliestExpiry)! >= 0 && daysUntil(product.earliestExpiry)! <= EXPIRY_WINDOW_DAYS}"> · {{ fmtDate(product.earliestExpiry) }}</span></div></div></div></td>
                             <td data-label="On hand"><strong>{{ totalText(product.totals) }}</strong></td>
                             <td data-label="Locations"><div>{{ product.locations.length === 1 ? product.locations[0].name : '' }}<template v-if="product.locations.length > 1"><span v-for="(place, i) in product.locations" :key="place.id ?? 'none'">{{ i ? ', ' : '' }}{{ place.name }} <span class="text-medium-emphasis">{{ totalText(place.totals) }}</span></span></template></div></td>
                             <td data-label="Earliest known expiry"><div><template v-if="product.earliestExpiry"><v-chip size="small" label :color="expiryColor(product.earliestExpiry)">{{ fmtDate(product.earliestExpiry) }}</v-chip><span v-if="daysUntil(product.earliestExpiry)! < 0" class="text-caption text-error ms-2">Past expiry</span><span v-else-if="daysUntil(product.earliestExpiry)! <= EXPIRY_WINDOW_DAYS" class="text-caption ms-2">Due soon</span></template><span v-else class="text-medium-emphasis" aria-label="Not recorded">—</span></div></td>
@@ -97,14 +105,23 @@
                         <div class="d-flex align-center ga-4"><pantry-product-image :src="selectedProduct.food?.productImage" /><p class="text-h5 font-weight-bold">{{ totalText(selectedProduct.totals) }} <span class="text-body-2 font-weight-regular">on hand</span></p></div>
                         <div class="d-flex flex-wrap ga-2 my-3"><v-chip v-for="place in selectedProduct.locations" :key="place.id ?? 'none'" size="small">{{ place.name }}: {{ totalText(place.totals) }}</v-chip></div>
                         <p v-if="lineBarcodes" class="text-body-2 mb-3">Retail barcodes: {{ lineBarcodes }}</p>
-                        <p class="text-body-2 text-medium-emphasis">{{ selectedProduct.batches.length }} separate inventory entries · Quantities are shown by unit.</p>
+                        <p class="text-body-2 text-medium-emphasis">{{ selectedProduct.batches.length }} separate inventory {{ selectedProduct.batches.length == 1 ? "entry" : "entries" }} · Quantities are shown by unit.</p>
                         <article v-for="batch in selectedProduct.batches" :key="batch.id" class="batch-card mt-4 pa-4">
                             <div class="d-flex justify-space-between flex-wrap ga-2"><h3 class="text-subtitle-1 font-weight-bold">{{ quantity(batch.amount ?? 0, batch.unit) }}<span v-if="entryGroup(batch)?.amount != null && entryGroup(batch)?.unit?.id != batch.unit?.id" class="font-weight-regular text-medium-emphasis"> ({{ quantity(entryGroup(batch)!.amount!, {name: entryGroup(batch)!.unit!.name, pluralName: entryGroup(batch)!.unit!.plural_name} as any) }})</span><span v-if="batch.food && batch.food.id != selectedProduct.food?.id" class="font-weight-regular"> · {{ batch.food.name }}</span></h3><span class="text-body-2">Item label #{{ batch.code || 'Not assigned' }}</span></div>
                             <p>{{ batch.inventoryLocation?.name || 'Unassigned' }}<span v-if="batch.subLocation"> · {{ batch.subLocation }}</span></p>
                             <p class="text-body-2 text-medium-emphasis mt-1">Expiry: {{ fmtDate(expiryDay(batch)) || 'Not recorded' }}</p>
                             <p v-if="batch.note" class="text-body-2 mt-1">{{ batch.note }}</p>
                             <div v-if="batch.food?.id" class="d-flex flex-wrap ga-2 mt-3">
-                                <v-btn v-for="action in batchActions" :key="action.tab" variant="outlined" size="small" @click="batchAction(batch, action.tab)">{{ action.label }}</v-btn>
+                                <!-- home: one main action, two common ones, the rest in a menu -->
+                                <v-btn v-for="(action, ai) in batchActions.slice(0, 3)" :key="action.tab" :variant="ai == 0 ? 'flat' : 'outlined'" :color="ai == 0 ? 'primary' : undefined" size="small" @click="batchAction(batch, action.tab)">{{ action.label }}</v-btn>
+                                <v-btn variant="text" size="small" icon="fa-solid fa-ellipsis" :aria-label="`More for this entry`">
+                                    <v-icon icon="fa-solid fa-ellipsis" size="small" />
+                                    <v-menu activator="parent">
+                                        <v-list density="compact">
+                                            <v-list-item v-for="action in batchActions.slice(3)" :key="action.tab" :title="action.label" @click="batchAction(batch, action.tab)" />
+                                        </v-list>
+                                    </v-menu>
+                                </v-btn>
                             </div>
                         </article>
                         <!-- home fork: products under a general food (cookbook/helper/home_products.py) -->
@@ -117,7 +134,7 @@
                                 <div class="d-flex flex-wrap ga-2">
                                     <v-btn v-if="!selectedProduct.grouped" size="small" variant="outlined" prepend-icon="fa-solid fa-layer-group" @click="startGroup">Group under a general food</v-btn>
                                     <v-btn v-for="f in lineProducts" :key="f.id" size="small" variant="text" @click="ungroup(f)">Count {{ f.name }} separately</v-btn>
-                                    <v-btn v-if="selectedProduct.food" size="small" variant="text" prepend-icon="fa-solid fa-code-merge" @click="startMerge(selectedProduct.food)">Merge into another food</v-btn>
+                                    <v-btn v-if="selectedProduct.food" size="small" variant="outlined" prepend-icon="fa-solid fa-code-merge" @click="startMerge(selectedProduct.food)">Merge into another food</v-btn>
                                 </div>
                             </template>
                             <template v-else>
@@ -276,7 +293,7 @@ const scannerState = computed(() => {
 const hasFilters = computed(() => !!(search.value || food.value || location.value))
 function resetFilters() { search.value = ''; food.value = null; location.value = null }
 function expiryColor(day: string) { const days = daysUntil(day)!; return days < 0 ? 'error' : days <= EXPIRY_WINDOW_DAYS ? 'warning' : undefined }
-const batchActions = [{tab: 'add', label: 'Add stock'}, {tab: 'use', label: 'Use / remove'}, {tab: 'count', label: 'Set quantity / correct'}, {tab: 'move', label: 'Move'}, {tab: 'details', label: 'Edit expiry / details'}, {tab: 'duplicate', label: 'Duplicate'}]
+const batchActions = [{tab: 'use', label: 'Use / remove'}, {tab: 'add', label: 'Add stock'}, {tab: 'count', label: 'Set quantity'}, {tab: 'move', label: 'Move'}, {tab: 'details', label: 'Edit expiry / details'}, {tab: 'duplicate', label: 'Duplicate'}]
 function batchAction(batch: InventoryEntry, tab: string) {
     selectedKey.value = null
     openScanPanel({mode: 'lookup', foodId: batch.food.id, entryId: batch.id, tab})

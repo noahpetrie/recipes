@@ -5,8 +5,17 @@
 
         <language-select></language-select>
 
-        <v-label>{{$t('Nav_Color')}}</v-label>
-        <v-color-picker v-model="useUserPreferenceStore().userSettings.navBgColor" mode="hex" :modes="['hex']" show-swatches :swatches="[['#ddbf86'],['#b98766'],['#b55e4f'],['#82aa8b'],['#385f84']]"></v-color-picker>
+        <!-- home: the colour picker opens from a swatch instead of always taking 300px of the page -->
+        <v-menu :close-on-content-click="false">
+            <template #activator="{props}">
+                <v-text-field v-bind="props" :label="$t('Nav_Color')" :model-value="useUserPreferenceStore().userSettings.navBgColor" readonly class="mt-4 cursor-pointer">
+                    <template #prepend-inner>
+                        <span class="nav-swatch" :style="{background: useUserPreferenceStore().userSettings.navBgColor}"></span>
+                    </template>
+                </v-text-field>
+            </template>
+            <v-color-picker v-model="useUserPreferenceStore().userSettings.navBgColor" mode="hex" :modes="['hex']" show-swatches :swatches="[['#ddbf86'],['#b98766'],['#b55e4f'],['#82aa8b'],['#385f84']]"></v-color-picker>
+        </v-menu>
 
         <v-select :label="$t('Theme')" class="mt-4" v-model="useUserPreferenceStore().userSettings.theme" :items="[{title: 'Tandoor', value: 'TANDOOR'}, {title: 'Tandoor Dark', value: 'TANDOOR_DARK'}, ]">
         </v-select>
@@ -14,7 +23,7 @@
         <v-checkbox :label="$t('Show_Logo')" :hint="$t('Show_Logo_Help')" persistent-hint v-model="useUserPreferenceStore().userSettings.navShowLogo"></v-checkbox>
         <v-checkbox :label="$t('Sticky_Nav')" :hint="$t('Sticky_Nav_Help')" persistent-hint v-model="useUserPreferenceStore().userSettings.navSticky"></v-checkbox>
 
-        <v-btn class="mt-3" color="success" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">{{$t('Save')}}</v-btn>
+        <v-btn class="mt-3" color="primary" variant="flat" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">{{$t('Save')}}</v-btn>
 
         <p class="text-h6 mt-3">{{ $t('Preferences') }}</p>
         <v-divider class="mb-3"></v-divider>
@@ -34,7 +43,7 @@
         <v-checkbox :label="$t('Comments_setting')" v-model="useUserPreferenceStore().userSettings.comments"></v-checkbox>
         <v-checkbox :label="$t('left_handed')" :hint="$t('left_handed_help')" persistent-hint v-model="useUserPreferenceStore().userSettings.leftHanded"></v-checkbox>
         <v-checkbox :label="$t('show_step_ingredients_setting')" :hint="$t('show_step_ingredients_setting_help')" persistent-hint v-model="useUserPreferenceStore().userSettings.showStepIngredients"></v-checkbox>
-        <v-btn class="mt-3" color="success" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">{{$t('Save')}}</v-btn>
+        <v-btn class="mt-3" color="primary" variant="flat" @click="useUserPreferenceStore().updateUserSettings()" prepend-icon="$save">{{$t('Save')}}</v-btn>
     </v-form>
 </template>
 
@@ -65,5 +74,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.nav-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+
 
 </style>

@@ -8,7 +8,7 @@
                 <v-row>
                     <v-col>
 
-                        <v-btn-toggle border divided v-model="mode">
+                        <v-btn-toggle v-model="mode" mandatory class="home-segmented">
                             <v-btn value="md_list"><i class="fa-solid fa-list-check"></i></v-btn>
                             <v-btn value="md_table"><i class="fa-solid fa-table-cells"></i></v-btn>
                             <v-btn value="csv"><i class="fa-solid fa-file-csv"></i></v-btn>

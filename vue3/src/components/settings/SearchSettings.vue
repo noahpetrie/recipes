@@ -8,12 +8,12 @@
         <p class="mt-2 mb-2"> {{ $t('SearchSettingsOverview') }}</p>
         <v-card :title="$t('Fuzzy') +' (' + $t('Default') + ')'" :subtitle="$t('FuzzySearchHelp')">
             <template #append>
-                <v-btn color="success" @click="applyFuzzyPreset()">{{ $t('Apply') }}</v-btn>
+                <v-btn variant="outlined" size="small" @click="applyFuzzyPreset()">{{ $t('Apply') }}</v-btn>
             </template>
         </v-card>
         <v-card :title="$t('Precision')" :subtitle="$t('PrecisionSearchHelp')" class="mt-2">
             <template #append>
-                <v-btn color="success" @click="applyPrecisePreset()">{{ $t('Apply') }}</v-btn>
+                <v-btn variant="outlined" size="small" @click="applyPrecisePreset()">{{ $t('Apply') }}</v-btn>
             </template>
         </v-card>
 
@@ -34,7 +34,7 @@
             <v-model-select model="SearchFields" chips multiple v-model="searchPreferences.fulltext" :label="$t('Fulltext')" :hint="$t('FulltextHelp')"></v-model-select>
             <v-model-select model="SearchFields" chips multiple v-model="searchPreferences.trigram" :label="$t('Fuzzy')" :hint="$t('FuzzySearchHelp')"></v-model-select>
 
-            <v-btn class="mt-3" color="success" @click="updateSearchSettings()" prepend-icon="$save" :loading="loading">
+            <v-btn class="mt-3" color="primary" variant="flat" @click="updateSearchSettings()" prepend-icon="$save" :loading="loading">
                 {{ $t('Save') }}
             </v-btn>
         </v-form>

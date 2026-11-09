@@ -18,10 +18,10 @@
             <timer :seconds="step.time != undefined ? step.time*60 : 0" @stop="timerRunning = false" v-if="timerRunning"></timer>
             <v-card-text class="pt-1" v-if="step.ingredients.length > 0 || step.instruction != ''">
                 <v-row>
-                    <v-col :cols="(useUserPreferenceStore().isPrintMode) ? 6 : 12" md="6" v-if="step.ingredients.length > 0 && (step.showIngredientsTable || step.show_ingredients_table)">
+                    <v-col :cols="(useUserPreferenceStore().isPrintMode) ? 6 : 12" md="6" v-if="hasIngredientTable">
                         <ingredients-table v-model="step.ingredients" :ingredient-factor="ingredientFactor"></ingredients-table>
                     </v-col>
-                    <v-col :cols="(useUserPreferenceStore().isPrintMode) ? 6 : 12" md="6" class="markdown-body">
+                    <v-col :cols="(useUserPreferenceStore().isPrintMode && hasIngredientTable) ? 6 : 12" :md="hasIngredientTable ? 6 : 12" class="markdown-body" :class="{'step-text-only': !hasIngredientTable}">
                         <instructions :instructions_html="step.instructionsMarkdown" :ingredient_factor="ingredientFactor"
                                       v-if="step.instructionsMarkdown != undefined"></instructions>
                         <!-- sub recipes dont have a correct schema, thus they use different variable naming -->
@@ -78,6 +78,9 @@ const props = defineProps({
 const timerRunning = ref(false)
 const stepChecked = ref(false)
 
+// sub recipes use snake_case fields
+const hasIngredientTable = computed(() => step.value.ingredients.length > 0 && (step.value.showIngredientsTable || (step.value as any).show_ingredients_table))
+
 const hasDetails = computed(() => {
     return step.value.ingredients.length > 0 || (step.value.instruction != undefined && step.value.instruction.length > 0) || step.value.stepRecipeData != undefined || step.value.file != undefined
 })
@@ -85,5 +88,11 @@ const hasDetails = computed(() => {
 </script>
 
 <style scoped>
+/* steps without ingredients: full width, but a comfortable line length */
+.step-text-only :deep(.markdown-body),
+.step-text-only > * {
+    max-width: 75ch;
+}
+
 
 </style>

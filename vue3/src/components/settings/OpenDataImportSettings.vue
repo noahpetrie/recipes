@@ -1,7 +1,7 @@
 <template>
-    <p class="text-h4">{{ $t('Open_Data_Import') }}</p>
+    <p class="text-h6">{{ $t('Open_Data_Import') }}</p>
     <v-divider></v-divider>
-    <p class="text-subtitle-1">{{ $t('Data_Import_Info') }} <a href="https://github.com/TandoorRecipes/open-tandoor-data" target="_blank" rel="noreferrer nofollow">{{ $t('Learn_More') }}</a></p>
+    <p class="text-body-2 mt-3 mb-3">{{ $t('Data_Import_Info') }} <a href="https://github.com/TandoorRecipes/open-tandoor-data" target="_blank" rel="noreferrer nofollow">{{ $t('Learn_More') }}</a></p>
 
     <v-select :items="metadata.versions" :label="$t('Language')" class="mt-4" v-model="requestData.selectedVersion" :loading="loading"></v-select>
 
@@ -37,7 +37,7 @@
                 </tr>
                 </tbody>
             </v-table>
-            <v-btn @click="importOpenData()" class="mt-2 float-right" color="success" :loading="loading">{{ $t('Import') }}</v-btn>
+            <v-btn @click="importOpenData()" class="mt-2" color="primary" variant="flat" :loading="loading">{{ $t('Import') }}</v-btn>
         </v-col>
     </v-row>
 

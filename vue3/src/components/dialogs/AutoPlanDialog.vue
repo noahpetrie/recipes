@@ -1,37 +1,38 @@
 <template>
-    <v-dialog max-width="600px" :activator="props.activator" v-model="dialog">
+    <v-dialog max-width="560px" :activator="props.activator" v-model="dialog">
         <v-card :loading="loading">
-            <v-closable-card-title v-model="dialog" :title="$t('Auto_Planner')" icon="fa-solid fa-calendar-plus"></v-closable-card-title>
+            <v-closable-card-title v-model="dialog" :title="$t('Auto_Planner')" icon="fa-solid fa-calendar-plus"
+                                   sub-title="Fill empty days with recipes that match."></v-closable-card-title>
 
-            <v-card-text>
+            <v-card-text class="pt-3 pb-2">
+                <v-form class="home-form">
+                    <v-model-select model="MealType" v-model="autoMealPlan.mealTypeId" :return-object="false" hide-details></v-model-select>
 
-                <v-form>
-                    <v-model-select model="MealType" v-model="autoMealPlan.mealTypeId" :return-object="false"></v-model-select>
-                    <div class="d-flex keyword-row">
-                        <v-model-select model="Keyword" v-model="keywordIds" multiple chips :return-object="false" class="flex-grow-1 keyword-select" hide-details></v-model-select>
-                        <v-btn-toggle v-model="keywordMode" mandatory divided border class="keyword-toggle">
-                            <v-btn value="and">AND</v-btn>
-                            <v-btn value="or">OR</v-btn>
+                    <div class="keyword-row">
+                        <v-model-select model="Keyword" v-model="keywordIds" multiple chips :return-object="false" class="keyword-select" hide-details></v-model-select>
+                        <v-btn-toggle v-model="keywordMode" mandatory density="compact" class="home-segmented" :title="$t('Keywords')">
+                            <v-btn value="and">All</v-btn>
+                            <v-btn value="or">Any</v-btn>
                         </v-btn-toggle>
                     </div>
 
-                    <v-number-input :label="$t('Servings')" v-model="autoMealPlan.servings"></v-number-input>
-
-                    <v-date-input :label="$t('Date')"
-                                  multiple="range"
-                                  v-model="dateRangeValue"
-                                  :first-day-of-week="useUserPreferenceStore().deviceSettings.mealplan_startingDayOfWeek"
-                                  :show-week="useUserPreferenceStore().deviceSettings.mealplan_displayWeekNumbers"
-                                  prepend-icon=""
-                                  prepend-inner-icon="$calendar"
-                    ></v-date-input>
+                    <div class="home-form-row">
+                        <v-number-input :label="$t('Servings')" v-model="autoMealPlan.servings" :min="1" control-variant="split" hide-details class="servings"></v-number-input>
+                        <v-date-input :label="$t('Date')"
+                                      multiple="range"
+                                      v-model="dateRangeValue"
+                                      :first-day-of-week="useUserPreferenceStore().deviceSettings.mealplan_startingDayOfWeek"
+                                      :show-week="useUserPreferenceStore().deviceSettings.mealplan_displayWeekNumbers"
+                                      hide-details
+                        ></v-date-input>
+                    </div>
 
                     <v-checkbox v-model="autoMealPlan.addshopping" :label="$t('AddToShopping')" hide-details></v-checkbox>
                 </v-form>
             </v-card-text>
             <v-card-actions>
-                <v-btn @click="dialog = false">{{ $t('Cancel') }}</v-btn>
-                <v-btn color="create" prepend-icon="fa-solid fa-person-running" @click="doAutoPlan()" :loading="loading">{{ $t('Create') }}</v-btn>
+                <v-btn variant="text" @click="dialog = false">{{ $t('Cancel') }}</v-btn>
+                <v-btn variant="flat" color="primary" prepend-icon="fa-solid fa-wand-magic-sparkles" @click="doAutoPlan()" :loading="loading">{{ $t('Create') }}</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -85,11 +86,18 @@ function initializeRequest() {
     keywordIds.value = []
     keywordMode.value = 'and'
 
+    // with a single meal type (e.g. only Dinner) there is nothing to choose
+    new ApiApi().apiMealTypeList({}).then(r => {
+        if (r.results.length == 1 && autoMealPlan.value.mealTypeId == undefined) {
+            autoMealPlan.value.mealTypeId = r.results[0].id
+        }
+    }).catch(() => {})
+
     dateRangeValue.value = []
-    let currentDate = DateTime.fromJSDate(autoMealPlan.value.startDate).plus({day: 1}).toJSDate()
-    while (currentDate <= autoMealPlan.value.endDate) {
-        dateRangeValue.value.push(currentDate)
-        currentDate = DateTime.fromJSDate(currentDate).plus({day: 1}).toJSDate()
+    // this week: today and the six days after it
+    const today = DateTime.now().startOf('day')
+    for (let i = 0; i < 7; i++) {
+        dateRangeValue.value.push(today.plus({day: i}).toJSDate())
     }
 
 }
@@ -107,7 +115,6 @@ function doAutoPlan() {
     autoMealPlan.value.keywords = keywordIds.value
     autoMealPlan.value.keywordMode = keywordMode.value
 
-    console.log('requesting auto plan from ', autoMealPlan.value.startDate, ' to ', autoMealPlan.value.endDate)
 
     api.apiAutoPlanCreate({autoMealPlan: autoMealPlan.value}).then(r => {
         dialog.value = false
@@ -125,28 +132,17 @@ function doAutoPlan() {
 
 <style scoped>
 .keyword-row {
-    gap: 0;
-    align-items: stretch;
-    margin-bottom: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
 }
 
 .keyword-select {
+    flex: 1 1 auto;
     min-width: 0;
 }
 
-.keyword-row :deep(.multiselect) {
-    border: thin solid rgba(0, 0, 0, 0.12) !important;
-    border-right: none !important;
-    border-radius: 4px 0 0 4px !important;
-}
-
-.keyword-toggle {
-    height: auto !important;
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-}
-
-.keyword-toggle .v-btn {
-    height: 100% !important;
+.servings {
+    flex: 0 0 150px;
 }
 </style>

@@ -1,15 +1,26 @@
 <template>
     <!-- home: shadcn-style toolbar — range title, then Today, ‹ › and a date picker button -->
     <div class="mpc-header">
-        <div class="mpc-range d-none d-md-block">
-            {{ DateTime.fromJSDate(props.headerProps?.displayFirstDate).toLocaleString(DateTime.DATE_MED) }} –
-            {{ DateTime.fromJSDate(props.headerProps?.displayLastDate).toLocaleString(DateTime.DATE_MED) }}
+        <!-- home: the range shows on phones too (short form); the calendar's last date is exclusive -->
+        <div class="mpc-range">
+            <template v-if="mdAndUp">
+                {{ DateTime.fromJSDate(props.headerProps?.displayFirstDate).toLocaleString(DateTime.DATE_MED) }} –
+                {{ lastShownDate.toLocaleString(DateTime.DATE_MED) }}
+            </template>
+            <template v-else>
+                {{ DateTime.fromJSDate(props.headerProps?.displayFirstDate).toLocaleString({month: 'short', day: 'numeric'}) }} –
+                {{ lastShownDate.toLocaleString({month: 'short', day: 'numeric'}) }}
+            </template>
         </div>
         <div class="mpc-tools">
             <shop-week-button />
             <!-- home fork: the auto planner and view options used to sit in the sidebar -->
-            <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-calendar-plus">
+            <v-btn variant="outlined" size="small" prepend-icon="fa-solid fa-calendar-plus" v-if="smAndUp">
                 {{ $t('Auto_Planner') }}
+                <auto-plan-dialog></auto-plan-dialog>
+            </v-btn>
+            <v-btn variant="outlined" size="small" icon :aria-label="$t('Auto_Planner')" :title="$t('Auto_Planner')" v-else>
+                <v-icon icon="fa-solid fa-calendar-plus" size="small"></v-icon>
                 <auto-plan-dialog></auto-plan-dialog>
             </v-btn>
             <v-btn variant="outlined" size="small" @click="date = new Date()">{{ $t('Today') }}</v-btn>
@@ -19,15 +30,15 @@
                 <v-btn variant="outlined" size="small" icon="fa-solid fa-chevron-right" :aria-label="$t('Next')"
                        @click="date = props.headerProps.nextFullPeriod"></v-btn>
             </div>
-            <v-btn variant="outlined" size="small" prepend-icon="fa-regular fa-calendar" class="mpc-date">
+            <v-btn variant="outlined" size="small" prepend-icon="fa-regular fa-calendar" class="mpc-date" v-if="smAndUp">
                 {{ DateTime.fromJSDate(date).toLocaleString({month: 'short', day: 'numeric', year: 'numeric'}) }}
                 <v-menu activator="parent" v-model="pickerOpen" :close-on-content-click="false" location="bottom end">
                     <v-date-picker v-model="date" hide-header color="primary" @update:model-value="pickerOpen = false"
                                    :first-day-of-week="useUserPreferenceStore().deviceSettings.mealplan_startingDayOfWeek"></v-date-picker>
                 </v-menu>
             </v-btn>
-            <v-btn variant="outlined" size="small" icon="fa-solid fa-sliders" :aria-label="$t('Settings')" :title="$t('Settings')">
-                <v-icon icon="fa-solid fa-sliders"></v-icon>
+            <v-btn variant="outlined" size="small" icon :aria-label="$t('Settings')" :title="$t('Settings')">
+                <v-icon icon="fa-solid fa-sliders" size="small"></v-icon>
                 <v-menu activator="parent" :close-on-content-click="false" location="bottom end">
                     <v-card width="320" class="mpc-options">
                         <v-card-text class="pb-2">
@@ -47,7 +58,8 @@
 <script setup lang="ts">
 
 import {IHeaderProps} from "vue-simple-calendar/dist/src/IHeaderProps";
-import {ref, watch} from "vue";
+import {computed, ref, watch} from "vue";
+import {useDisplay} from "vuetify";
 import {DateTime} from "luxon";
 import {useUserPreferenceStore} from "@/stores/UserPreferenceStore";
 import ShopWeekButton from "@/components/buttons/ShopWeekButton.vue";
@@ -65,6 +77,8 @@ const props = defineProps({
 })
 
 const date = ref(new Date())
+const {mdAndUp, smAndUp} = useDisplay()
+const lastShownDate = computed(() => DateTime.fromJSDate(props.headerProps?.displayLastDate).minus({day: 1}))
 const pickerOpen = ref(false)
 
 watch(() => date.value, (newValue, oldValue) => {
@@ -82,6 +96,7 @@ watch(() => date.value, (newValue, oldValue) => {
 }
 
 .mpc-range {
+    white-space: nowrap;
     font-size: 1.125rem;
     font-weight: 600;
     letter-spacing: -0.01em;
@@ -92,8 +107,23 @@ watch(() => date.value, (newValue, oldValue) => {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
+    min-width: 0;
     align-items: center;
     gap: 8px;
+}
+
+/* phones and unfolded phones: range on its own line, tools below it from the left */
+@media (max-width: 759.98px) {
+    .mpc-header {
+        flex-wrap: wrap;
+        row-gap: 10px;
+    }
+
+    .mpc-tools {
+        margin-left: 0;
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 
 /* the two arrows as one joined control */

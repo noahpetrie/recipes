@@ -261,6 +261,14 @@ async function discard() {
     overflow-x: auto;
 }
 
+/* phones: the table scrolls sideways instead of squeezing names to four lines */
+@media (max-width: 599.98px) {
+    .scp-card { overflow-x: auto; }
+    .scp-table { min-width: 560px; }
+}
+
+.scp-uncounted { margin-top: 10px; }
+
 .scp-table {
     width: 100%;
     border-collapse: collapse;

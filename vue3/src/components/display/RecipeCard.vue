@@ -8,20 +8,20 @@
 
             </recipe-image>
         </router-link>
-        <div class="ml-3">
-            <div class="d-flex ">
+        <div class="mx-3">
+            <div class="d-flex align-start">
                 <div class="flex-grow-1 cursor-pointer" @click="openRecipe()">
                     <p class="font-weight-bold mt-2 clamp-2" :title="props.recipe.name">{{ props.recipe.name }}</p>
                 </div>
-                <div class="mt-1">
-                    <!--                    <v-btn icon="fas fa-ellipsis-v" size="small" variant="plain"></v-btn>-->
+                <!-- negative bottom margin: the menu button doesn't make one-line titles taller than two-line ones -->
+                <div class="mt-1 card-menu">
                     <recipe-context-menu ref="contextMenu" :recipe="props.recipe" size="small" v-if="props.showMenu"></recipe-context-menu>
                 </div>
             </div>
             <!--            <p class="text-disabled">{{ props.recipe.createdBy.displayName}}</p>-->
-            <keywords-component variant="outlined" :keywords="props.recipe.keywords" :max-keywords="3" v-if="props.showKeywords">
+            <keywords-component class="mt-2" variant="outlined" :keywords="props.recipe.keywords" :max-keywords="3" v-if="props.showKeywords">
                 <template #prepend>
-                    <made-it-badge class="mb-1 me-1" :recipe="props.recipe"></made-it-badge>
+                    <span class="mb-1 me-1 d-inline-flex"><made-it-badge :recipe="props.recipe"></made-it-badge></span>
                     <span v-if="props.recipe.originCountry" class="mb-1 me-1 origin-flag" :title="countryName(props.recipe.originCountry)">{{ flag(props.recipe.originCountry) }}</span>
                     <v-chip class="mb-1 me-1" size="x-small" label variant="outlined" v-if="recipe._private">
                         <private-recipe-badge  :show-text="false"></private-recipe-badge>
@@ -158,6 +158,11 @@ function openRecipe() {
 </script>
 
 <style scoped>
+.card-menu {
+    margin-bottom: -12px;
+    margin-inline-end: -6px;
+}
+
 
 .text-rows-1 {
     overflow: hidden;

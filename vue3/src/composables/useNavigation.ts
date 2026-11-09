@@ -15,7 +15,7 @@ export function useNavigation() {
         // home fork: only the places used every day; Search is the top bar's ⌘K, Import is in the + menu,
         // Database and Settings are in the account menu
         let navigation = [
-            {component: VListItem, prependIcon: '$recipes', title: 'Home', to: {name: 'StartPage', params: {}}},
+            {component: VListItem, prependIcon: 'fa-solid fa-house', title: 'Home', to: {name: 'StartPage', params: {}}},
             {component: VListItem, prependIcon: '$mealplan', title: t('Meal_Plan'), to: {name: 'MealPlanPage', params: {}}},
             {component: VListItem, prependIcon: 'fa-solid fa-fire-burner', title: 'Ready to Cook', to: {name: 'CookNowPage', params: {}}},
             {component: VListItem, prependIcon: '$shopping', title: t('Shopping'), to: {name: 'ShoppingListPage', params: {}}},
